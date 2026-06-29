@@ -1,39 +1,56 @@
-# DataStorified — Phase 1
+# DataStorified — Phase 1 production candidate
 
-DataStorified is a mobile-first decision intelligence platform with three independently deployable Next.js applications and a shared, typed product layer.
+DataStorified is a mobile-first decision-intelligence platform with three independently deployable Next.js applications, 55 working calculators, 55 working browser utilities, and shared typed engines.
 
 [![CI and production deployment](https://github.com/appsabhijitrana/datastorified/actions/workflows/ci-deploy.yml/badge.svg)](https://github.com/appsabhijitrana/datastorified/actions/workflows/ci-deploy.yml)
 
-## Project status
+## Release status
 
-**Phase 1 feature scope: 100% complete · Public-launch readiness: 94%**
+The Phase 1 production candidate is implemented on the development line and is ready for a reviewed `dev → main` release after the full quality gate passes in GitHub Actions. Production deployment remains restricted to `main`.
 
-All requested Phase 1 product surfaces are implemented, all three applications are live on Vercel, and the production pipeline is operational. Custom-domain DNS and final cross-browser, accessibility, and Lighthouse QA remain before the public-domain launch.
+| Surface | Scope | Local port |
+| --- | --- | ---: |
+| Decision Engine | Decision input, preview, product, Legal & Trust | 3000 |
+| Calculators | 55 searchable, validated calculators | 3001 |
+| Tools | 55 text, developer, image, PDF, and general utilities | 3002 |
 
-| Application | Production preview | Status |
-| --- | --- | --- |
-| Decision Engine | [datastorified-website.vercel.app](https://datastorified-website.vercel.app) | Live |
-| Calculators | [datastorified-calculators.vercel.app](https://datastorified-calculators.vercel.app) | Live — 20 calculators |
-| Tools | [datastorified-tools.vercel.app](https://datastorified-tools.vercel.app) | Live — 25 tools |
+Current automated evidence:
 
-See the [detailed progress report](docs/progress.md) for the weighted score, completed capabilities, production status, and remaining launch work.
+- 333 unit tests passing;
+- calculator engine: 100% line coverage;
+- tools engine: 99.25% line coverage;
+- storage: 100% line coverage;
+- 15 functional browser regression scenarios;
+- 7 visual regression baselines;
+- ESLint and strict TypeScript quality gates;
+- static production builds for all registered routes.
 
-## Apps
+Detailed documentation:
 
-- `apps/website` — decision engine landing experience on port `3000`
-- `apps/calculators` — 20 visual calculators on port `3001`
-- `apps/tools` — 25 private, client-first utilities on port `3002`
+- [Calculator formulas and test cases](docs/calculators.md)
+- [Utility functions and limitations](docs/tools.md)
+- [Testing architecture and commands](docs/testing.md)
+- [Production quality checklist](docs/quality-checklist.md)
+- [Deployment and release process](docs/deployment.md)
+- [Project progress](docs/progress.md)
 
 ## Run locally
 
-Requirements: Node.js 20+ and pnpm 9+.
+Requirements: Node.js 22 and pnpm 9.15.4.
 
 ```bash
 pnpm install
+pnpm exec playwright install chromium
 pnpm dev
 ```
 
-Run one surface only:
+Open:
+
+- `http://localhost:3000` — website;
+- `http://localhost:3001` — calculators;
+- `http://localhost:3002` — tools.
+
+Run one app:
 
 ```bash
 pnpm dev:website
@@ -41,60 +58,65 @@ pnpm dev:calculators
 pnpm dev:tools
 ```
 
-Production checks:
+## Quality commands
 
 ```bash
-pnpm typecheck
-pnpm build
+pnpm lint           # ESLint, zero warnings
+pnpm typecheck      # strict TypeScript across all apps
+pnpm test           # unit tests
+pnpm test:watch     # Vitest watch mode
+pnpm test:coverage  # coverage and package thresholds
+pnpm build          # all production builds
+pnpm test:e2e       # functional and visual Playwright tests
+pnpm ci             # complete local release gate
 ```
 
-## Development workflow
-
-- `main` is the protected production branch. Direct pushes are blocked.
-- `dev` is the shared development and integration branch.
-- Create feature branches from `dev` and open pull requests back into `dev`.
-- When a release is ready, open a pull request from `dev` into `main`.
-- CI runs for pushes and pull requests involving either branch. Production deployment runs only after the release PR is merged into `main`.
-
-```text
-feature/* → dev → pull request → main → production
-```
-
-## Workspace map
+## Architecture
 
 ```text
 apps/
-  website/              Decision Engine and marketing experience
-  calculators/          Search, discovery, and dynamic calculator pages
-  tools/                Search, discovery, and dynamic utility pages
+  website/              Decision Engine, brand, Legal & Trust
+  calculators/          Search and data-driven calculator pages
+  tools/                Search and data-driven utility/file pages
 packages/
+  calculators-engine/   55 formulas, registries, Zod schemas, tests
+  tools-engine/         55 transformations/file processors and tests
   ui/                   Shared mobile-first component system
-  seo/                  Metadata, canonical URL, and FAQ schema helpers
+  storage/              Failure-safe local persistence
+  seo/                  Metadata, icons, social cards, structured data
+  analytics/            Console-free browser event facade
+  test-utils/            Shared Vitest/Testing Library setup
   utils/                Formatting and class utilities
-  calculators-engine/   Registry and calculation formulas
-  tools-engine/         Registry and browser-side transformations
-  storage/              Version-stable local persistence API
-  analytics/            Development-safe tracking facade
+e2e/                    Functional and visual Playwright regression tests
 ```
 
-## What is implemented
+Calculator and utility pages render registry definitions and call engine functions; formulas and transformations do not live in UI components. Calculator schemas stay engine-side so Zod objects never cross the Next.js server/client serialization boundary.
 
-Calculator formulas are centralized in `packages/calculators-engine`. EMI, SIP, FD, CAGR, inflation, retirement, emergency fund, net worth, loan eligibility, home affordability, GST, basic income tax, HRA, age, percentage, discount, BMI, fuel cost, and unit conversion run locally. Currency conversion intentionally uses a user-visible demo rate rather than a live API.
+## Working capabilities
 
-Text and developer tools run through `packages/tools-engine`: counts, case conversion, line cleanup/sorting, slugs, JSON formatting/validation, Base64, URL encoding, UUIDs, Markdown preview, regex testing, passwords, and timestamps. Hashing, image, PDF, and QR workflows are clearly labeled Phase 1 demos and do not pretend to process or upload files.
+The calculator catalog covers finance, investing, Indian tax, gold, property, vehicles, business, health, and general conversion/planning tasks. Every page includes validation, results, insights, formulas, assumptions, related calculators, FAQs, draft persistence, favorites, and recent history.
 
-Favorites, recent items, searches, preferences, and calculator drafts use the requested `ds.*` local-storage keys. There is no login wall or backend.
+The utility catalog includes text cleanup/counting, JSON/CSV/YAML conversion, Base64/URL/JWT/regex/timestamp/cron tools, SHA-256, QR and UPI QR, secure passwords and UUIDs, canvas-based image operations, and `pdf-lib` merge/split/rotate/extract/images-to-PDF/metadata workflows. File operations run locally and provide downloadable outputs.
 
-## Legal & Trust
+## Development and deployment workflow
 
-The website includes a production-structured Legal & Trust section with a legal hub, Trust Center, About, Contact, and 11 versioned policies covering privacy, terms, cookies, disclaimers, AI disclosure, security, community conduct, acceptable use, data sources, copyright, and accessibility.
+- `dev` is the development/integration branch.
+- `main` is protected and is the only production deployment branch.
+- Feature work merges into `dev`; a reviewed release pull request merges `dev` into `main`.
+- CI runs install, lint, typecheck, tests, coverage, builds, and Playwright.
+- Vercel production deployments and smoke tests run only after a successful `main` push.
 
-Policy content lives in [`apps/website/lib/legal-content.ts`](apps/website/lib/legal-content.ts). Shared layouts and cards live in [`apps/website/components/legal.tsx`](apps/website/components/legal.tsx). The documents are platform policy templates and must be reviewed by qualified legal counsel before being treated as legal advice.
+```text
+feature/* → dev → release pull request → main → production
+```
 
-## Deployment
+The applications are configured for `datastorified.com`, `calculators.datastorified.com`, and `tools.datastorified.com`. See [deployment documentation](docs/deployment.md) for Vercel variables, DNS, rollback, and release details.
 
-Three Vercel projects are deployed from this repository with each Root Directory mapped to its corresponding app. The custom domains `datastorified.com`, `calculators.datastorified.com`, and `tools.datastorified.com` are attached in Vercel and awaiting GoDaddy DNS changes. No server, database, queue, object storage, paid AI, or SMS provider is needed for Phase 1.
+## Known release limitations
 
-The repository includes a GitHub Actions quality and production-deployment pipeline. See [`docs/deployment.md`](docs/deployment.md) for the branching model, project configuration, repository variables, secrets, DNS records, release behavior, and rollback instructions.
-
-Possible later additions: Neon PostgreSQL for accounts and sync, Cloudflare R2 for user-owned files, and opt-in AI decision reports. Keep calculator and tool execution client-side where practical.
+- Currency conversion uses a user-entered static rate and does not claim live pricing.
+- Image workflows depend on browser canvas codecs/memory and do not retain all metadata or animation frames.
+- PDF workflows require unencrypted documents and available browser memory.
+- The basic cropper and color picker use numeric coordinates in Phase 1.
+- JWT decoding does not verify signatures; basic minifiers are not production compilers.
+- Legal templates and regulated-domain disclaimers require qualified human review before broad public promotion.
