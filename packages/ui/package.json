@@ -3,6 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "main": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./smart-number": "./smart-number.ts",
+    "./smart-number-input": "./smart-number-input.tsx"
+  },
   "peerDependencies": {
     "next": "^15.1.0",
     "react": "^19.0.0",

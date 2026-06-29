@@ -25,9 +25,9 @@ import {
   Header,
   InsightCard,
   ResultCard,
-  SmartNumberInput,
-  type SmartNumberMode,
 } from "@datastorified/ui";
+import { SmartNumberInput } from "@datastorified/ui/smart-number-input";
+import type { SmartNumberMode } from "@datastorified/ui/smart-number";
 
 export default function CalculatorExperience({ calculator }: { calculator: CalculatorDefinition }) {
   const defaults = useMemo(() => Object.fromEntries(calculator.fields.map((field) => [field.key, field.default])), [calculator]);

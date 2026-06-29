@@ -5,7 +5,8 @@ import { Download, FileUp, Heart, Play, RefreshCw, ShieldCheck } from "lucide-re
 import { processImage, processPdf, runTool, tools, type FileLike, type FileUtilityResult, type ToolDefinition, type UtilityResult, type UtilityScalar } from "@datastorified/tools-engine";
 import { storage } from "@datastorified/storage";
 import { trackFavorite, trackToolUsed } from "@datastorified/analytics";
-import { Badge, BottomNav, Breadcrumb, Button, Card, CopyButton, FAQ, Footer, Header, Input, InsightCard, SmartNumberInput, Tabs, Textarea, ToolCard } from "@datastorified/ui";
+import { Badge, BottomNav, Breadcrumb, Button, Card, CopyButton, FAQ, Footer, Header, Input, InsightCard, Tabs, Textarea, ToolCard } from "@datastorified/ui";
+import { SmartNumberInput } from "@datastorified/ui/smart-number-input";
 
 const samples: Record<string, string> = {
   "json-format": '{"decision":"clear","confidence":82,"nextSteps":["compare","verify","act"]}',

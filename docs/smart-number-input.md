@@ -11,6 +11,8 @@ Formatting can use Indian grouping, international grouping, normal numeric outpu
 ## API
 
 ```tsx
+import { SmartNumberInput } from "@datastorified/ui/smart-number-input";
+
 <SmartNumberInput
   label="Loan amount"
   description="How much would you like to borrow?"
