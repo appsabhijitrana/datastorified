@@ -51,7 +51,7 @@ The workflow in `.github/workflows/ci-deploy.yml` performs the following:
 - Pushes to `main`: run the same quality gate, then deploy all three projects in parallel.
 - Each deployment: build with the pinned Vercel CLI, deploy the prebuilt output, and smoke-test its deployment URL.
 
-Because this workflow owns production deployment, disable Vercel's automatic Git deployments after the initial project setup to avoid duplicate deployments. Keep the GitHub repository connected only if you want Vercel's separate automatic preview deployments; otherwise disconnect it under each project's Git settings.
+Because this workflow owns production deployment, each app includes a `vercel.json` that disables Vercel's automatic deployment for `main`. This avoids duplicate production deployments while keeping Vercel's automatic branch and pull-request previews available.
 
 Optionally add required reviewers or branch protection to the GitHub `production` environment and require the CI check before `main` can be updated.
 
@@ -97,4 +97,3 @@ pnpm install --frozen-lockfile
 pnpm typecheck
 pnpm build
 ```
-
