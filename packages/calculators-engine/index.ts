@@ -1,6 +1,6 @@
 export * from "./registry";
 
-import { calculatorBySlug, type CalculatorDefinition } from "./registry";
+import { calculatorBySlug, calculatorSchemas, type CalculatorDefinition } from "./registry";
 
 export type ResultUnit = "currency" | "percent" | "number";
 export type PrimaryResult = { label: string; value: number; unit: ResultUnit; suffix?: string };
@@ -85,7 +85,7 @@ const result = (definition: CalculatorDefinition | undefined, value: number, opt
 export function calculate(slug: string, rawValues: Record<string, number>): CalculationResult {
   const definition = calculatorBySlug(slug);
   if (!definition) return result(undefined, 0, { error: "This calculator is not available." });
-  const parsed = definition.schema.safeParse(rawValues);
+  const parsed = calculatorSchemas[slug].safeParse(rawValues);
   if (!parsed.success) return result(definition, 0, { error: parsed.error.issues[0]?.message ?? "Check your inputs." });
   const v = parsed.data as Record<string, number>;
   const money = (label: string, value: number): SecondaryResult => ({ label, value, unit: "currency" });

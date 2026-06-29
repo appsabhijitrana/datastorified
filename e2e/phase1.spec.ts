@@ -43,14 +43,14 @@ test("recent calculator persists after reload", async ({ page }) => {
   await page.goto(calculators);
   await page.reload();
   await expect(page.getByRole("heading", { name: "Recently used" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "SIP Calculator" })).toBeVisible();
+  await expect(page.locator("#recent").getByRole("heading", { name: "SIP Calculator" })).toBeVisible();
 });
 
 test("tools homepage loads and search finds JSON Formatter", async ({ page }) => {
   await page.goto(tools);
   await expect(page.getByRole("heading", { name: /Everyday tools/i })).toBeVisible();
   await page.getByPlaceholder(/Search JSON/i).fill("JSON Formatter");
-  await expect(page.getByRole("heading", { name: "JSON Formatter" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "JSON Formatter", exact: true })).toBeVisible();
 });
 
 test("JSON Formatter formats valid JSON", async ({ page }) => {
@@ -62,7 +62,7 @@ test("JSON Formatter formats valid JSON", async ({ page }) => {
 test("JSON Formatter shows a friendly error for invalid JSON", async ({ page }) => {
   await page.goto(`${tools}/json-formatter`);
   await page.getByLabel("JSON Formatter input").fill("{");
-  await expect(page.getByRole("alert")).toBeVisible();
+  await expect(page.locator("div[role='alert']").filter({ hasText: /JSON|property|position/i })).toBeVisible();
 });
 
 test("Password Generator creates a new password", async ({ page }) => {

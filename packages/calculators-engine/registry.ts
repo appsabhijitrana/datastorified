@@ -28,7 +28,6 @@ export type CalculatorDefinition = {
   warnings?: string[];
   source?: { label: string; url: string };
   related: string[];
-  schema: z.ZodObject<Record<string, z.ZodTypeAny>>;
 };
 
 const numberField = (key: string, label: string, value: number, suffix = "", step = 1, min = 0, max?: number, help?: string): CalculatorField =>
@@ -57,10 +56,10 @@ const buildSchema = (fields: CalculatorField[]) => z.object(Object.fromEntries(f
   return [field.key, validated];
 })));
 
-type DefinitionInput = Omit<CalculatorDefinition, "schema" | "icon" | "keywords" | "assumptions" | "related"> & Partial<Pick<CalculatorDefinition, "icon" | "keywords" | "assumptions" | "related">>;
+type DefinitionInput = Omit<CalculatorDefinition, "icon" | "keywords" | "assumptions" | "related"> & Partial<Pick<CalculatorDefinition, "icon" | "keywords" | "assumptions" | "related">>;
 const define = (definition: DefinitionInput): CalculatorDefinition => ({
   icon: "Calculator", keywords: [], assumptions: ["Inputs remain constant for the selected period.", "Results are planning estimates, not professional advice."], related: [],
-  ...definition, schema: buildSchema(definition.fields),
+  ...definition,
 });
 
 const loanFields = (amount = 1_000_000) => [n("principal", "Loan amount", amount, "₹", 10_000, 1, 1_000_000_000), n("rate", "Annual interest rate", 9, "%", 0.1, 0, 100), n("years", "Loan tenure", 5, "years", 1, 1, 50)];
@@ -133,6 +132,7 @@ export const calculators: CalculatorDefinition[] = [
 ];
 
 export const calculatorBySlug = (slug: string) => calculators.find((calculator) => calculator.slug === slug);
+export const calculatorSchemas = Object.fromEntries(calculators.map((calculator) => [calculator.slug, buildSchema(calculator.fields)])) as Record<string, z.ZodObject<Record<string, z.ZodTypeAny>>>;
 
 export const searchCalculators = (query: string) => {
   const normalized = query.toLowerCase().trim();
@@ -140,6 +140,6 @@ export const searchCalculators = (query: string) => {
 };
 
 export function validateCalculatorInputs(calculator: CalculatorDefinition, values: Record<string, number>): string[] {
-  const parsed = calculator.schema.safeParse(values);
+  const parsed = calculatorSchemas[calculator.slug].safeParse(values);
   return parsed.success ? [] : [...new Set(parsed.error.issues.map((issue) => issue.message))];
 }
