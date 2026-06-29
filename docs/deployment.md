@@ -32,6 +32,7 @@ Create these GitHub repository variables under **Settings → Secrets and variab
 
 | Variable | Value |
 | --- | --- |
+| `VERCEL_DEPLOY_ENABLED` | Set to `true` after all IDs and the token below are configured |
 | `VERCEL_ORG_ID` | Vercel account/team ID |
 | `VERCEL_WEBSITE_PROJECT_ID` | Project ID for `datastorified-website` |
 | `VERCEL_CALCULATORS_PROJECT_ID` | Project ID for `datastorified-calculators` |
@@ -44,6 +45,8 @@ Create one GitHub repository secret:
 | `VERCEL_TOKEN` | A Vercel access token allowed to deploy all three projects |
 
 The team and project IDs are shown in each Vercel project's **Settings → General** page. Create the token from Vercel account settings and store it only as a GitHub secret.
+
+Until `VERCEL_DEPLOY_ENABLED` is exactly `true`, the workflow runs CI and safely skips production deployment.
 
 The workflow in `.github/workflows/ci-deploy.yml` performs the following:
 
