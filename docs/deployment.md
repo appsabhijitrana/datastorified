@@ -19,7 +19,7 @@ In Vercel, import the same GitHub repository three times. Give each project the 
 For every project:
 
 1. Keep Framework Preset set to Next.js.
-2. Use Node.js 20 or newer.
+2. Use Node.js 22, matching the current Vercel project configuration.
 3. Leave Build Command and Output Directory on their detected defaults.
 4. In the Root Directory settings, enable **Include source files outside of the Root Directory in the Build Step**. The apps import shared workspace packages from `packages/`.
 5. Make one initial deployment so Vercel finishes creating the project.
@@ -70,18 +70,18 @@ Optionally add `www.datastorified.com` to the website project and configure it t
 
 Add the domains in Vercel before changing DNS. Vercel will display the exact DNS target and any ownership-verification TXT record required for each domain.
 
-## 5. Configure Cloudflare DNS
+## 5. Configure DNS
 
-If Cloudflare remains the authoritative DNS provider, create the records Vercel reports. A typical configuration is:
+The domain currently uses GoDaddy nameservers (`ns63.domaincontrol.com` and `ns64.domaincontrol.com`). Add these records in GoDaddy DNS:
 
-| Type | Name | Target | Cloudflare proxy |
+| Type | Name | Target | Notes |
 | --- | --- | --- | --- |
-| `A` | `@` | `76.76.21.21` | DNS only |
-| `CNAME` | `calculators` | Vercel-provided CNAME | DNS only |
-| `CNAME` | `tools` | Vercel-provided CNAME | DNS only |
-| `CNAME` | `www` | Vercel-provided CNAME | DNS only |
+| `A` | `@` | `76.76.21.21` | Apex website |
+| `A` | `calculators` | `76.76.21.21` | Calculator app |
+| `A` | `tools` | `76.76.21.21` | Tools app |
+| `CNAME` | `www` | Vercel-provided CNAME | Optional website redirect |
 
-Use the exact values shown by Vercel rather than assuming the example targets. Remove conflicting A, AAAA, or CNAME records for the same host. Keep the Cloudflare proxy disabled during verification and SSL provisioning.
+These are the exact records currently requested by Vercel. Remove conflicting A, AAAA, or CNAME records for the same hosts. If DNS is later moved to Cloudflare, keep its proxy disabled during Vercel verification and SSL provisioning.
 
 After DNS resolves, Vercel automatically provisions HTTPS certificates. Confirm all four URLs in Vercel's Domains view and test them in a private browser window.
 

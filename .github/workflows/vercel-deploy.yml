@@ -51,7 +51,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
 
       - name: Pull Vercel project settings
@@ -70,4 +70,3 @@ jobs:
 
       - name: Smoke-test deployment
         run: curl --fail --silent --show-error --retry 5 --retry-all-errors "${{ steps.deploy.outputs.deployment_url }}" > /dev/null
-
