@@ -2,8 +2,9 @@ name: CI and production deployment
 
 on:
   pull_request:
+    branches: [dev, main]
   push:
-    branches: [main]
+    branches: [dev, main]
   workflow_dispatch:
 
 permissions:
@@ -46,7 +47,7 @@ jobs:
   deploy-website:
     name: Deploy website
     needs: quality
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.VERCEL_DEPLOY_ENABLED == 'true'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.VERCEL_DEPLOY_ENABLED == 'true'
     uses: ./.github/workflows/vercel-deploy.yml
     with:
       project_name: website
@@ -57,7 +58,7 @@ jobs:
   deploy-calculators:
     name: Deploy calculators
     needs: quality
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.VERCEL_DEPLOY_ENABLED == 'true'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.VERCEL_DEPLOY_ENABLED == 'true'
     uses: ./.github/workflows/vercel-deploy.yml
     with:
       project_name: calculators
@@ -68,7 +69,7 @@ jobs:
   deploy-tools:
     name: Deploy tools
     needs: quality
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.VERCEL_DEPLOY_ENABLED == 'true'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.VERCEL_DEPLOY_ENABLED == 'true'
     uses: ./.github/workflows/vercel-deploy.yml
     with:
       project_name: tools

@@ -8,9 +8,18 @@ DataStorified is deployed as three Vercel projects from the same Git repository.
 | `datastorified-calculators` | `apps/calculators` | `calculators.datastorified.com` |
 | `datastorified-tools` | `apps/tools` | `tools.datastorified.com` |
 
-## 1. Put the workspace in GitHub
+## 1. Branching and release model
 
-The pipeline expects the production branch to be named `main`. Push this workspace to a private or public GitHub repository. Generated output, dependencies, local environment files, and Vercel link data are excluded by the root `.gitignore`.
+The repository uses a protected two-branch release model:
+
+| Branch | Purpose | Deployment behavior |
+| --- | --- | --- |
+| `dev` | Shared development and integration | Runs CI; never deploys production |
+| `main` | Reviewed production releases | Runs CI and deploys after a merged pull request |
+
+Create feature branches from `dev`, merge reviewed feature pull requests into `dev`, and open a release pull request from `dev` to `main`. Direct pushes to `main` are blocked by GitHub branch protection. The required **Typecheck and build** check must pass before a release PR can merge.
+
+Generated output, dependencies, local environment files, and Vercel link data are excluded by the root `.gitignore`.
 
 ## 2. Create the Vercel projects
 
@@ -50,13 +59,15 @@ Until `VERCEL_DEPLOY_ENABLED` is exactly `true`, the workflow runs CI and safely
 
 The workflow in `.github/workflows/ci-deploy.yml` performs the following:
 
-- Pull requests: install, typecheck, and production-build all three apps.
-- Pushes to `main`: run the same quality gate, then deploy all three projects in parallel.
+- Pull requests into `dev` or `main`: install, typecheck, and production-build all three apps.
+- Pushes to `dev`: run the same quality gate without deployment.
+- A merged release pull request into `main`: run the quality gate, then deploy all three projects in parallel.
+- Manual workflow runs: run the quality gate without production deployment.
 - Each deployment: build with the pinned Vercel CLI, deploy the prebuilt output, and smoke-test its deployment URL.
 
 Because this workflow owns production deployment, each app includes a `vercel.json` that disables Vercel's automatic deployment for `main`. This avoids duplicate production deployments while keeping Vercel's automatic branch and pull-request previews available.
 
-Optionally add required reviewers or branch protection to the GitHub `production` environment and require the CI check before `main` can be updated.
+The `main` branch protection rule requires pull requests and the CI quality check. Add required reviewers to the GitHub `production` environment if a second approval layer is needed later.
 
 ## 4. Assign domains in Vercel
 
@@ -87,7 +98,7 @@ After DNS resolves, Vercel automatically provisions HTTPS certificates. Confirm 
 
 ## 6. Release and rollback
 
-A merge or push to `main` starts the production workflow. The production domains move to the successful deployments after all three independent builds complete.
+Merging the reviewed `dev` → `main` release pull request starts the production workflow. The production domains move to the successful deployments after all three independent builds complete.
 
 For rollback, open the affected Vercel project, select a known-good deployment, and choose **Promote to Production**. Each application can be rolled back independently.
 

@@ -65,7 +65,8 @@ The launch-readiness percentage is a weighted delivery estimate, not an automate
 - Three Vercel projects configured with their monorepo Root Directories and Node.js 22.
 - Production deployments are live on Vercel-hosted URLs.
 - GitHub Actions installs dependencies, typechecks, and builds all three applications.
-- Successful `main` builds deploy all applications in parallel and smoke-test each resulting URL.
+- `dev` runs CI without production deployment; protected `main` accepts reviewed pull requests only.
+- Successful release merges into `main` deploy all applications in parallel and smoke-test each resulting URL.
 - Vercel team and project IDs plus the deployment token are configured in GitHub Actions.
 - Requested custom domains are attached to their matching Vercel projects.
 
@@ -109,4 +110,3 @@ The verified production pipeline run is available in [GitHub Actions](https://gi
 ## Definition of Phase 1 done
 
 Phase 1 is considered feature-complete because all requested applications, calculators, tools, shared packages, local persistence, search, metadata, and deployment automation exist and pass production builds. Public launch is considered complete after custom DNS verification and the recommended minimum QA pass.
-

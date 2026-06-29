@@ -48,6 +48,18 @@ pnpm typecheck
 pnpm build
 ```
 
+## Development workflow
+
+- `main` is the protected production branch. Direct pushes are blocked.
+- `dev` is the shared development and integration branch.
+- Create feature branches from `dev` and open pull requests back into `dev`.
+- When a release is ready, open a pull request from `dev` into `main`.
+- CI runs for pushes and pull requests involving either branch. Production deployment runs only after the release PR is merged into `main`.
+
+```text
+feature/* → dev → pull request → main → production
+```
+
 ## Workspace map
 
 ```text
@@ -77,6 +89,6 @@ Favorites, recent items, searches, preferences, and calculator drafts use the re
 
 Three Vercel projects are deployed from this repository with each Root Directory mapped to its corresponding app. The custom domains `datastorified.com`, `calculators.datastorified.com`, and `tools.datastorified.com` are attached in Vercel and awaiting GoDaddy DNS changes. No server, database, queue, object storage, paid AI, or SMS provider is needed for Phase 1.
 
-The repository includes a GitHub Actions quality and production-deployment pipeline. See [`docs/deployment.md`](docs/deployment.md) for project creation, repository variables, secrets, DNS records, release behavior, and rollback instructions.
+The repository includes a GitHub Actions quality and production-deployment pipeline. See [`docs/deployment.md`](docs/deployment.md) for the branching model, project configuration, repository variables, secrets, DNS records, release behavior, and rollback instructions.
 
 Possible later additions: Neon PostgreSQL for accounts and sync, Cloudflare R2 for user-owned files, and opt-in AI decision reports. Keep calculator and tool execution client-side where practical.
