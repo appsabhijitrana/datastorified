@@ -67,8 +67,8 @@ export default function CalculatorExperience({ calculator }: { calculator: Calcu
     else await navigator.clipboard.writeText(location.href);
   };
 
-  const resultLabel = result.label ?? calculator.resultLabel;
-  const copyValue = `${resultLabel}: ${result.value.toLocaleString("en-IN", { maximumFractionDigits: 2 })}${result.suffix ? ` ${result.suffix}` : ""}`;
+  const resultLabel = result.primaryResult.label;
+  const copyValue = `${resultLabel}: ${result.primaryResult.value.toLocaleString("en-IN", { maximumFractionDigits: 2 })}${result.primaryResult.suffix ? ` ${result.primaryResult.suffix}` : ""}`;
   const faq = [
     { question: `How does the ${calculator.name} work?`, answer: calculator.formula },
     { question: "Is my information uploaded?", answer: "No. Phase 1 calculations run in your browser, and drafts are stored locally on this device." },
@@ -117,10 +117,10 @@ export default function CalculatorExperience({ calculator }: { calculator: Calcu
 
         <div className="space-y-5" aria-live="polite">
           {isValid ? <>
-            <ResultCard label={resultLabel} value={result.value} unit={result.unit} suffix={result.suffix} secondary={result.secondary} />
+            <ResultCard label={resultLabel} value={result.primaryResult.value} unit={result.primaryResult.unit} suffix={result.primaryResult.suffix} secondary={result.secondaryResults} />
             <div className="flex justify-end"><CopyButton value={copyValue} /></div>
             <InsightCard>{result.insight}</InsightCard>
-            {result.chart && result.chart.some((item) => item.value > 0) && <ChartCard data={result.chart} />}
+            {result.chartData.some((item) => item.value > 0) && <ChartCard data={result.chartData} />}
           </> : <Card className="border-warning/30 bg-warning/[.06] p-6">
             <div className="flex gap-3">
               <AlertTriangle className="mt-0.5 shrink-0 text-warning" />
@@ -133,6 +133,13 @@ export default function CalculatorExperience({ calculator }: { calculator: Calcu
               <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-soft text-primary"><Sigma size={18} /></span>
               <div><p className="font-semibold">How this is calculated</p><p className="mt-1 text-sm leading-6 text-muted">{calculator.formula}</p>{calculator.source && <a className="mt-2 inline-block text-sm font-semibold text-primary hover:underline" href={calculator.source.url} target="_blank" rel="noreferrer">{calculator.source.label} ↗</a>}</div>
             </div>
+          </Card>
+
+          <Card className="p-5">
+            <p className="font-semibold">Assumptions and limitations</p>
+            <ul className="mt-3 space-y-2 text-sm leading-6 text-muted">
+              {[...calculator.assumptions, ...result.warnings].map((item) => <li key={item} className="flex gap-2"><span className="text-primary">•</span><span>{item}</span></li>)}
+            </ul>
           </Card>
         </div>
       </div>
