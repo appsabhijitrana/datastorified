@@ -47,10 +47,6 @@ const amortize = (balance: number, annualRate: number, payment: number, maxMonth
   }
   return { months: month, interest, balance, repayable: balance <= 0.005 };
 };
-const remainingLoan = (principal: number, annualRate: number, payment: number, paidMonths: number) => {
-  const rate = annualRate / 1200;
-  return rate === 0 ? Math.max(0, principal - payment * paidMonths) : Math.max(0, principal * (1 + rate) ** paidMonths - payment * ((1 + rate) ** paidMonths - 1) / rate);
-};
 const newRegimeTaxAY2026 = (income: number) => {
   const slabs = [[400_000, 800_000, .05], [800_000, 1_200_000, .10], [1_200_000, 1_600_000, .15], [1_600_000, 2_000_000, .20], [2_000_000, 2_400_000, .25], [2_400_000, Number.POSITIVE_INFINITY, .30]];
   let tax = slabs.reduce((total, [from, to, rate]) => total + Math.max(0, Math.min(income, to) - from) * rate, 0);

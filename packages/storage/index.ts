@@ -4,7 +4,10 @@ const KEYS = {
   searches: "ds.search.history", preferences: "ds.preferences", drafts: "ds.drafts"
 } as const;
 const read = <T>(key: string, fallback: T): T => { if (typeof window === "undefined") return fallback; try { return JSON.parse(localStorage.getItem(key) || "") as T; } catch { return fallback; } };
-const write = (key: string, value: unknown) => { if (typeof window !== "undefined") localStorage.setItem(key, JSON.stringify(value)); };
+const write = (key: string, value: unknown) => {
+  if (typeof window === "undefined") return false;
+  try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch { return false; }
+};
 const pushUnique = (key: string, value: string, limit: number) => { const next = [value, ...read<string[]>(key, []).filter(x => x !== value)].slice(0, limit); write(key, next); return next; };
 export const storageKeys = KEYS;
 export const storage = {

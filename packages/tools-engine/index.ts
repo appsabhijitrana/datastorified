@@ -66,7 +66,8 @@ const sha256 = (text: string) => {
   const hash: number[] = []; const constants: number[] = []; const composite: Record<number, boolean> = {};
   for (let candidate = 2, primeCount = 0; primeCount < 64; candidate += 1) if (!composite[candidate]) {
     for (let multiple = candidate * candidate; multiple < 313; multiple += candidate) composite[multiple] = true;
-    hash[primeCount] = (candidate ** .5 * maxWord) | 0; constants[primeCount] = (candidate ** (1 / 3) * maxWord) | 0; primeCount += 1;
+    if (primeCount < 8) hash[primeCount] = (candidate ** .5 * maxWord) | 0;
+    constants[primeCount] = (candidate ** (1 / 3) * maxWord) | 0; primeCount += 1;
   }
   let padded = `${ascii}\x80`; while (padded.length % 64 !== 56) padded += "\x00";
   for (let index = 0; index < padded.length; index += 1) words32[index >> 2] |= padded.charCodeAt(index) << ((3 - index) % 4) * 8;
@@ -148,7 +149,7 @@ export function runTool(mode: string, rawInput: string, options: Record<string, 
       case "json-minify": { const value: unknown = JSON.parse(input); const output = JSON.stringify(value); return success(output, { "Original size": input.length, "Minified size": output.length, Saved: `${input.length ? Math.max(0, (1 - output.length / input.length) * 100).toFixed(1) : 0}%` }); }
       case "json-csv": { const value: unknown = JSON.parse(input); if (!Array.isArray(value) || value.some((item) => !item || typeof item !== "object" || Array.isArray(item))) throw new Error("Enter a JSON array of objects."); const records = value as Record<string, unknown>[]; const headers = [...new Set(records.flatMap((record) => Object.keys(record)))]; const output = [headers.map(escapeCsv).join(","), ...records.map((record) => headers.map((header) => escapeCsv(record[header])).join(","))].join("\n"); return success(output, { Rows: records.length, Columns: headers.length }); }
       case "csv-json": { const rows = parseCsv(input); if (!rows.length) return success("[]", { Rows: 0 }); const [headers, ...body] = rows; const output = body.filter((row) => row.some(Boolean)).map((row) => Object.fromEntries(headers.map((header, index) => [header, row[index] ?? ""]))); return success(JSON.stringify(output, null, 2), { Rows: output.length, Columns: headers.length }); }
-      case "yaml-json": { const value = parseYaml(input); return success(JSON.stringify(value, null, 2)); }
+      case "yaml-json": { const value = parseYaml(input); return success(JSON.stringify(value ?? null, null, 2)); }
       case "json-yaml": { const value: unknown = JSON.parse(input); return success(toYaml(value, { noRefs: true, lineWidth: 100 })); }
       case "base64-encode": return success(base64Encode(input), { "Input bytes": new TextEncoder().encode(input).length });
       case "base64-decode": return success(base64Decode(input));
@@ -162,7 +163,7 @@ export function runTool(mode: string, rawInput: string, options: Record<string, 
       case "timestamp": { const numeric = Number(input.trim()); const date = Number.isFinite(numeric) ? new Date(numeric < 1e12 ? numeric * 1000 : numeric) : new Date(input.trim()); if (Number.isNaN(date.getTime())) throw new Error("Enter Unix seconds, milliseconds, or a valid date string."); return success(date.toISOString(), { "Unix seconds": Math.floor(date.getTime() / 1000), "Unix milliseconds": date.getTime() }, { UTC: date.toUTCString() }); }
       case "cron": { const parts = input.trim().split(/\s+/u); if (parts.length !== 5) throw new Error("Enter a standard five-field cron expression."); const [minute, hour, day, month, weekday] = parts; return success(`${cronPart(minute, "minute", "minutes")}; ${cronPart(hour, "hour", "hours")}; ${cronPart(day, "day of month", "days of month")}; ${cronPart(month, "month", "months")}; ${cronPart(weekday, "weekday", "weekdays")}.`, {}, { Fields: "minute hour day month weekday" }); }
       case "html-format": { const formatted = input.replace(/>\s*</gu, "><").replace(/(<\/?[^>]+>)/gu, "\n$1\n").split("\n").map((line) => line.trim()).filter(Boolean); let depth = 0; const output = formatted.map((line) => { if (/^<\//u.test(line)) depth = Math.max(0, depth - 1); const indented = `${"  ".repeat(depth)}${line}`; if (/^<[^/!][^>]*>$/u.test(line) && !/\/(?:>|$)|^<(?:area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr)\b/iu.test(line) && !line.includes("</")) depth += 1; return indented; }).join("\n"); return success(output); }
-      case "css-minify": { const output = input.replace(/\/\*[\s\S]*?\*\//gu, "").replace(/\s+/gu, " ").replace(/\s*([{}:;,>])\s*/gu, "$1").replace(/;}/gu, "}").trim(); return success(output, { "Original size": input.length, "Minified size": output.length }); }
+      case "css-minify": { const output = input.replace(/\/\*[\s\S]*?\*\//gu, "").replace(/\s+/gu, " ").replace(/\s*([{}:;,>])\s*/gu, "$1").replace(/;\}/gu, "}").trim(); return success(output, { "Original size": input.length, "Minified size": output.length }); }
       case "js-minify": { const output = input.replace(/\/\*[\s\S]*?\*\//gu, "").replace(/(^|[^:])\/\/.*$/gmu, "$1").replace(/\s+/gu, " ").replace(/\s*([{}();,:=+*<>])\s*/gu, "$1").trim(); return success(output, { "Original size": input.length, "Minified size": output.length }, {}, ["Basic minification only; review complex regular expressions and template literals."]); }
 
       case "qr": { const output = qrSvg(input); return success(output, { Characters: unicodeLength(input) }, { Format: "SVG" }); }

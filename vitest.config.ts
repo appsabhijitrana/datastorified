@@ -10,7 +10,14 @@ export default defineConfig({
       reporter: ["text", "json-summary", "html"],
       include: ["packages/calculators-engine/**/*.ts", "packages/tools-engine/**/*.ts", "packages/storage/**/*.ts"],
       exclude: ["**/*.test.ts", "**/*.test.tsx", "**/registry.ts"],
-      thresholds: { lines: 80, functions: 80, statements: 80, branches: 75 },
+      thresholds: {
+        lines: 80,
+        functions: 80,
+        statements: 80,
+        branches: 75,
+        "packages/calculators-engine/index.ts": { lines: 90, functions: 90, statements: 90 },
+        "packages/tools-engine/**": { lines: 85, functions: 85, statements: 85 },
+      },
     },
   },
 });
