@@ -162,11 +162,13 @@ export default function CalculatorExperience({ calculator }: { calculator: Calcu
 function CalculatorInput({ field, value, onChange }: { field: CalculatorField; value: number; onChange: (value: number) => void }) {
   const inputId = `field-${field.key}`;
   const helpId = `${inputId}-help`;
+  const finiteValue = Number.isFinite(value) ? value : "";
+  const selectValue = field.options?.some((option) => option.value === value) ? value : field.default;
   return <label htmlFor={inputId} className="block">
     <span className="mb-2 block text-sm font-semibold">{field.label}</span>
     {field.input === "select" ? <select
       id={inputId}
-      value={value}
+      value={selectValue}
       onChange={(event) => onChange(Number(event.target.value))}
       aria-describedby={field.help ? helpId : undefined}
       className="min-h-12 w-full rounded-xl border border-border bg-white px-4 text-base text-ink outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
@@ -177,7 +179,7 @@ function CalculatorInput({ field, value, onChange }: { field: CalculatorField; v
         id={inputId}
         inputMode="decimal"
         type="number"
-        value={value}
+        value={finiteValue}
         min={field.min}
         max={field.max}
         step={field.step}
