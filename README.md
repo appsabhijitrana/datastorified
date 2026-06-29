@@ -61,4 +61,6 @@ Favorites, recent items, searches, preferences, and calculator drafts use the re
 
 Create three Vercel projects from this repository and set each Root Directory to its corresponding app. Point `datastorified.com`, `calculators.datastorified.com`, and `tools.datastorified.com` to those projects through Cloudflare DNS. No server, database, queue, object storage, paid AI, or SMS provider is needed for Phase 1.
 
+The repository includes a GitHub Actions quality and production-deployment pipeline. See [`docs/deployment.md`](docs/deployment.md) for project creation, repository variables, secrets, DNS records, release behavior, and rollback instructions.
+
 Possible later additions: Neon PostgreSQL for accounts and sync, Cloudflare R2 for user-owned files, and opt-in AI decision reports. Keep calculator and tool execution client-side where practical.

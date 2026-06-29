@@ -1,0 +1,73 @@
+name: Reusable Vercel deployment
+
+on:
+  workflow_call:
+    inputs:
+      project_name:
+        description: Human-readable application name
+        required: true
+        type: string
+      vercel_org_id:
+        description: Vercel account or team ID
+        required: true
+        type: string
+      vercel_project_id:
+        description: Vercel project ID
+        required: true
+        type: string
+    secrets:
+      VERCEL_TOKEN:
+        description: Vercel access token
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-${{ inputs.project_name }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy ${{ inputs.project_name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    env:
+      VERCEL_CLI_VERSION: 54.18.2
+      VERCEL_ORG_ID: ${{ inputs.vercel_org_id }}
+      VERCEL_PROJECT_ID: ${{ inputs.vercel_project_id }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Pull Vercel project settings
+        run: pnpm dlx vercel@${VERCEL_CLI_VERSION} pull --yes --environment=production --token="${VERCEL_TOKEN}"
+
+      - name: Build Vercel output
+        run: pnpm dlx vercel@${VERCEL_CLI_VERSION} build --prod --token="${VERCEL_TOKEN}"
+
+      - name: Deploy production output
+        id: deploy
+        run: |
+          deployment_url=$(pnpm dlx vercel@${VERCEL_CLI_VERSION} deploy --prebuilt --prod --archive=tgz --token="${VERCEL_TOKEN}")
+          echo "deployment_url=${deployment_url}" >> "${GITHUB_OUTPUT}"
+          echo "### ${{ inputs.project_name }} deployed" >> "${GITHUB_STEP_SUMMARY}"
+          echo "${deployment_url}" >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Smoke-test deployment
+        run: curl --fail --silent --show-error --retry 5 --retry-all-errors "${{ steps.deploy.outputs.deployment_url }}" > /dev/null
+

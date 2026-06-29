@@ -1,0 +1,78 @@
+name: CI and production deployment
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: datastorified-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  quality:
+    name: Typecheck and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck applications
+        run: pnpm typecheck
+
+      - name: Build applications
+        run: pnpm build
+
+  deploy-website:
+    name: Deploy website
+    needs: quality
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/vercel-deploy.yml
+    with:
+      project_name: website
+      vercel_org_id: ${{ vars.VERCEL_ORG_ID }}
+      vercel_project_id: ${{ vars.VERCEL_WEBSITE_PROJECT_ID }}
+    secrets: inherit
+
+  deploy-calculators:
+    name: Deploy calculators
+    needs: quality
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/vercel-deploy.yml
+    with:
+      project_name: calculators
+      vercel_org_id: ${{ vars.VERCEL_ORG_ID }}
+      vercel_project_id: ${{ vars.VERCEL_CALCULATORS_PROJECT_ID }}
+    secrets: inherit
+
+  deploy-tools:
+    name: Deploy tools
+    needs: quality
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/vercel-deploy.yml
+    with:
+      project_name: tools
+      vercel_org_id: ${{ vars.VERCEL_ORG_ID }}
+      vercel_project_id: ${{ vars.VERCEL_TOOLS_PROJECT_ID }}
+    secrets: inherit
+
