@@ -85,6 +85,12 @@ Text and developer tools run through `packages/tools-engine`: counts, case conve
 
 Favorites, recent items, searches, preferences, and calculator drafts use the requested `ds.*` local-storage keys. There is no login wall or backend.
 
+## Legal & Trust
+
+The website includes a production-structured Legal & Trust section with a legal hub, Trust Center, About, Contact, and 11 versioned policies covering privacy, terms, cookies, disclaimers, AI disclosure, security, community conduct, acceptable use, data sources, copyright, and accessibility.
+
+Policy content lives in [`apps/website/lib/legal-content.ts`](apps/website/lib/legal-content.ts). Shared layouts and cards live in [`apps/website/components/legal.tsx`](apps/website/components/legal.tsx). The documents are platform policy templates and must be reviewed by qualified legal counsel before being treated as legal advice.
+
 ## Deployment
 
 Three Vercel projects are deployed from this repository with each Root Directory mapped to its corresponding app. The custom domains `datastorified.com`, `calculators.datastorified.com`, and `tools.datastorified.com` are attached in Vercel and awaiting GoDaddy DNS changes. No server, database, queue, object storage, paid AI, or SMS provider is needed for Phase 1.

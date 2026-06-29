@@ -60,6 +60,13 @@ The launch-readiness percentage is a weighted delivery estimate, not an automate
 - Canonical URLs, Open Graph metadata, Twitter cards, and FAQ structured data.
 - Development-safe analytics facade for searches, favorites, tool usage, and calculator usage.
 
+### Legal and Trust documentation — implemented
+
+- Legal hub, Trust Center, About, and Contact pages.
+- Eleven detailed, versioned policies with dynamic tables of contents, related links, contact sections, and route-specific SEO metadata.
+- Global footer links for privacy, terms, cookies, disclaimer, AI disclosure, security, and contact.
+- Policy templates are complete for product integration but still require qualified legal review before public reliance.
+
 ### Deployment and CI/CD — operational
 
 - Three Vercel projects configured with their monorepo Root Directories and Node.js 22.
