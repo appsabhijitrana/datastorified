@@ -1,4 +1,6 @@
 import { expect, test } from "@playwright/test";
+import { calculators as calculatorCatalog } from "@datastorified/calculators-engine";
+import { tools as toolCatalog } from "@datastorified/tools-engine";
 
 const website = "http://127.0.0.1:3000";
 const calculators = "http://127.0.0.1:3001";
@@ -97,4 +99,19 @@ test("unknown routes return the 404 page", async ({ page }) => {
   const response = await page.goto(`${website}/route-that-does-not-exist`);
   expect(response?.status()).toBe(404);
   await expect(page.getByText(/could not be found/i)).toBeVisible();
+});
+
+test("every registered calculator and utility route responds successfully", async ({ request }) => {
+  test.setTimeout(120_000);
+  for (const calculator of calculatorCatalog) expect((await request.get(`${calculators}/${calculator.slug}`)).ok(), calculator.slug).toBe(true);
+  for (const tool of toolCatalog) expect((await request.get(`${tools}/${tool.slug}`)).ok(), tool.slug).toBe(true);
+});
+
+test("representative pages produce no browser console errors", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });
+  for (const url of [website, `${calculators}/emi-calculator`, `${tools}/json-formatter`, `${tools}/pdf-merge`, `${website}/legal/privacy`]) {
+    await page.goto(url); await page.waitForLoadState("networkidle");
+  }
+  expect(errors).toEqual([]);
 });

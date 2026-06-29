@@ -19,6 +19,8 @@ lib-cov
 coverage
 *.lcov
 .nyc_output
+playwright-report/
+test-results/
 dist
 out
 .output
@@ -72,9 +74,10 @@ build/Release
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
+# Playwright baselines live in e2e/__screenshots__; reports and run artifacts are generated.
+
 # Local configuration
 .env
 .env.*
 !.env.example
 .DS_Store
-

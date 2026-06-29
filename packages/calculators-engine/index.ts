@@ -21,18 +21,18 @@ const monthlyPayment = (principal: number, annualRate: number, years: number) =>
   const months = years * 12;
   const rate = annualRate / 1200;
   if (principal <= 0 || months <= 0) return 0;
-  return rate === 0 ? principal / months : principal * rate * (1 + rate) ** months / ((1 + rate) ** months - 1);
+  return Math.abs(rate) < 1e-10 ? principal / months : principal * rate * (1 + rate) ** months / ((1 + rate) ** months - 1);
 };
 const loanFromPayment = (payment: number, annualRate: number, years: number) => {
   const months = years * 12;
   const rate = annualRate / 1200;
   if (payment <= 0 || months <= 0) return 0;
-  return rate === 0 ? payment * months : payment * ((1 + rate) ** months - 1) / (rate * (1 + rate) ** months);
+  return Math.abs(rate) < 1e-10 ? payment * months : payment * ((1 + rate) ** months - 1) / (rate * (1 + rate) ** months);
 };
 const annuityDue = (monthly: number, annualRate: number, years: number) => {
   const months = years * 12;
   const rate = annualRate / 1200;
-  return rate === 0 ? monthly * months : monthly * ((1 + rate) ** months - 1) / rate * (1 + rate);
+  return Math.abs(rate) < 1e-10 ? monthly * months : monthly * ((1 + rate) ** months - 1) / rate * (1 + rate);
 };
 const amortize = (balance: number, annualRate: number, payment: number, maxMonths = 1200) => {
   const rate = annualRate / 1200;

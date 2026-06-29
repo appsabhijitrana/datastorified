@@ -11,7 +11,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "ci": "pnpm lint && pnpm typecheck && pnpm test:coverage && pnpm build && pnpm test:e2e",
+    "ci": "corepack pnpm lint && corepack pnpm typecheck && corepack pnpm test:coverage && corepack pnpm build && corepack pnpm test:e2e",
     "turbo:build": "turbo build",
     "dev:website": "pnpm --filter @datastorified/website dev",
     "dev:calculators": "pnpm --filter @datastorified/calculators dev",

@@ -6,7 +6,7 @@ Last updated: 29 June 2026
 
 - Phase 1 production scope: implemented locally on `dev`.
 - Product inventory: 55 calculators, 55 utilities, Decision Engine, and Legal & Trust.
-- Automated tests: 337 unit/component tests, 15 functional Playwright scenarios, and 7 visual baselines.
+- Automated tests: 337 unit/component tests, 17 functional Playwright scenarios, and 7 visual baselines.
 - Coverage: calculators 100%, tools 99.25%, storage 100%, overall 99.66% lines.
 - Release state: awaiting review, commit/push approval, CI confirmation, and `dev → main` release PR.
 

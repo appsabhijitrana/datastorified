@@ -41,6 +41,8 @@ Functional Playwright scenarios:
 11. Mobile calculator and utility pages have no horizontal overflow.
 12. Legal pages load.
 13. Unknown routes return 404.
+14. Every one of the 110 registered product routes responds successfully.
+15. Representative website, calculator, utility, PDF, and legal pages emit no browser console errors.
 
 Visual baselines:
 
@@ -62,8 +64,10 @@ pnpm test:watch
 pnpm test:coverage
 pnpm build
 pnpm test:e2e
-pnpm ci
+pnpm run ci
 ```
+
+Use `pnpm run ci`, not `pnpm ci`: pnpm reserves the bare `ci` command as a currently unimplemented built-in, so the explicit `run` is required to invoke the repository script.
 
 Install Chromium once on a new machine before E2E testing:
 

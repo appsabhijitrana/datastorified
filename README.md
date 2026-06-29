@@ -20,7 +20,7 @@ Current automated evidence:
 - calculator engine: 100% line coverage;
 - tools engine: 99.25% line coverage;
 - storage: 100% line coverage;
-- 15 functional browser regression scenarios;
+- 17 functional browser regression scenarios, including every registered route and console-error checks;
 - 7 visual regression baselines;
 - ESLint and strict TypeScript quality gates;
 - static production builds for all registered routes.
@@ -68,7 +68,7 @@ pnpm test:watch     # Vitest watch mode
 pnpm test:coverage  # coverage and package thresholds
 pnpm build          # all production builds
 pnpm test:e2e       # functional and visual Playwright tests
-pnpm ci             # complete local release gate
+pnpm run ci         # complete local release gate (`pnpm ci` is reserved by pnpm)
 ```
 
 ## Architecture
