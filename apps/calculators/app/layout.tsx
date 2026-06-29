@@ -1,0 +1,3 @@
+import "./globals.css";import {createMetadata} from "@datastorified/seo";
+export const metadata=createMetadata("Smart Calculators — DataStorified","Visual, guided financial and everyday calculators.","calculators.datastorified.com");
+export default function Layout({children}:{children:React.ReactNode}){return <html lang="en"><body>{children}</body></html>}

@@ -1,0 +1,1 @@
+import type {NextConfig} from "next";const config:NextConfig={transpilePackages:["@datastorified/ui","@datastorified/seo","@datastorified/utils","@datastorified/storage","@datastorified/analytics","@datastorified/tools-engine"]};export default config;

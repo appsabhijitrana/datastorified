@@ -1,0 +1,1 @@
+import "./globals.css";import {createMetadata} from "@datastorified/seo";export const metadata=createMetadata("Online Tools — DataStorified","Fast, private, client-side utilities for text, code, images, PDFs, and more.","tools.datastorified.com");export default function Layout({children}:{children:React.ReactNode}){return <html lang="en"><body>{children}</body></html>}
