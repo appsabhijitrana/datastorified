@@ -1,12 +1,80 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Diagnostic reports and runtime data
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage and generated output
+lib-cov
+coverage
+*.lcov
+.nyc_output
+dist
+out
+.output
+
+# Dependency directories
 node_modules/
-.next/
-.turbo/
-.vercel/
-dist/
+jspm_packages/
+web_modules/
+bower_components/
+
+# Build and framework caches
+.next
+.turbo
+.vercel
+.cache
+.parcel-cache
+.nuxt
+.svelte-kit/
+.docusaurus
+.serverless/
+.fusebox/
+.dynamodb/
+.firebase/
+.vite/
+**/.vitepress/dist
+**/.vitepress/cache
+.vuepress/dist
+.temp
+build/Release
+
+# Tool caches
 *.tsbuildinfo
+.npm
+.pnpm-store
+.eslintcache
+.stylelintcache
+.grunt
+.lock-wscript
+.node_repl_history
+.tern-port
+.vscode-test
+*.tgz
+.yarn-integrity
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# Local configuration
 .env
 .env.*
 !.env.example
 .DS_Store
-coverage/
-pnpm-debug.log*
+
