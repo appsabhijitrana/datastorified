@@ -42,7 +42,7 @@
 
 - [x] ESLint runs with zero warnings and forbids console calls.
 - [x] TypeScript strict checks pass for all applications.
-- [x] 333 unit tests pass.
+- [x] 337 unit and component tests pass.
 - [x] Calculator engine line coverage is 100% (threshold 90%).
 - [x] Tools engine line coverage is 99.25% (threshold 85%).
 - [x] Overall line coverage is 99.66% (threshold 80%).

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import fc from "fast-check";
 import { calculate, calculators, validateCalculatorInputs } from ".";
 
 const defaultsFor = (index: number) => Object.fromEntries(calculators[index].fields.map((field) => [field.key, field.default]));
@@ -76,5 +77,32 @@ describe("known formula examples", () => {
 
   it("rejects an unknown calculator", () => {
     expect(calculate("not-real", {}).error).toBe("This calculator is not available.");
+  });
+});
+
+describe("calculator properties", () => {
+  it("EMI stays finite and positive for valid positive loans", () => {
+    fc.assert(fc.property(
+      fc.double({ min: 1, max: 100_000_000, noNaN: true }),
+      fc.double({ min: 0, max: 40, noNaN: true }),
+      fc.integer({ min: 1, max: 50 }),
+      (principal, rate, years) => {
+        const value = calculate("emi-calculator", { principal, rate, years }).primaryResult.value;
+        return Number.isFinite(value) && value > 0;
+      },
+    ));
+  });
+
+  it("converting a length to another unit and back preserves the value", () => {
+    fc.assert(fc.property(
+      fc.double({ min: -1_000_000, max: 1_000_000, noNaN: true }),
+      fc.integer({ min: 0, max: 7 }),
+      fc.integer({ min: 0, max: 7 }),
+      (value, fromUnit, toUnit) => {
+        const converted = calculate("unit-converter", { value, fromUnit, toUnit }).primaryResult.value;
+        const restored = calculate("unit-converter", { value: converted, fromUnit: toUnit, toUnit: fromUnit }).primaryResult.value;
+        return Math.abs(restored - value) <= Math.max(1e-8, Math.abs(value) * 1e-10);
+      },
+    ));
   });
 });

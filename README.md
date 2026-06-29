@@ -16,7 +16,7 @@ The Phase 1 production candidate is implemented on the development line and is r
 
 Current automated evidence:
 
-- 333 unit tests passing;
+- 337 unit and component tests passing;
 - calculator engine: 100% line coverage;
 - tools engine: 99.25% line coverage;
 - storage: 100% line coverage;

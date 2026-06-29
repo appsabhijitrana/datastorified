@@ -12,10 +12,11 @@
 
 | Area | Tests | Line coverage |
 | --- | ---: | ---: |
-| Calculator engine | 172 | 100% |
+| Calculator engine | 174 | 100% |
 | Tools engine (text, developer, image, PDF, utility) | 156 | 99.25% |
 | Storage | 5 | 100% |
-| **Unit total** | **333** | **99.66% overall** |
+| Shared UI components | 2 | Not included in engine threshold |
+| **Unit/component total** | **337** | **99.66% overall engine/storage** |
 
 Thresholds enforced by `vitest.config.ts`:
 
