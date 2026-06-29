@@ -2,6 +2,22 @@
 
 DataStorified is a mobile-first decision intelligence platform with three independently deployable Next.js applications and a shared, typed product layer.
 
+[![CI and production deployment](https://github.com/appsabhijitrana/datastorified/actions/workflows/ci-deploy.yml/badge.svg)](https://github.com/appsabhijitrana/datastorified/actions/workflows/ci-deploy.yml)
+
+## Project status
+
+**Phase 1 feature scope: 100% complete · Public-launch readiness: 94%**
+
+All requested Phase 1 product surfaces are implemented, all three applications are live on Vercel, and the production pipeline is operational. Custom-domain DNS and final cross-browser, accessibility, and Lighthouse QA remain before the public-domain launch.
+
+| Application | Production preview | Status |
+| --- | --- | --- |
+| Decision Engine | [datastorified-website.vercel.app](https://datastorified-website.vercel.app) | Live |
+| Calculators | [datastorified-calculators.vercel.app](https://datastorified-calculators.vercel.app) | Live — 20 calculators |
+| Tools | [datastorified-tools.vercel.app](https://datastorified-tools.vercel.app) | Live — 25 tools |
+
+See the [detailed progress report](docs/progress.md) for the weighted score, completed capabilities, production status, and remaining launch work.
+
 ## Apps
 
 - `apps/website` — decision engine landing experience on port `3000`
@@ -59,7 +75,7 @@ Favorites, recent items, searches, preferences, and calculator drafts use the re
 
 ## Deployment
 
-Create three Vercel projects from this repository and set each Root Directory to its corresponding app. Point `datastorified.com`, `calculators.datastorified.com`, and `tools.datastorified.com` to those projects through the authoritative DNS provider. The domain currently uses GoDaddy DNS; Cloudflare can be adopted later. No server, database, queue, object storage, paid AI, or SMS provider is needed for Phase 1.
+Three Vercel projects are deployed from this repository with each Root Directory mapped to its corresponding app. The custom domains `datastorified.com`, `calculators.datastorified.com`, and `tools.datastorified.com` are attached in Vercel and awaiting GoDaddy DNS changes. No server, database, queue, object storage, paid AI, or SMS provider is needed for Phase 1.
 
 The repository includes a GitHub Actions quality and production-deployment pipeline. See [`docs/deployment.md`](docs/deployment.md) for project creation, repository variables, secrets, DNS records, release behavior, and rollback instructions.
 
