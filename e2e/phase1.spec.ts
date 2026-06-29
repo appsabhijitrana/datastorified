@@ -27,9 +27,9 @@ test("calculators homepage loads and search finds EMI", async ({ page }) => {
 
 test("EMI calculator calculates a known result", async ({ page }) => {
   await page.goto(`${calculators}/emi-calculator`);
-  await page.getByLabel("Loan amount").fill("120000");
-  await page.getByLabel("Annual interest rate").fill("0");
-  await page.getByLabel("Loan tenure").fill("1");
+  await page.getByRole("textbox", { name: "Loan amount", exact: true }).fill("120000");
+  await page.getByRole("textbox", { name: "Annual interest rate", exact: true }).fill("0");
+  await page.getByRole("textbox", { name: "Loan tenure", exact: true }).fill("1");
   await expect(page.getByText("₹10,000", { exact: true })).toBeVisible();
 });
 

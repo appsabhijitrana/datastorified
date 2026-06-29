@@ -15,8 +15,8 @@
 | Calculator engine | 174 | 100% |
 | Tools engine (text, developer, image, PDF, utility) | 156 | 99.25% |
 | Storage | 5 | 100% |
-| Shared UI components | 2 | Not included in engine threshold |
-| **Unit/component total** | **337** | **99.66% overall engine/storage** |
+| Shared UI components and SmartNumberInput | 30 | Not included in engine threshold |
+| **Unit/component total** | **365** | **99.66% overall engine/storage** |
 
 Thresholds enforced by `vitest.config.ts`:
 

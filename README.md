@@ -16,7 +16,7 @@ The Phase 1 production candidate is implemented on the development line and is r
 
 Current automated evidence:
 
-- 337 unit and component tests passing;
+- 365 unit and component tests passing;
 - calculator engine: 100% line coverage;
 - tools engine: 99.25% line coverage;
 - storage: 100% line coverage;
@@ -30,6 +30,7 @@ Detailed documentation:
 - [Calculator formulas and test cases](docs/calculators.md)
 - [Utility functions and limitations](docs/tools.md)
 - [Testing architecture and commands](docs/testing.md)
+- [SmartNumberInput API and behavior](docs/smart-number-input.md)
 - [Production quality checklist](docs/quality-checklist.md)
 - [Deployment and release process](docs/deployment.md)
 - [Project progress](docs/progress.md)

@@ -24,8 +24,9 @@ import {
   Footer,
   Header,
   InsightCard,
-  Input,
   ResultCard,
+  SmartNumberInput,
+  type SmartNumberMode,
 } from "@datastorified/ui";
 
 export default function CalculatorExperience({ calculator }: { calculator: CalculatorDefinition }) {
@@ -96,7 +97,7 @@ export default function CalculatorExperience({ calculator }: { calculator: Calcu
       </div>
 
       <div className="mt-10 grid items-start gap-6 lg:grid-cols-[.9fr_1.1fr]">
-        <Card className="p-5 sm:p-7">
+        <Card className="min-w-0 overflow-hidden p-5 sm:p-7">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-[.16em] text-primary">Live calculation</p>
@@ -169,11 +170,38 @@ export default function CalculatorExperience({ calculator }: { calculator: Calcu
 function CalculatorInput({ field, value, onChange }: { field: CalculatorField; value: number; onChange: (value: number) => void }) {
   const inputId = `field-${field.key}`;
   const helpId = `${inputId}-help`;
-  const finiteValue = Number.isFinite(value) ? value : "";
   const selectValue = field.options?.some((option) => option.value === value) ? value : field.default;
-  return <label htmlFor={inputId} className="block">
+  if (field.input !== "select") {
+    const mode = numberModeFor(field);
+    const isCurrency = mode === "currency";
+    const isTemporal = ["years", "months", "days"].includes(mode);
+    return <SmartNumberInput
+      id={inputId}
+      label={field.label}
+      description={field.help}
+      value={Number.isFinite(value) ? value : null}
+      onChange={(result) => onChange(result.numericValue ?? Number.NaN)}
+      mode={mode}
+      format="indian"
+      currency="INR"
+      unit={!isCurrency && mode !== "percentage" ? field.suffix : undefined}
+      min={field.min}
+      max={field.max}
+      step={field.step}
+      allowNegative={(field.min ?? 0) < 0}
+      allowDecimal={(field.step ?? 1) % 1 !== 0}
+      showWords={isCurrency}
+      showChips={isCurrency && field.default >= 5_000}
+      showSlider={mode === "percentage" && field.min !== undefined && field.max !== undefined}
+      showStepper={mode === "percentage" || isTemporal}
+      actions={["clear", "reset"]}
+      defaultValue={field.default}
+      compact
+    />;
+  }
+  return <label htmlFor={inputId} className="block rounded-[24px] border border-border bg-white p-5 shadow-sm">
     <span className="mb-2 block text-sm font-semibold">{field.label}</span>
-    {field.input === "select" ? <select
+    <select
       id={inputId}
       value={selectValue}
       onChange={(event) => onChange(Number(event.target.value))}
@@ -181,21 +209,20 @@ function CalculatorInput({ field, value, onChange }: { field: CalculatorField; v
       className="min-h-12 w-full rounded-xl border border-border bg-white px-4 text-base text-ink outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
     >
       {field.options?.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-    </select> : <div className="relative">
-      <Input
-        id={inputId}
-        inputMode="decimal"
-        type="number"
-        value={finiteValue}
-        min={field.min}
-        max={field.max}
-        step={field.step}
-        aria-describedby={field.help ? helpId : undefined}
-        onChange={(event) => onChange(event.target.value === "" ? Number.NaN : Number(event.target.value))}
-        className={field.suffix ? "pr-20" : undefined}
-      />
-      {field.suffix && <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-muted">{field.suffix}</span>}
-    </div>}
+    </select>
     {field.help && <span id={helpId} className="mt-1.5 block text-xs leading-5 text-muted">{field.help}</span>}
   </label>;
+}
+
+function numberModeFor(field: CalculatorField): SmartNumberMode {
+  const suffix = field.suffix?.toLocaleLowerCase() ?? "";
+  if (suffix.includes("₹")) return "currency";
+  if (suffix === "%") return "percentage";
+  if (suffix.includes("year")) return "years";
+  if (suffix.includes("month")) return "months";
+  if (suffix.includes("day")) return "days";
+  if (suffix === "kg") return "weight";
+  if (suffix.startsWith("km")) return "distance";
+  if (suffix === "l") return "volume";
+  return (field.step ?? 1) % 1 === 0 ? "integer" : "decimal";
 }

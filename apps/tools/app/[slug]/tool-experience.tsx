@@ -5,7 +5,7 @@ import { Download, FileUp, Heart, Play, RefreshCw, ShieldCheck } from "lucide-re
 import { processImage, processPdf, runTool, tools, type FileLike, type FileUtilityResult, type ToolDefinition, type UtilityResult, type UtilityScalar } from "@datastorified/tools-engine";
 import { storage } from "@datastorified/storage";
 import { trackFavorite, trackToolUsed } from "@datastorified/analytics";
-import { Badge, BottomNav, Breadcrumb, Button, Card, CopyButton, FAQ, Footer, Header, Input, InsightCard, Tabs, Textarea, ToolCard } from "@datastorified/ui";
+import { Badge, BottomNav, Breadcrumb, Button, Card, CopyButton, FAQ, Footer, Header, Input, InsightCard, SmartNumberInput, Tabs, Textarea, ToolCard } from "@datastorified/ui";
 
 const samples: Record<string, string> = {
   "json-format": '{"decision":"clear","confidence":82,"nextSteps":["compare","verify","act"]}',
@@ -94,12 +94,12 @@ function ToolOptions({ mode, options, setOptions }: { mode: string; options: Rec
     {mode === "bulk-uuid" && <NumberOption label="Number of UUIDs" value={Number(options.count)} min={1} max={1000} onChange={(value) => update("count", value)} />}
     {mode === "regex" && <div className="mt-4 grid grid-cols-[1fr_80px] gap-2"><Input aria-label="Pattern" value={String(options.pattern)} onChange={(event) => update("pattern", event.target.value)} placeholder="Pattern" /><Input aria-label="Flags" value={String(options.flags)} onChange={(event) => update("flags", event.target.value)} placeholder="Flags" /></div>}
     {mode === "password" && <><NumberOption label="Password length" value={Number(options.length)} min={8} max={128} onChange={(value) => update("length", value)} /><div className="mt-4 grid grid-cols-2 gap-3">{[["uppercase", "Uppercase"], ["lowercase", "Lowercase"], ["numbers", "Numbers"], ["symbols", "Symbols"]].map(([key, label]) => <label key={key} className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={Boolean(options[key])} onChange={(event) => update(key, event.target.checked)} />{label}</label>)}</div></>}
-    {mode === "upi-qr" && <div className="mt-4 grid gap-3"><Input aria-label="Payee name" value={String(options.name)} onChange={(event) => update("name", event.target.value)} placeholder="Payee name" /><Input aria-label="Amount" type="number" min={0} value={Number(options.amount)} onChange={(event) => update("amount", Number(event.target.value))} placeholder="Amount" /><Input aria-label="Payment note" value={String(options.note)} onChange={(event) => update("note", event.target.value)} placeholder="Payment note" /></div>}
+    {mode === "upi-qr" && <div className="mt-4 grid gap-3"><Input aria-label="Payee name" value={String(options.name)} onChange={(event) => update("name", event.target.value)} placeholder="Payee name" /><SmartNumberInput compact label="Amount" mode="currency" value={Number(options.amount)} min={0} onChange={(result) => update("amount", result.numericValue ?? 0)} actions={["clear"]} /><Input aria-label="Payment note" value={String(options.note)} onChange={(event) => update("note", event.target.value)} placeholder="Payment note" /></div>}
   </>;
 }
 
 function NumberOption({ label, value, min, max, step = 1, onChange }: { label: string; value: number; min: number; max: number; step?: number; onChange: (value: number) => void }) {
-  return <label className="mt-4 block"><span className="mb-2 block text-sm font-semibold">{label}</span><Input type="number" min={min} max={max} step={step} value={Number.isFinite(value) ? value : ""} onChange={(event) => onChange(event.target.value === "" ? min : Number(event.target.value))} /></label>;
+  return <SmartNumberInput className="mt-4" compact label={label} mode={step % 1 === 0 ? "integer" : "decimal"} value={Number.isFinite(value) ? value : null} min={min} max={max} step={step} allowDecimal={step % 1 !== 0} showStepper onChange={(result) => onChange(result.numericValue ?? min)} actions={["reset"]} defaultValue={value} />;
 }
 
 function ResultPanel({ tool, result, isQr = false }: { tool: ToolDefinition; result: UtilityResult; isQr?: boolean }) {
