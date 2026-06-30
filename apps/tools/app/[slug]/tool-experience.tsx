@@ -48,7 +48,7 @@ export default function ToolExperience({ tool }: { tool: ToolDefinition }) {
 
   return <>
     <Header surface="tools" />
-    <main className="mx-auto max-w-7xl px-4 pb-20 pt-7 sm:px-6">
+    <main className="mx-auto max-w-7xl px-4 pb-32 pt-7 sm:px-6">
       <Breadcrumb items={[{ label: "Tools", href: "/" }, { label: tool.category, href: "/#categories" }, { label: tool.name }]} />
       <div className="mt-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div><Badge>{tool.category}</Badge><h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-5xl">{tool.name}</h1><p className="mt-3 max-w-2xl text-lg leading-8 text-muted">{tool.description}</p></div>

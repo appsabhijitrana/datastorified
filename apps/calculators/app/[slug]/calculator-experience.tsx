@@ -78,7 +78,7 @@ export default function CalculatorExperience({ calculator }: { calculator: Calcu
 
   return <>
     <Header surface="calculators" />
-    <main className="mx-auto max-w-7xl px-4 pb-20 pt-7 sm:px-6">
+    <main className="mx-auto max-w-7xl px-4 pb-32 pt-7 sm:px-6">
       <Breadcrumb items={[{ label: "Calculators", href: "/" }, { label: calculator.category, href: "/#categories" }, { label: calculator.name }]} />
 
       <div className="mt-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
