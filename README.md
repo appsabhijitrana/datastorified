@@ -6,7 +6,7 @@ DataStorified is a mobile-first decision-intelligence platform with three indepe
 
 ## Release status
 
-The Phase 1 production candidate is implemented on the development line and is ready for a reviewed `dev → main` release after the full quality gate passes in GitHub Actions. Production deployment remains restricted to `main`.
+The Phase 1 production candidate is implemented on the development line and is ready for a reviewed `dev → main` release after the full quality gate passes in GitHub Actions. `dev` now publishes Vercel preview deployments for non-production review, while production deployment remains restricted to `main`.
 
 | Surface | Scope | Local port |
 | --- | --- | ---: |
@@ -107,11 +107,11 @@ The utility catalog includes text cleanup/counting, JSON/CSV/YAML conversion, Ba
 
 ## Development and deployment workflow
 
-- `dev` is the development/integration branch.
+- `dev` is the development/integration branch and publishes non-production preview deployments.
 - `main` is protected and is the only production deployment branch.
 - Feature work merges into `dev`; a reviewed release pull request merges `dev` into `main`.
-- CI runs install, lint, typecheck, tests, coverage, builds, and Playwright.
-- Vercel production deployments and smoke tests run only after a successful `main` push.
+- CI runs install, lint, typecheck, tests, coverage, and builds on every branch.
+- Vercel preview deployments run on `dev` pushes and production deployments run only after a successful `main` push.
 
 ```text
 feature/* → dev → release pull request → main → production

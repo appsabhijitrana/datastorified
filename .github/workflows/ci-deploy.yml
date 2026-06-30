@@ -60,6 +60,7 @@ jobs:
     uses: ./.github/workflows/vercel-deploy.yml
     with:
       project_name: website
+      deployment_target: production
       vercel_org_id: ${{ vars.VERCEL_ORG_ID }}
       vercel_project_id: ${{ vars.VERCEL_WEBSITE_PROJECT_ID }}
     secrets: inherit
@@ -71,6 +72,7 @@ jobs:
     uses: ./.github/workflows/vercel-deploy.yml
     with:
       project_name: calculators
+      deployment_target: production
       vercel_org_id: ${{ vars.VERCEL_ORG_ID }}
       vercel_project_id: ${{ vars.VERCEL_CALCULATORS_PROJECT_ID }}
     secrets: inherit
@@ -82,6 +84,43 @@ jobs:
     uses: ./.github/workflows/vercel-deploy.yml
     with:
       project_name: tools
+      deployment_target: production
+      vercel_org_id: ${{ vars.VERCEL_ORG_ID }}
+      vercel_project_id: ${{ vars.VERCEL_TOOLS_PROJECT_ID }}
+    secrets: inherit
+
+  preview-website:
+    name: Preview website
+    needs: quality
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev' && vars.VERCEL_DEPLOY_ENABLED == 'true'
+    uses: ./.github/workflows/vercel-deploy.yml
+    with:
+      project_name: website
+      deployment_target: preview
+      vercel_org_id: ${{ vars.VERCEL_ORG_ID }}
+      vercel_project_id: ${{ vars.VERCEL_WEBSITE_PROJECT_ID }}
+    secrets: inherit
+
+  preview-calculators:
+    name: Preview calculators
+    needs: quality
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev' && vars.VERCEL_DEPLOY_ENABLED == 'true'
+    uses: ./.github/workflows/vercel-deploy.yml
+    with:
+      project_name: calculators
+      deployment_target: preview
+      vercel_org_id: ${{ vars.VERCEL_ORG_ID }}
+      vercel_project_id: ${{ vars.VERCEL_CALCULATORS_PROJECT_ID }}
+    secrets: inherit
+
+  preview-tools:
+    name: Preview tools
+    needs: quality
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev' && vars.VERCEL_DEPLOY_ENABLED == 'true'
+    uses: ./.github/workflows/vercel-deploy.yml
+    with:
+      project_name: tools
+      deployment_target: preview
       vercel_org_id: ${{ vars.VERCEL_ORG_ID }}
       vercel_project_id: ${{ vars.VERCEL_TOOLS_PROJECT_ID }}
     secrets: inherit
