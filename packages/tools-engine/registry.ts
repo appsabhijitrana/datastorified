@@ -1,3 +1,5 @@
+import { fuzzySearch } from "@datastorified/utils";
+
 export type ToolCategory = "Text" | "Developer" | "Image" | "PDF" | "Utility";
 export type ToolInputKind = "text" | "generator" | "image" | "pdf" | "files";
 export type ToolDefinition = {
@@ -85,5 +87,5 @@ export const tools: ToolDefinition[] = [
 export const toolBySlug = (slug: string) => tools.find((tool) => tool.slug === slug);
 export const searchTools = (query: string) => {
   const normalized = query.toLowerCase().trim();
-  return normalized ? tools.filter((tool) => [tool.name, tool.slug, tool.category, tool.description, ...tool.keywords].join(" ").toLowerCase().includes(normalized)) : tools;
+  return normalized ? fuzzySearch(tools, normalized, (tool) => [tool.name, tool.slug, tool.category, tool.description, ...tool.keywords].join(" ")) : tools;
 };

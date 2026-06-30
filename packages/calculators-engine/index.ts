@@ -1,6 +1,17 @@
 export * from "./registry";
 
-import { calculatorBySlug, calculatorSchemas, type CalculatorDefinition } from "./registry";
+import { z } from "zod";
+import { calculatorBySlug, calculators, type CalculatorDefinition, type CalculatorField } from "./registry";
+
+const buildSchema = (fields: CalculatorField[]) => z.object(Object.fromEntries(fields.map((field) => {
+  let schema = z.number({ invalid_type_error: `${field.label} is required.` }).finite(`${field.label} must be a valid number.`);
+  if (field.min !== undefined) schema = schema.min(field.min, `${field.label} must be at least ${field.min}.`);
+  if (field.max !== undefined) schema = schema.max(field.max, `${field.label} must be no more than ${field.max}.`);
+  const validated: z.ZodTypeAny = field.input === "select" ? schema.refine((value) => field.options?.some((option) => option.value === value), `Choose a valid option for ${field.label.toLowerCase()}.`) : schema;
+  return [field.key, validated];
+})));
+const calculatorSchemas = Object.fromEntries(calculators.map((calculator) => [calculator.slug, buildSchema(calculator.fields)])) as Record<string, z.ZodObject<Record<string, z.ZodTypeAny>>>;
+export function validateCalculatorInputs(calculator: CalculatorDefinition, values: Record<string, number>): string[] { const parsed = calculatorSchemas[calculator.slug].safeParse(values); return parsed.success ? [] : [...new Set(parsed.error.issues.map((issue) => issue.message))]; }
 
 export type ResultUnit = "currency" | "percent" | "number";
 export type PrimaryResult = { label: string; value: number; unit: ResultUnit; suffix?: string };

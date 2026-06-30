@@ -27,6 +27,11 @@ describe("local storage adapter", () => {
   it("returns fallbacks for malformed stored values", () => {
     localStorage.setItem(storageKeys.recentCalculators, "not-json");
     expect(storage.getRecent("calculators")).toEqual([]);
+    localStorage.setItem(storageKeys.favoriteTools, JSON.stringify({ broken: true }));
+    localStorage.setItem(storageKeys.preferences, JSON.stringify({ locale: "en-IN", invalid: 42 }));
+    expect(storage.getFavorites("tools")).toEqual([]);
+    expect(storage.getPreferences()).toEqual({ locale: "en-IN" });
+    expect(storage.addSearch("   ")).toEqual([]);
   });
 
   it("fails gracefully when localStorage reads and writes throw", () => {

@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { fuzzySearch } from "@datastorified/utils";
 
 export type CalculatorField = {
   key: string;
@@ -47,14 +47,6 @@ const lengthUnits = [
 const activityOptions = [
   ["Sedentary", 1.2], ["Light activity", 1.375], ["Moderate activity", 1.55], ["Very active", 1.725], ["Extra active", 1.9],
 ].map(([label, value]) => ({ label: String(label), value: Number(value) }));
-
-const buildSchema = (fields: CalculatorField[]) => z.object(Object.fromEntries(fields.map((field) => {
-  let schema = z.number({ invalid_type_error: `${field.label} is required.` }).finite(`${field.label} must be a valid number.`);
-  if (field.min !== undefined) schema = schema.min(field.min, `${field.label} must be at least ${field.min}.`);
-  if (field.max !== undefined) schema = schema.max(field.max, `${field.label} must be no more than ${field.max}.`);
-  const validated: z.ZodTypeAny = field.input === "select" ? schema.refine((value) => field.options?.some((option) => option.value === value), `Choose a valid option for ${field.label.toLowerCase()}.`) : schema;
-  return [field.key, validated];
-})));
 
 type DefinitionInput = Omit<CalculatorDefinition, "icon" | "keywords" | "assumptions" | "related"> & Partial<Pick<CalculatorDefinition, "icon" | "keywords" | "assumptions" | "related">>;
 const define = (definition: DefinitionInput): CalculatorDefinition => ({
@@ -132,14 +124,7 @@ export const calculators: CalculatorDefinition[] = [
 ];
 
 export const calculatorBySlug = (slug: string) => calculators.find((calculator) => calculator.slug === slug);
-export const calculatorSchemas = Object.fromEntries(calculators.map((calculator) => [calculator.slug, buildSchema(calculator.fields)])) as Record<string, z.ZodObject<Record<string, z.ZodTypeAny>>>;
-
 export const searchCalculators = (query: string) => {
   const normalized = query.toLowerCase().trim();
-  return normalized ? calculators.filter((calculator) => [calculator.name, calculator.slug, calculator.category, calculator.description, ...calculator.keywords].join(" ").toLowerCase().includes(normalized)) : calculators;
+  return normalized ? fuzzySearch(calculators, normalized, (calculator) => [calculator.name, calculator.slug, calculator.category, calculator.description, ...calculator.keywords].join(" ")) : calculators;
 };
-
-export function validateCalculatorInputs(calculator: CalculatorDefinition, values: Record<string, number>): string[] {
-  const parsed = calculatorSchemas[calculator.slug].safeParse(values);
-  return parsed.success ? [] : [...new Set(parsed.error.issues.map((issue) => issue.message))];
-}

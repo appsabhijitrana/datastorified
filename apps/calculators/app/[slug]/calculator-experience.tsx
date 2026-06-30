@@ -18,7 +18,6 @@ import {
   Button,
   CalculatorCard,
   Card,
-  ChartCard,
   CopyButton,
   FAQ,
   Footer,
@@ -26,6 +25,7 @@ import {
   InsightCard,
   ResultCard,
 } from "@datastorified/ui";
+import { ChartCard } from "@datastorified/ui/chart-card";
 import { SmartNumberInput } from "@datastorified/ui/smart-number-input";
 import type { SmartNumberMode } from "@datastorified/ui/smart-number";
 

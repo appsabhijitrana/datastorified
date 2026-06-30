@@ -1,4 +1,3 @@
-import { degrees, PDFDocument } from "pdf-lib";
 import type { UtilityResult, UtilityScalar } from ".";
 
 export type FileLike = Blob & { name?: string };
@@ -81,6 +80,7 @@ const pdfBlob = (bytes: Uint8Array) => new Blob([new Uint8Array(bytes)], { type:
 export async function processPdf(mode: string, files: FileLike[], options: FileOptions = {}): Promise<FileUtilityResult> {
   if (!files.length) return fail("Choose at least one file.");
   try {
+    const { degrees, PDFDocument } = await import("pdf-lib");
     if (mode === "images-pdf") {
       const document = await PDFDocument.create();
       for (const file of files) {

@@ -16,7 +16,8 @@
 | Tools engine (text, developer, image, PDF, utility) | 156 | 99.25% |
 | Storage | 5 | 100% |
 | Shared UI components and SmartNumberInput | 30 | Not included in engine threshold |
-| **Unit/component total** | **365** | **99.66% overall engine/storage** |
+| Search and SEO helpers | 8 | Focused contract coverage |
+| **Unit/component total** | **373** | **99.66% overall engine/storage** |
 
 Thresholds enforced by `vitest.config.ts`:
 
@@ -44,12 +45,15 @@ Functional Playwright scenarios:
 14. Every one of the 110 registered product routes responds successfully.
 15. Representative website, calculator, utility, PDF, and legal pages emit no browser console errors.
 
+Additional functional coverage verifies typo-tolerant search, generated sitemap/robots/PWA endpoints, structured metadata, response security headers, and horizontal overflow at 320, 360, 390, 430, 768, 1024, 1440, and 1920px.
+
 Visual baselines:
 
 - website homepage: desktop and mobile;
+- website and calculators homepages: tablet;
 - calculators homepage: desktop and mobile;
 - EMI calculator: mobile;
-- tools homepage: mobile;
+- tools homepage: desktop and mobile;
 - JSON Formatter: mobile.
 
 Animations are disabled through reduced-motion browser emulation and matching CSS so screenshots remain stable.

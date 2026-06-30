@@ -6,7 +6,10 @@
   "exports": {
     ".": "./index.ts",
     "./smart-number": "./smart-number.ts",
-    "./smart-number-input": "./smart-number-input.tsx"
+    "./smart-number-input": "./smart-number-input.tsx",
+    "./platform-client": "./platform-client.tsx",
+    "./error-screen": "./error-screen.tsx",
+    "./chart-card": "./chart-card.tsx"
   },
   "peerDependencies": {
     "next": "^15.1.0",

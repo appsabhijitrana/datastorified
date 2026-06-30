@@ -25,6 +25,11 @@ test("calculators homepage loads and search finds EMI", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "EMI Calculator" })).toBeVisible();
 });
 
+test("calculator and tool search tolerate typos", async ({ page }) => {
+  await page.goto(calculators); await page.getByPlaceholder(/Search EMI/i).fill("calclator"); await expect(page.getByRole("heading", { name: "Percentage Calculator" })).toBeVisible();
+  await page.goto(tools); await page.getByPlaceholder(/Search JSON/i).fill("formater"); await expect(page.getByRole("heading", { name: "JSON Formatter", exact: true })).toBeVisible();
+});
+
 test("EMI calculator calculates a known result", async ({ page }) => {
   await page.goto(`${calculators}/emi-calculator`);
   await page.getByRole("textbox", { name: "Loan amount", exact: true }).fill("120000");
@@ -42,6 +47,7 @@ test("favorite calculator persists after reload", async ({ page }) => {
 
 test("recent calculator persists after reload", async ({ page }) => {
   await page.goto(`${calculators}/sip-calculator`);
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("ds.recent.calculators"))).toContain("sip-calculator");
   await page.goto(calculators);
   await page.reload();
   await expect(page.getByRole("heading", { name: "Recently used" })).toBeVisible();
@@ -93,6 +99,30 @@ test("mobile tool has no horizontal overflow", async ({ page }) => {
 test("legal pages load", async ({ page }) => {
   await page.goto(`${website}/legal/privacy`);
   await expect(page.getByRole("heading", { name: /Privacy Policy/i })).toBeVisible();
+});
+
+test("SEO, PWA, and crawler endpoints are production complete", async ({ request }) => {
+  for (const origin of [website, calculators, tools]) {
+    expect((await request.get(`${origin}/robots.txt`)).ok()).toBe(true);
+    const sitemap = await request.get(`${origin}/sitemap.xml`); expect(sitemap.ok()).toBe(true); expect(await sitemap.text()).toContain("<urlset");
+    const manifest = await request.get(`${origin}/manifest.webmanifest`); expect(manifest.ok()).toBe(true); expect((await manifest.json()).icons.length).toBeGreaterThanOrEqual(2);
+    expect((await request.get(`${origin}/offline`)).ok()).toBe(true);
+  }
+});
+
+test("product pages expose canonical, social, FAQ, breadcrumb, and application metadata", async ({ page }) => {
+  await page.goto(`${calculators}/emi-calculator`);
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", "https://calculators.datastorified.com/emi-calculator");
+  await expect(page.locator('meta[property="og:image"]')).toHaveCount(1);
+  const jsonLd = await page.locator('script[type="application/ld+json"]').textContent(); expect(jsonLd).toContain("FAQPage"); expect(jsonLd).toContain("BreadcrumbList"); expect(jsonLd).toContain("SoftwareApplication");
+});
+
+test("security headers protect every surface", async ({ request }) => {
+  for (const origin of [website, calculators, tools]) { const response = await request.get(origin); expect(response.headers()["x-content-type-options"]).toBe("nosniff"); expect(response.headers()["x-frame-options"]).toBe("DENY"); expect(response.headers()["content-security-policy"]).toContain("frame-ancestors 'none'"); }
+});
+
+test("responsive layouts do not overflow at launch breakpoints", async ({ page }) => {
+  for (const width of [320, 360, 390, 430, 768, 1024, 1440, 1920]) { await page.setViewportSize({width,height:900}); await page.goto(`${calculators}/emi-calculator`); expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth), `overflow at ${width}px`).toBe(true); }
 });
 
 test("unknown routes return the 404 page", async ({ page }) => {

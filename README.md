@@ -16,14 +16,16 @@ The Phase 1 production candidate is implemented on the development line and is r
 
 Current automated evidence:
 
-- 365 unit and component tests passing;
+- 373 unit and component tests passing;
 - calculator engine: 100% line coverage;
 - tools engine: 99.25% line coverage;
 - storage: 100% line coverage;
-- 17 functional browser regression scenarios, including every registered route and console-error checks;
-- 7 visual regression baselines;
+- 22 functional browser regression scenarios, including every registered route, production metadata, security headers, and console-error checks;
+- 10 desktop, tablet, and mobile visual regression baselines;
 - ESLint and strict TypeScript quality gates;
 - static production builds for all registered routes.
+- local production Lighthouse: website 96, calculators 95, tools 93 performance; every surface scores 100 for accessibility, best practices, and SEO;
+- homepage first-load JavaScript: 153 kB website, 160 kB calculators, and 155 kB tools.
 
 Detailed documentation:
 
@@ -34,6 +36,10 @@ Detailed documentation:
 - [Production quality checklist](docs/quality-checklist.md)
 - [Deployment and release process](docs/deployment.md)
 - [Project progress](docs/progress.md)
+- [Architecture](ARCHITECTURE.md)
+- [SEO implementation](SEO.md)
+- [Production deployment summary](DEPLOYMENT.md)
+- [Production-readiness report](docs/production-readiness.md)
 
 ## Run locally
 

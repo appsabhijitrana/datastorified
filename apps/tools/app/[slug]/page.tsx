@@ -1,2 +1,11 @@
-import {notFound} from "next/navigation";import {toolBySlug,tools} from "@datastorified/tools-engine";import {createMetadata,faqSchema} from "@datastorified/seo";import ToolExperience from "./tool-experience";
-export function generateStaticParams(){return tools.map(x=>({slug:x.slug}))}export async function generateMetadata({params}:{params:Promise<{slug:string}>}){const{slug}=await params;const t=toolBySlug(slug);return t?createMetadata(`${t.name} — DataStorified`,t.description,"tools.datastorified.com",`/${slug}`):{}}export default async function Page({params}:{params:Promise<{slug:string}>}){const{slug}=await params;const tool=toolBySlug(slug);if(!tool)notFound();const schema=faqSchema([{question:`Does ${tool.name} upload my data?`,answer:"No. Phase 1 tools process text and files locally in the browser."},{question:"Is this tool free?",answer:"Yes. Phase 1 tools work without an account."}]);return <><script type="application/ld+json" dangerouslySetInnerHTML={{__html:JSON.stringify(schema)}}/><ToolExperience tool={tool}/></>}
+import { notFound } from "next/navigation";
+import { toolBySlug, tools } from "@datastorified/tools-engine/registry";
+import { breadcrumbSchema, canonical, createMetadata, faqSchema, serializeJsonLd, softwareApplicationSchema } from "@datastorified/seo";
+import ToolExperience from "./tool-experience";
+export function generateStaticParams() { return tools.map(({ slug }) => ({ slug })); }
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) { const { slug } = await params; const tool = toolBySlug(slug); return tool ? createMetadata(`${tool.name} — DataStorified`, tool.description, "tools.datastorified.com", `/${slug}`) : {}; }
+export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params; const tool = toolBySlug(slug); if (!tool) notFound(); const url = canonical("tools.datastorified.com", `/${slug}`);
+  const schemas = [faqSchema([{ question: `Does ${tool.name} upload my data?`, answer: "No. Tools process text and files locally in the browser." }, { question: "Is this tool free?", answer: "Yes. These tools work without an account." }]), softwareApplicationSchema({ name: tool.name, description: tool.description, url }), breadcrumbSchema([{ name: "Tools", url: canonical("tools.datastorified.com") }, { name: tool.category, url: canonical("tools.datastorified.com", "/#categories") }, { name: tool.name, url }])];
+  return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(schemas) }} /><ToolExperience tool={tool}/></>;
+}
