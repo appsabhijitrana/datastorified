@@ -7,6 +7,10 @@ on:
         description: Human-readable application name
         required: true
         type: string
+      deployment_target:
+        description: Vercel deployment target
+        required: true
+        type: string
       vercel_org_id:
         description: Vercel account or team ID
         required: true
@@ -32,7 +36,7 @@ jobs:
     name: Deploy ${{ inputs.project_name }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    environment: production
+    environment: ${{ inputs.deployment_target }}
     env:
       VERCEL_CLI_VERSION: 54.18.2
       VERCEL_ORG_ID: ${{ inputs.vercel_org_id }}
@@ -58,12 +62,16 @@ jobs:
         run: pnpm dlx vercel@${VERCEL_CLI_VERSION} pull --yes --environment=production --token="${VERCEL_TOKEN}"
 
       - name: Build Vercel output
-        run: pnpm dlx vercel@${VERCEL_CLI_VERSION} build --prod --token="${VERCEL_TOKEN}"
+        run: pnpm dlx vercel@${VERCEL_CLI_VERSION} build --token="${VERCEL_TOKEN}"
 
-      - name: Deploy production output
+      - name: Deploy output
         id: deploy
         run: |
-          deployment_url=$(pnpm dlx vercel@${VERCEL_CLI_VERSION} deploy --prebuilt --prod --archive=tgz --token="${VERCEL_TOKEN}")
+          deploy_args=(--prebuilt --archive=tgz --token="${VERCEL_TOKEN}")
+          if [ "${{ inputs.deployment_target }}" = "production" ]; then
+            deploy_args+=(--prod)
+          fi
+          deployment_url=$(pnpm dlx vercel@${VERCEL_CLI_VERSION} deploy "${deploy_args[@]}")
           echo "deployment_url=${deployment_url}" >> "${GITHUB_OUTPUT}"
           echo "### ${{ inputs.project_name }} deployed" >> "${GITHUB_STEP_SUMMARY}"
           echo "${deployment_url}" >> "${GITHUB_STEP_SUMMARY}"

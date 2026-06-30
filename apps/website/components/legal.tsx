@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import { Badge, Card, Footer, Header } from "@datastorified/ui";
 import {
-  LEGAL_EMAIL,
+  CONTACT_URL,
   LEGAL_TEMPLATE_NOTICE,
   legalPolicies,
   legalPolicyBySlug,
@@ -118,7 +118,7 @@ export function LegalLayout({ policy }: { policy: LegalPolicy }) {
             <div className="mb-10 rounded-2xl border border-warning/20 bg-warning/[.06] p-4 text-sm leading-6 text-muted">{LEGAL_TEMPLATE_NOTICE}</div>
             <div className="space-y-9">{policy.sections.map((item) => <LegalSection key={item.id} section={item} />)}</div>
             <div className="mt-10 rounded-2xl bg-soft p-5">
-              <div className="flex gap-3"><Mail size={20} className="mt-0.5 shrink-0 text-primary" /><div><h2 className="font-bold">Legal contact</h2><p className="mt-1 text-sm leading-6 text-muted">Questions about this document may be sent to <a className="font-semibold text-primary hover:underline" href={`mailto:${LEGAL_EMAIL}`}>{LEGAL_EMAIL}</a>.</p></div></div>
+              <div className="flex gap-3"><Mail size={20} className="mt-0.5 shrink-0 text-primary" /><div><h2 className="font-bold">Official contact channel</h2><p className="mt-1 text-sm leading-6 text-muted">Use the <a className="font-semibold text-primary hover:underline" href={CONTACT_URL}>DataStorified contact page</a> and choose the topic that matches your request.</p></div></div>
             </div>
           </article>
           <aside className="sticky top-24 hidden xl:block"><RelatedPolicies slugs={policy.related} currentSlug={policy.slug} /></aside>
@@ -148,8 +148,8 @@ export function TrustCard({ icon, title, children }: { icon?: ReactNode; title: 
   return <Card className="h-full p-6"><span className="grid size-11 place-items-center rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 text-primary">{icon ?? <ShieldCheck size={20} />}</span><h3 className="mt-4 text-lg font-bold">{title}</h3><div className="mt-2 text-sm leading-6 text-muted">{children}</div></Card>;
 }
 
-export function ContactCard({ icon, title, description, email }: { icon?: ReactNode; title: string; description: string; email: string }) {
-  return <Card className="flex h-full flex-col p-6"><span className="grid size-11 place-items-center rounded-2xl bg-soft text-primary">{icon ?? <Mail size={20} />}</span><h2 className="mt-4 text-xl font-bold">{title}</h2><p className="mt-2 flex-1 text-sm leading-6 text-muted">{description}</p><a href={`mailto:${email}`} className="mt-5 inline-flex items-center gap-2 break-all text-sm font-semibold text-primary hover:underline">{email} <ArrowRight size={14} /></a></Card>;
+export function ContactCard({ icon, title, description }: { icon?: ReactNode; title: string; description: string }) {
+  return <Card className="flex h-full flex-col p-6"><span className="grid size-11 place-items-center rounded-2xl bg-soft text-primary">{icon ?? <Mail size={20} />}</span><h2 className="mt-4 text-xl font-bold">{title}</h2><p className="mt-2 flex-1 text-sm leading-6 text-muted">{description}</p><p className="mt-5 text-sm font-semibold text-primary">Select “{title}” when an intake channel is listed below.</p></Card>;
 }
 
 export const legalVisuals = { ShieldCheck, Scale, HeartHandshake, Bot, Database, LockKeyhole, Mail };

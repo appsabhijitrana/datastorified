@@ -1,1 +1,1 @@
-{"name":"@datastorified/calculators-engine","version":"0.1.0","private":true,"main":"./index.ts","dependencies":{"@datastorified/utils":"workspace:*"}}
+{"name":"@datastorified/calculators-engine","version":"0.1.0","private":true,"main":"./index.ts","exports":{".":"./index.ts","./registry":"./registry.ts"},"dependencies":{"@datastorified/utils":"workspace:*","zod":"^3.25.0"}}

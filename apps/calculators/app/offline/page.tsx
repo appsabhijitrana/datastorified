@@ -1,0 +1,1 @@
+import { EmptyState, Footer, Header } from "@datastorified/ui";export default function Offline(){return <><Header surface="calculators"/><main className="mx-auto min-h-[65vh] max-w-3xl px-4 py-24"><EmptyState title="You’re offline" description="Reconnect to open a new calculator. Saved favorites and drafts remain on this device."/></main><Footer/></>}

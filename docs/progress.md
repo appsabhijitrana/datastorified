@@ -4,116 +4,61 @@ Last updated: 29 June 2026
 
 ## Executive summary
 
-- **Phase 1 feature scope:** 100% complete
-- **Public-launch readiness:** 94% complete
-- **Current state:** All three applications are deployed to Vercel and the production CI/CD pipeline is passing. Custom-domain DNS and final launch QA remain.
+- Phase 1 production scope: implemented locally on `dev`.
+- Product inventory: 55 calculators, 55 utilities, Decision Engine, and Legal & Trust.
+- Automated tests: 365 unit/component tests, 17 functional Playwright scenarios, and 7 visual baselines.
+- Coverage: calculators 100%, tools 99.25%, storage 100%, overall 99.66% lines.
+- Release state: awaiting review, commit/push approval, CI confirmation, and `dev → main` release PR.
 
-The launch-readiness percentage is a weighted delivery estimate, not an automated engineering metric. Features intentionally defined as demos in the Phase 1 brief count as complete when they provide polished, truthful demo behavior.
+## Completed in the production-grade upgrade
 
-## Weighted readiness score
+### Calculator product
 
-| Area | Weight | Completion | Contribution |
-| --- | ---: | ---: | ---: |
-| Monorepo and shared platform | 10% | 100% | 10% |
-| Decision Engine website | 15% | 100% | 15% |
-| Calculator product | 25% | 100% | 25% |
-| Tools product | 20% | 100% | 20% |
-| Shared UX, storage, SEO, and analytics | 10% | 100% | 10% |
-| Deployment and release automation | 10% | 90% | 9% |
-| Launch QA and operational readiness | 10% | 50% | 5% |
-| **Overall launch readiness** | **100%** |  | **94%** |
+- Expanded from 20 to 55 working calculator routes.
+- Moved all formulas into `packages/calculators-engine`.
+- Added engine-only Zod schemas with friendly range and option messages.
+- Standardized result contracts with primary/secondary results, chart data, insights, warnings, formulas, and assumptions.
+- Added 174 calculator tests covering every default example, missing/non-finite and below-range values, decimals, output contracts, schemas, known EMI/SIP/GST/BMI vectors, and property-based invariants.
 
-## Completed work
+### Utility product
 
-### Platform foundation — complete
+- Expanded from 25 entries to 55 working utility routes.
+- Removed every fake mock mode.
+- Added real SHA-256, QR/UPI QR, CSV/JSON/YAML, Base64, JWT, regex, timestamp, cron, color, contrast, UUID, password, and text workflows.
+- Added canvas-based image compression, resize, numeric crop, PNG/JPG/WebP conversion, metadata, and color sampling.
+- Added real `pdf-lib` merge, split, rotate, images-to-PDF, page extraction, and metadata workflows.
+- Added 156 tools-engine tests, including real generated-PDF tests and mocked browser-canvas processing.
 
-- pnpm and Turbo monorepo with three independently deployable Next.js applications.
-- Shared UI, utilities, SEO, storage, analytics, calculator engine, and tools engine packages.
-- Mobile-first design system with responsive navigation, premium cards, motion, charts, and consistent brand tokens.
-- Client-first architecture with no mandatory authentication or backend dependency.
+### Persistence, UI, and brand
 
-### Decision Engine website — complete
+- Favorites, recent history, drafts, searches, and preferences remain local.
+- Storage now handles unavailable or malformed local storage without throwing.
+- Calculator pages expose formulas and assumptions; utility pages expose input/upload, output, copy/download, warnings, related items, and FAQs.
+- Mobile overflow regressions are tested at 390 px.
+- The supplied DataStorified brand mark, lockup, favicon, PWA icons, manifests, and social card are integrated with no dark theme.
 
-- Sticky responsive header, decision-first hero input, and popular decision prompts.
-- Polished mocked decision analysis with detected category, guided questions, confidence preview, and recommended calculators.
-- How-it-works, calculator shortcuts, tool shortcuts, product rationale, footer, and mobile navigation.
+### Quality and delivery
 
-### Calculators — complete
+- Added Vitest, Testing Library setup, Playwright, `fast-check`, Zod, and coverage tooling.
+- Added zero-warning ESLint and console-free analytics behavior.
+- Added root `lint`, `test`, `test:watch`, `test:coverage`, `test:e2e`, and `ci` scripts.
+- Expanded GitHub Actions to run lint, typecheck, unit tests, coverage, build, and E2E before production jobs.
+- Production deployment remains restricted to successful pushes on protected `main`.
 
-- 20 searchable calculator pages with centralized formulas.
-- Live results, mixed-unit result formatting, visual charts where relevant, static insights, related calculators, FAQs, and SEO content.
-- Input validation, automatic draft persistence, favorites, recent history, result copying, and share support.
-- Calculator-specific flows including inclusive/exclusive GST, calendar-based age, eight-unit length conversion, HRA location selection, loan affordability, and AY 2026–27 basic income tax logic.
-- Currency conversion remains a clearly labelled manual-rate mock as required by Phase 1.
+## Remaining release work
 
-### Online tools — complete for Phase 1
+1. Complete the final local build and full Playwright rerun.
+2. Review the generated calculator/tool documentation and visual baselines.
+3. Commit and push to `dev` only after explicit approval.
+4. Confirm GitHub Actions passes on `dev`.
+5. Open and review the `dev → main` release PR.
+6. After merge, smoke-test all three custom domains and their TLS certificates.
+7. Complete manual Safari/Firefox/Edge/mobile QA, Lighthouse audits, legal review, and regulated-domain disclaimer review.
 
-- 25 searchable tool pages across Text, Developer, Image, PDF, and Utility categories.
-- 15 tools perform real browser-side transformations.
-- 10 file, hash, PDF, image, and QR workflows provide explicitly labelled Phase 1 demos rather than pretending to process data.
-- Copying, favorites, recently used tools, search history, private-by-design messaging, FAQs, and related-tool discovery.
+## Release references
 
-### Persistence, discovery, SEO, and telemetry — complete
-
-- Local storage for recent calculators, recent tools, favorites, searches, calculator drafts, and preferences with the requested `ds.*` keys and limits.
-- Static registry search across names, slugs, categories, keywords, and descriptions.
-- Canonical URLs, Open Graph metadata, Twitter cards, and FAQ structured data.
-- Development-safe analytics facade for searches, favorites, tool usage, and calculator usage.
-
-### Legal and Trust documentation — implemented
-
-- Legal hub, Trust Center, About, and Contact pages.
-- Eleven detailed, versioned policies with dynamic tables of contents, related links, contact sections, and route-specific SEO metadata.
-- Global footer links for privacy, terms, cookies, disclaimer, AI disclosure, security, and contact.
-- Policy templates are complete for product integration but still require qualified legal review before public reliance.
-
-### Deployment and CI/CD — operational
-
-- Three Vercel projects configured with their monorepo Root Directories and Node.js 22.
-- Production deployments are live on Vercel-hosted URLs.
-- GitHub Actions installs dependencies, typechecks, and builds all three applications.
-- `dev` runs CI without production deployment; protected `main` accepts reviewed pull requests only.
-- Successful release merges into `main` deploy all applications in parallel and smoke-test each resulting URL.
-- Vercel team and project IDs plus the deployment token are configured in GitHub Actions.
-- Requested custom domains are attached to their matching Vercel projects.
-
-## Current production endpoints
-
-| Application | Live endpoint | Custom domain status |
-| --- | --- | --- |
-| Website | [datastorified-website.vercel.app](https://datastorified-website.vercel.app) | `datastorified.com` attached; DNS pending |
-| Calculators | [datastorified-calculators.vercel.app](https://datastorified-calculators.vercel.app) | `calculators.datastorified.com` attached; DNS pending |
-| Tools | [datastorified-tools.vercel.app](https://datastorified-tools.vercel.app) | `tools.datastorified.com` attached; DNS pending |
-
-The verified production pipeline run is available in [GitHub Actions](https://github.com/appsabhijitrana/datastorified/actions/runs/28366923561).
-
-## Remaining before public-domain launch
-
-### Required
-
-1. Update GoDaddy DNS:
-   - Replace the apex `@` A record with `76.76.21.21`.
-   - Add `calculators` A record pointing to `76.76.21.21`.
-   - Add `tools` A record pointing to `76.76.21.21`.
-2. Wait for Vercel domain verification and automatic TLS certificate issuance.
-3. Smoke-test all three custom domains after DNS propagation.
-
-### Recommended launch QA
-
-- Run mobile and desktop Lighthouse audits and address material accessibility or performance findings.
-- Test current Safari, Chrome, Firefox, Edge, iOS Safari, and Android Chrome.
-- Add Playwright coverage for homepage search, calculator drafts, favorites, real tool transformations, and representative mocked tools.
-- Add a privacy-friendly production analytics provider and basic client-error monitoring when traffic justifies it.
-- Review financial, health, tax, privacy, and terms copy before broader promotion.
-
-## Post-Phase 1 backlog
-
-- Real client-side image, PDF, hashing, and QR implementations.
-- Live exchange-rate provider with freshness and failure handling.
-- Optional accounts, cloud sync, saved dashboards, and alerts.
-- Opt-in AI decision reports with transparent assumptions and cost controls.
-- Optional Neon PostgreSQL and Cloudflare R2 only when synchronization or user-owned files require them.
-
-## Definition of Phase 1 done
-
-Phase 1 is considered feature-complete because all requested applications, calculators, tools, shared packages, local persistence, search, metadata, and deployment automation exist and pass production builds. Public launch is considered complete after custom DNS verification and the recommended minimum QA pass.
+- [Calculator catalog](calculators.md)
+- [Utility catalog](tools.md)
+- [Testing](testing.md)
+- [Quality checklist](quality-checklist.md)
+- [Deployment](deployment.md)

@@ -3,6 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "main": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./smart-number": "./smart-number.ts",
+    "./smart-number-input": "./smart-number-input.tsx",
+    "./platform-client": "./platform-client.tsx",
+    "./error-screen": "./error-screen.tsx",
+    "./chart-card": "./chart-card.tsx"
+  },
   "peerDependencies": {
     "next": "^15.1.0",
     "react": "^19.0.0",
@@ -12,7 +20,8 @@
     "@datastorified/utils": "workspace:*",
     "framer-motion": "^11.15.0",
     "lucide-react": "^1.22.0",
-    "recharts": "^2.15.0"
+    "recharts": "^2.15.0",
+    "zod": "^3.25.0"
   },
   "devDependencies": {
     "@types/lodash": "^4.17.17",

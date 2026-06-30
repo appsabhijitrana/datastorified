@@ -1,3 +1,5 @@
+import { fuzzySearch } from "@datastorified/utils";
+
 export type CalculatorField = {
   key: string;
   label: string;
@@ -15,167 +17,114 @@ export type CalculatorDefinition = {
   slug: string;
   name: string;
   description: string;
-  category: string;
+  category: "Finance" | "Investment" | "Tax India" | "Gold" | "Property" | "Vehicle" | "Business" | "Health" | "General";
   keywords: string[];
   icon: string;
   popular?: boolean;
   fields: CalculatorField[];
   resultLabel: string;
   formula: string;
+  assumptions: string[];
+  warnings?: string[];
   source?: { label: string; url: string };
   related: string[];
 };
 
-const numberField = (
-  key: string,
-  label: string,
-  value: number,
-  suffix = "",
-  step = 1,
-  min = 0,
-  max?: number,
-  help?: string,
-): CalculatorField => ({ key, label, default: value, suffix, step, min, max, help, input: "number" });
+const numberField = (key: string, label: string, value: number, suffix = "", step = 1, min = 0, max?: number, help?: string): CalculatorField =>
+  ({ key, label, default: value, suffix, step, min, max, help, input: "number" });
 
-const selectField = (
-  key: string,
-  label: string,
-  value: number,
-  options: Array<{ label: string; value: number }>,
-  help?: string,
-): CalculatorField => ({ key, label, default: value, options, help, input: "select" });
+const selectField = (key: string, label: string, value: number, options: Array<{ label: string; value: number }>, help?: string): CalculatorField =>
+  ({ key, label, default: value, options, help, input: "select" });
 
-const today = new Date();
+const n = numberField;
+const s = selectField;
+const yesNo = [{ label: "Yes", value: 1 }, { label: "No", value: 0 }];
+const sexOptions = [{ label: "Female", value: 0 }, { label: "Male", value: 1 }];
 const lengthUnits = [
-  { label: "Metres (m)", value: 0 },
-  { label: "Kilometres (km)", value: 1 },
-  { label: "Centimetres (cm)", value: 2 },
-  { label: "Millimetres (mm)", value: 3 },
-  { label: "Feet (ft)", value: 4 },
-  { label: "Inches (in)", value: 5 },
-  { label: "Yards (yd)", value: 6 },
-  { label: "Miles (mi)", value: 7 },
-];
+  ["Metres (m)", 0], ["Kilometres (km)", 1], ["Centimetres (cm)", 2], ["Millimetres (mm)", 3],
+  ["Feet (ft)", 4], ["Inches (in)", 5], ["Yards (yd)", 6], ["Miles (mi)", 7],
+].map(([label, value]) => ({ label: String(label), value: Number(value) }));
+const activityOptions = [
+  ["Sedentary", 1.2], ["Light activity", 1.375], ["Moderate activity", 1.55], ["Very active", 1.725], ["Extra active", 1.9],
+].map(([label, value]) => ({ label: String(label), value: Number(value) }));
+
+type DefinitionInput = Omit<CalculatorDefinition, "icon" | "keywords" | "assumptions" | "related"> & Partial<Pick<CalculatorDefinition, "icon" | "keywords" | "assumptions" | "related">>;
+const define = (definition: DefinitionInput): CalculatorDefinition => ({
+  icon: "Calculator", keywords: [], assumptions: ["Inputs remain constant for the selected period.", "Results are planning estimates, not professional advice."], related: [],
+  ...definition,
+});
+
+const loanFields = (amount = 1_000_000) => [n("principal", "Loan amount", amount, "₹", 10_000, 1, 1_000_000_000), n("rate", "Annual interest rate", 9, "%", 0.1, 0, 100), n("years", "Loan tenure", 5, "years", 1, 1, 50)];
+const investmentFields = [n("principal", "Investment amount", 100_000, "₹", 1_000, 1), n("rate", "Expected annual return", 12, "%", 0.1, -99, 100), n("years", "Investment period", 10, "years", 0.5, 0.1, 100)];
 
 export const calculators: CalculatorDefinition[] = [
-  {
-    slug: "emi-calculator", name: "EMI Calculator", description: "Plan loan payments, total interest, and repayment cost.", category: "Loans", keywords: ["loan", "mortgage", "monthly"], icon: "Landmark", popular: true,
-    fields: [numberField("principal", "Loan amount", 2500000, "₹", 10000, 1), numberField("rate", "Annual interest rate", 8.5, "%", 0.1, 0, 100), numberField("years", "Loan tenure", 20, "years", 1, 1, 50)],
-    resultLabel: "Monthly EMI", formula: "Uses the reducing-balance EMI formula with monthly compounding.", related: ["loan-eligibility-calculator", "home-affordability-calculator"],
-  },
-  {
-    slug: "sip-calculator", name: "SIP Calculator", description: "Project long-term mutual fund wealth from monthly investments.", category: "Investing", keywords: ["mutual fund", "returns", "monthly"], icon: "TrendingUp", popular: true,
-    fields: [numberField("monthly", "Monthly investment", 10000, "₹", 500, 1), numberField("rate", "Expected annual return", 12, "%", 0.5, 0, 100), numberField("years", "Investment period", 10, "years", 1, 1, 60)],
-    resultLabel: "Projected value", formula: "Calculates the future value of monthly investments made at the start of each month.", related: ["cagr-calculator", "retirement-calculator"],
-  },
-  {
-    slug: "fd-calculator", name: "FD Calculator", description: "Estimate fixed-deposit maturity value and interest earned.", category: "Investing", keywords: ["deposit", "interest", "bank"], icon: "PiggyBank",
-    fields: [numberField("principal", "Deposit amount", 100000, "₹", 1000, 1), numberField("rate", "Annual interest rate", 7, "%", 0.1, 0, 100), numberField("years", "Deposit tenure", 5, "years", 0.25, 0.25, 30)],
-    resultLabel: "Maturity value", formula: "Assumes interest is compounded quarterly for the selected tenure.", related: ["sip-calculator", "cagr-calculator"],
-  },
-  {
-    slug: "cagr-calculator", name: "CAGR Calculator", description: "Measure annualised investment growth between two values.", category: "Investing", keywords: ["growth", "annual", "return"], icon: "ChartNoAxesCombined",
-    fields: [numberField("start", "Initial value", 100000, "₹", 1000, 1), numberField("end", "Final value", 200000, "₹", 1000, 0), numberField("years", "Investment period", 5, "years", 0.5, 0.1, 100)],
-    resultLabel: "Annual growth", formula: "CAGR = (final value ÷ initial value)^(1 ÷ years) − 1.", related: ["sip-calculator", "fd-calculator"],
-  },
-  {
-    slug: "inflation-calculator", name: "Inflation Calculator", description: "See how rising prices change a future cost.", category: "Planning", keywords: ["cost", "future value", "purchasing"], icon: "ChartSpline",
-    fields: [numberField("amount", "Current cost", 100000, "₹", 1000, 0), numberField("rate", "Expected inflation", 6, "%", 0.1, 0, 100), numberField("years", "Time horizon", 10, "years", 1, 0, 100)],
-    resultLabel: "Future cost", formula: "Future cost = current cost × (1 + inflation rate)^years.", related: ["retirement-calculator", "sip-calculator"],
-  },
-  {
-    slug: "retirement-calculator", name: "Retirement Calculator", description: "Estimate a retirement corpus from future expenses and returns.", category: "Planning", keywords: ["corpus", "future", "pension"], icon: "Sunset", popular: true,
-    fields: [numberField("expense", "Monthly expense today", 50000, "₹", 1000, 1), numberField("years", "Years to retirement", 25, "years", 1, 0, 60), numberField("retirementYears", "Years in retirement", 25, "years", 1, 1, 60), numberField("inflation", "Expected inflation", 6, "%", 0.1, 0, 30), numberField("return", "Post-retirement return", 8, "%", 0.1, 0, 50)],
-    resultLabel: "Target corpus", formula: "Inflates today’s expense, then values the selected years of retirement spending using the real post-retirement return.", related: ["sip-calculator", "inflation-calculator"],
-  },
-  {
-    slug: "emergency-fund-calculator", name: "Emergency Fund Calculator", description: "Build a safety buffer around essential monthly spending.", category: "Planning", keywords: ["safety", "expenses", "buffer"], icon: "ShieldCheck",
-    fields: [numberField("expense", "Essential monthly expenses", 45000, "₹", 1000, 1), numberField("months", "Months of cover", 6, "months", 1, 1, 36)],
-    resultLabel: "Fund target", formula: "Emergency fund = essential monthly expenses × months of cover.", related: ["net-worth-calculator", "retirement-calculator"],
-  },
-  {
-    slug: "net-worth-calculator", name: "Net Worth Calculator", description: "Get a clear snapshot of assets minus liabilities.", category: "Planning", keywords: ["assets", "liabilities", "wealth"], icon: "WalletCards",
-    fields: [numberField("assets", "Total assets", 3500000, "₹", 10000, 0), numberField("liabilities", "Total liabilities", 1200000, "₹", 10000, 0)],
-    resultLabel: "Your net worth", formula: "Net worth = total assets − total liabilities.", related: ["emergency-fund-calculator", "home-affordability-calculator"],
-  },
-  {
-    slug: "loan-eligibility-calculator", name: "Loan Eligibility Calculator", description: "Estimate a maximum loan from income and existing obligations.", category: "Loans", keywords: ["salary", "emi", "borrow"], icon: "BadgeIndianRupee",
-    fields: [numberField("income", "Monthly net income", 100000, "₹", 1000, 1), numberField("obligations", "Existing monthly EMIs", 10000, "₹", 1000, 0), numberField("rate", "Annual interest rate", 9, "%", 0.1, 0, 100), numberField("years", "Loan tenure", 20, "years", 1, 1, 50)],
-    resultLabel: "Eligible loan", formula: "Limits total monthly debt payments to 45% of income, then converts the available EMI into a loan principal.", related: ["emi-calculator", "home-affordability-calculator"],
-  },
-  {
-    slug: "home-affordability-calculator", name: "Home Affordability Calculator", description: "Find a responsible home-buying budget from cash and borrowing capacity.", category: "Loans", keywords: ["house", "property", "down payment"], icon: "House",
-    fields: [numberField("income", "Monthly household income", 150000, "₹", 1000, 1), numberField("savings", "Available down payment", 1500000, "₹", 10000, 0), numberField("obligations", "Existing monthly EMIs", 15000, "₹", 1000, 0), numberField("rate", "Home-loan interest rate", 8.5, "%", 0.1, 0, 100), numberField("years", "Loan tenure", 20, "years", 1, 1, 50)],
-    resultLabel: "Affordable home budget", formula: "Keeps total EMIs within 40% of income, estimates loan capacity, and adds the available down payment.", related: ["emi-calculator", "loan-eligibility-calculator"],
-  },
-  {
-    slug: "gst-calculator", name: "GST Calculator", description: "Add GST to a base price or extract it from an inclusive price.", category: "Tax", keywords: ["tax", "invoice", "goods", "inclusive", "exclusive"], icon: "ReceiptIndianRupee",
-    fields: [selectField("mode", "Calculation", 0, [{ label: "Add GST to base price", value: 0 }, { label: "Remove GST from inclusive price", value: 1 }]), numberField("amount", "Amount", 10000, "₹", 100, 0), numberField("rate", "GST rate", 18, "%", 1, 0, 100)],
-    resultLabel: "Calculated amount", formula: "Exclusive mode adds rate × base amount; inclusive mode extracts tax using rate ÷ (100 + rate).", related: ["income-tax-calculator", "percentage-calculator"],
-  },
-  {
-    slug: "income-tax-calculator", name: "Income Tax Basic Calculator", description: "Estimate individual income tax under the AY 2026–27 new regime.", category: "Tax", keywords: ["salary", "income", "india", "new regime", "ay 2026-27"], icon: "FileText",
-    fields: [numberField("income", "Annual taxable income", 1500000, "₹", 10000, 0, undefined, "Enter taxable income after eligible deductions.")],
-    resultLabel: "Estimated tax", formula: "Applies AY 2026–27 new-regime slabs, eligible section 87A rebate and marginal relief, then adds 4% health and education cess. Surcharge and special-rate income are excluded.", source: { label: "Income Tax Department — AY 2026–27", url: "https://www.incometax.gov.in/iec/foportal/help/individual/return-applicable-1" }, related: ["hra-calculator", "gst-calculator"],
-  },
-  {
-    slug: "hra-calculator", name: "HRA Basic Calculator", description: "Estimate HRA exemption using the standard three-part rule.", category: "Tax", keywords: ["rent", "salary", "exemption"], icon: "Building2",
-    fields: [numberField("hra", "Annual HRA received", 240000, "₹", 1000, 0), numberField("rent", "Annual rent paid", 300000, "₹", 1000, 0), numberField("basic", "Annual basic salary + DA", 600000, "₹", 1000, 1), selectField("metro", "Work location", 1, [{ label: "Metro: Delhi, Mumbai, Kolkata or Chennai", value: 1 }, { label: "Non-metro city", value: 0 }])],
-    resultLabel: "HRA exemption", formula: "Uses the lowest of HRA received, rent minus 10% of basic salary, or 50% of basic in a metro / 40% elsewhere.", related: ["income-tax-calculator", "home-affordability-calculator"],
-  },
-  {
-    slug: "age-calculator", name: "Age Calculator", description: "Calculate calendar age in years, months, and days.", category: "Everyday", keywords: ["birthday", "years", "date"], icon: "CakeSlice",
-    fields: [numberField("birthDay", "Birth day", 1, "day", 1, 1, 31), numberField("birthMonth", "Birth month", 1, "month", 1, 1, 12), numberField("birthYear", "Birth year", 1995, "year", 1, 1900, today.getFullYear()), numberField("currentDay", "As-of day", today.getDate(), "day", 1, 1, 31), numberField("currentMonth", "As-of month", today.getMonth() + 1, "month", 1, 1, 12), numberField("currentYear", "As-of year", today.getFullYear(), "year", 1, 1900, 2200)],
-    resultLabel: "Your age", formula: "Subtracts the birth date from the selected as-of date using calendar years, months, and days.", related: ["percentage-calculator", "bmi-calculator"],
-  },
-  {
-    slug: "percentage-calculator", name: "Percentage Calculator", description: "Find a percentage of any number.", category: "Everyday", keywords: ["percent", "math", "ratio"], icon: "Percent",
-    fields: [numberField("value", "Value", 5000, "", 1, 0), numberField("percentage", "Percentage", 18, "%", 0.1, 0)],
-    resultLabel: "Result", formula: "Result = value × percentage ÷ 100.", related: ["discount-calculator", "gst-calculator"],
-  },
-  {
-    slug: "discount-calculator", name: "Discount Calculator", description: "See the sale price and savings instantly.", category: "Everyday", keywords: ["sale", "saving", "price"], icon: "BadgePercent",
-    fields: [numberField("price", "Original price", 4999, "₹", 1, 0), numberField("discount", "Discount", 25, "%", 0.1, 0, 100)],
-    resultLabel: "Sale price", formula: "Sale price = original price × (1 − discount ÷ 100).", related: ["percentage-calculator", "gst-calculator"],
-  },
-  {
-    slug: "bmi-calculator", name: "BMI Calculator", description: "Check body mass index and the standard screening range.", category: "Health", keywords: ["weight", "height", "fitness"], icon: "Activity",
-    fields: [numberField("weight", "Weight", 70, "kg", 0.5, 1, 500), numberField("height", "Height", 175, "cm", 1, 30, 300)],
-    resultLabel: "Your BMI", formula: "BMI = weight in kilograms ÷ height in metres². BMI is a screening measure, not a diagnosis.", related: ["age-calculator", "percentage-calculator"],
-  },
-  {
-    slug: "fuel-cost-calculator", name: "Fuel Cost Calculator", description: "Estimate fuel required and spend for a journey.", category: "Everyday", keywords: ["petrol", "trip", "mileage"], icon: "Fuel",
-    fields: [numberField("distance", "Journey distance", 500, "km", 1, 0), numberField("mileage", "Vehicle mileage", 15, "km/L", 0.5, 0.1, 200), numberField("price", "Fuel price", 105, "₹/L", 0.1, 0)],
-    resultLabel: "Trip fuel cost", formula: "Fuel needed = distance ÷ mileage; trip cost = fuel needed × price per litre.", related: ["percentage-calculator", "discount-calculator"],
-  },
-  {
-    slug: "unit-converter", name: "Unit Converter", description: "Convert between eight common length units.", category: "Everyday", keywords: ["length", "metres", "feet", "miles", "inches"], icon: "Ruler",
-    fields: [numberField("value", "Value to convert", 10, "", 0.01, 0), selectField("fromUnit", "From", 0, lengthUnits), selectField("toUnit", "To", 4, lengthUnits)],
-    resultLabel: "Converted value", formula: "Converts the source value to metres, then from metres to the selected target unit.", related: ["percentage-calculator", "age-calculator"],
-  },
-  {
-    slug: "currency-converter", name: "Currency Converter Mock", description: "Preview USD-to-INR conversion using a rate you provide.", category: "Everyday", keywords: ["money", "exchange", "forex"], icon: "ArrowLeftRight",
-    fields: [numberField("amount", "US dollar amount", 100, "USD", 1, 0), numberField("rate", "Demo USD/INR rate", 83.5, "₹/USD", 0.1, 0.01)],
-    resultLabel: "Indian rupee value", formula: "INR value = USD amount × the manually entered demo exchange rate. No live rate is fetched.", related: ["gst-calculator", "percentage-calculator"],
-  },
+  define({ slug: "emi-calculator", name: "EMI Calculator", description: "Plan monthly loan payments, total interest, and repayment cost.", category: "Finance", popular: true, keywords: ["loan", "mortgage", "monthly"], fields: loanFields(2_000_000), resultLabel: "Monthly EMI", formula: "EMI = P × r × (1 + r)ⁿ ÷ ((1 + r)ⁿ − 1).", related: ["loan-prepayment-calculator", "loan-eligibility-calculator"] }),
+  define({ slug: "loan-prepayment-calculator", name: "Loan Prepayment Calculator", description: "Estimate interest and tenure saved with an extra monthly payment.", category: "Finance", fields: [...loanFields(2_000_000), n("extra", "Extra monthly payment", 5_000, "₹", 500, 0)], resultLabel: "Interest saved", formula: "Compares month-by-month amortisation with and without the additional payment.", related: ["emi-calculator", "debt-payoff-calculator"] }),
+  define({ slug: "loan-eligibility-calculator", name: "Loan Eligibility Calculator", description: "Estimate borrowing capacity from income and existing obligations.", category: "Finance", fields: [n("income", "Monthly net income", 100_000, "₹", 1_000, 1), n("obligations", "Existing monthly EMIs", 10_000, "₹", 1_000, 0), n("rate", "Annual interest rate", 9, "%", 0.1, 0, 100), n("years", "Loan tenure", 20, "years", 1, 1, 50)], resultLabel: "Eligible loan", formula: "Available EMI is 45% of income less obligations, converted to principal using the EMI formula.", related: ["emi-calculator", "home-affordability-calculator"] }),
+  define({ slug: "home-affordability-calculator", name: "Home Affordability Calculator", description: "Estimate a responsible property budget from income and savings.", category: "Finance", fields: [n("income", "Monthly household income", 150_000, "₹", 1_000, 1), n("savings", "Available down payment", 1_500_000, "₹", 10_000, 0), n("obligations", "Existing monthly EMIs", 15_000, "₹", 1_000, 0), n("rate", "Home-loan interest rate", 8.5, "%", 0.1, 0, 100), n("years", "Loan tenure", 20, "years", 1, 1, 50)], resultLabel: "Affordable home budget", formula: "Uses a 40% debt-to-income cap, estimates loan capacity, then adds the down payment.", warnings: ["Registration, furnishing, maintenance, and emergency reserves are excluded."], related: ["emi-calculator", "rent-vs-buy-calculator"] }),
+  define({ slug: "personal-loan-calculator", name: "Personal Loan Calculator", description: "Estimate EMI and total cost for an unsecured personal loan.", category: "Finance", fields: loanFields(500_000), resultLabel: "Monthly EMI", formula: "Uses the reducing-balance EMI formula with monthly compounding.", related: ["emi-calculator", "debt-payoff-calculator"] }),
+  define({ slug: "car-loan-calculator", name: "Car Loan Calculator", description: "Plan vehicle-loan EMI, interest, and repayment.", category: "Finance", fields: loanFields(800_000), resultLabel: "Monthly EMI", formula: "Uses the reducing-balance EMI formula with monthly compounding.", related: ["emi-calculator", "ev-vs-petrol-savings-calculator"] }),
+  define({ slug: "credit-card-interest-calculator", name: "Credit Card Interest Calculator", description: "Estimate monthly card interest and payoff time.", category: "Finance", fields: [n("balance", "Outstanding balance", 100_000, "₹", 1_000, 1), n("rate", "Annual interest rate", 36, "%", 0.1, 0, 100), n("payment", "Monthly payment", 10_000, "₹", 500, 1)], resultLabel: "First-month interest", formula: "Monthly interest = balance × annual rate ÷ 12; payoff is simulated monthly.", warnings: ["Fees, new purchases, taxes, and issuer-specific compounding are excluded."], related: ["debt-payoff-calculator", "loan-prepayment-calculator"] }),
+  define({ slug: "debt-payoff-calculator", name: "Debt Payoff Calculator", description: "Estimate how long a fixed payment takes to clear debt.", category: "Finance", fields: [n("balance", "Debt balance", 500_000, "₹", 1_000, 1), n("rate", "Annual interest rate", 14, "%", 0.1, 0, 100), n("payment", "Monthly payment", 15_000, "₹", 500, 1)], resultLabel: "Months to debt-free", formula: "Simulates interest and payment each month until the balance reaches zero.", related: ["credit-card-interest-calculator", "loan-prepayment-calculator"] }),
+  define({ slug: "emergency-fund-calculator", name: "Emergency Fund Calculator", description: "Build a safety buffer around essential monthly spending.", category: "Finance", fields: [n("expense", "Essential monthly expenses", 45_000, "₹", 1_000, 1), n("months", "Months of cover", 6, "months", 1, 1, 36)], resultLabel: "Fund target", formula: "Emergency fund = monthly essentials × months of cover.", related: ["net-worth-calculator", "fire-calculator"] }),
+  define({ slug: "net-worth-calculator", name: "Net Worth Calculator", description: "Calculate assets minus liabilities.", category: "Finance", fields: [n("assets", "Total assets", 3_500_000, "₹", 10_000, 0), n("liabilities", "Total liabilities", 1_200_000, "₹", 10_000, 0)], resultLabel: "Net worth", formula: "Net worth = total assets − total liabilities.", related: ["emergency-fund-calculator", "fire-calculator"] }),
+
+  define({ slug: "sip-calculator", name: "SIP Calculator", description: "Project wealth from monthly investments.", category: "Investment", popular: true, fields: [n("monthly", "Monthly investment", 10_000, "₹", 500, 1), n("rate", "Expected annual return", 12, "%", 0.1, 0, 100), n("years", "Investment period", 10, "years", 1, 1, 60)], resultLabel: "Projected value", formula: "Future value of an annuity due using monthly compounding.", warnings: ["Market returns are not guaranteed."], related: ["goal-planner-calculator", "cagr-calculator"] }),
+  define({ slug: "lumpsum-calculator", name: "Lumpsum Calculator", description: "Project a one-time investment using compound growth.", category: "Investment", fields: investmentFields, resultLabel: "Projected value", formula: "Future value = principal × (1 + annual return)^years.", warnings: ["Market returns are not guaranteed."], related: ["sip-calculator", "cagr-calculator"] }),
+  define({ slug: "swp-calculator", name: "SWP Calculator", description: "Estimate the remaining corpus after regular withdrawals.", category: "Investment", fields: [n("principal", "Starting corpus", 2_000_000, "₹", 10_000, 1), n("withdrawal", "Monthly withdrawal", 20_000, "₹", 500, 0), n("rate", "Expected annual return", 8, "%", 0.1, -99, 100), n("years", "Withdrawal period", 10, "years", 1, 1, 60)], resultLabel: "Remaining corpus", formula: "Applies monthly return, then subtracts each monthly withdrawal.", related: ["retirement-calculator", "lumpsum-calculator"] }),
+  define({ slug: "cagr-calculator", name: "CAGR Calculator", description: "Measure annualised growth between two values.", category: "Investment", fields: [n("start", "Initial value", 100_000, "₹", 1_000, 1), n("end", "Final value", 200_000, "₹", 1_000, 0), n("years", "Investment period", 5, "years", 0.5, 0.1, 100)], resultLabel: "Annual growth", formula: "CAGR = (final ÷ initial)^(1 ÷ years) − 1.", related: ["lumpsum-calculator", "gold-investment-return-calculator"] }),
+  define({ slug: "xirr-calculator", name: "XIRR Calculator", description: "Estimate annual return for irregular cash flows.", category: "Investment", fields: [n("initial", "Initial investment", 100_000, "₹", 1_000, 1), n("middle", "Additional investment after year 1", 25_000, "₹", 1_000, 0), n("final", "Final value", 180_000, "₹", 1_000, 0), n("years", "Total period", 3, "years", 0.1, 1.1, 50)], resultLabel: "Estimated XIRR", formula: "Solves the annual discount rate that makes irregular cash-flow NPV equal zero.", assumptions: ["The additional investment occurs exactly one year after the initial investment.", "The final value is received at the end of the selected period."], related: ["cagr-calculator", "sip-calculator"] }),
+  define({ slug: "fd-calculator", name: "FD Calculator", description: "Estimate fixed-deposit maturity and interest.", category: "Investment", fields: [n("principal", "Deposit amount", 100_000, "₹", 1_000, 1), n("rate", "Annual interest rate", 7, "%", 0.1, 0, 100), n("years", "Deposit tenure", 5, "years", 0.25, 0.25, 30)], resultLabel: "Maturity value", formula: "Quarterly compound interest: P × (1 + r ÷ 4)^(4t).", related: ["rd-calculator", "lumpsum-calculator"] }),
+  define({ slug: "rd-calculator", name: "RD Calculator", description: "Estimate recurring-deposit maturity from monthly deposits.", category: "Investment", fields: [n("monthly", "Monthly deposit", 5_000, "₹", 500, 1), n("rate", "Annual interest rate", 7, "%", 0.1, 0, 100), n("years", "Deposit tenure", 5, "years", 0.25, 0.25, 20)], resultLabel: "Maturity value", formula: "Future value of monthly deposits using monthly compounding.", related: ["fd-calculator", "sip-calculator"] }),
+  define({ slug: "ppf-calculator", name: "PPF Calculator", description: "Project Public Provident Fund maturity.", category: "Investment", fields: [n("annual", "Annual contribution", 150_000, "₹", 500, 500, 150_000), n("rate", "Annual interest rate", 7.1, "%", 0.1, 0, 20), n("years", "Contribution period", 15, "years", 1, 15, 50)], resultLabel: "Projected maturity", formula: "Compounds each annual contribution at the entered annual rate.", warnings: ["Official PPF rates can change each quarter; this uses one constant rate."], related: ["epf-calculator", "nps-calculator"] }),
+  define({ slug: "epf-calculator", name: "EPF Calculator", description: "Estimate employee provident fund accumulation.", category: "Investment", fields: [n("basic", "Monthly basic salary + DA", 50_000, "₹", 1_000, 1), n("employeeRate", "Employee contribution", 12, "%", 0.1, 0, 100), n("employerRate", "Employer EPF contribution", 3.67, "%", 0.01, 0, 100), n("return", "Annual EPF interest", 8.25, "%", 0.01, 0, 20), n("years", "Contribution period", 20, "years", 1, 1, 50), n("salaryGrowth", "Annual salary growth", 6, "%", 0.1, 0, 30)], resultLabel: "Projected EPF balance", formula: "Simulates monthly employee and EPF-eligible employer contributions with annual salary growth.", warnings: ["Employer EPS allocation and statutory wage ceilings can change the actual EPF credit."], related: ["ppf-calculator", "retirement-calculator"] }),
+  define({ slug: "nps-calculator", name: "NPS Calculator", description: "Project pension corpus and annuity allocation.", category: "Investment", fields: [n("monthly", "Monthly contribution", 10_000, "₹", 500, 1), n("rate", "Expected annual return", 10, "%", 0.1, 0, 100), n("years", "Contribution period", 25, "years", 1, 1, 60), n("annuity", "Annuity allocation", 40, "%", 1, 40, 100), n("annuityRate", "Expected annuity rate", 6, "%", 0.1, 0, 30)], resultLabel: "Projected NPS corpus", formula: "Projects monthly contributions, then divides corpus into annuity and lump-sum portions.", related: ["retirement-calculator", "sip-calculator"] }),
+  define({ slug: "inflation-calculator", name: "Inflation Calculator", description: "See how rising prices change future cost.", category: "Investment", fields: [n("amount", "Current cost", 100_000, "₹", 1_000, 0), n("rate", "Expected inflation", 6, "%", 0.1, 0, 100), n("years", "Time horizon", 10, "years", 1, 0, 100)], resultLabel: "Future cost", formula: "Future cost = current cost × (1 + inflation)^years.", related: ["goal-planner-calculator", "retirement-calculator"] }),
+  define({ slug: "goal-planner-calculator", name: "Goal Planner Calculator", description: "Estimate the monthly investment required for a future goal.", category: "Investment", fields: [n("goal", "Goal amount today", 2_500_000, "₹", 10_000, 1), n("inflation", "Expected inflation", 6, "%", 0.1, 0, 30), n("return", "Expected annual return", 12, "%", 0.1, 0, 100), n("years", "Years to goal", 10, "years", 1, 1, 60), n("existing", "Existing investment", 200_000, "₹", 1_000, 0)], resultLabel: "Required monthly investment", formula: "Inflates the goal, grows existing savings, then solves the monthly investment needed for the shortfall.", related: ["sip-calculator", "inflation-calculator"] }),
+  define({ slug: "retirement-calculator", name: "Retirement Calculator", description: "Estimate corpus needed to fund retirement spending.", category: "Investment", popular: true, fields: [n("expense", "Monthly expense today", 50_000, "₹", 1_000, 1), n("years", "Years to retirement", 25, "years", 1, 0, 60), n("retirementYears", "Years in retirement", 25, "years", 1, 1, 60), n("inflation", "Expected inflation", 6, "%", 0.1, 0, 30), n("return", "Post-retirement return", 8, "%", 0.1, 0, 50)], resultLabel: "Target corpus", formula: "Inflates expenses then values retirement withdrawals using the real return.", related: ["nps-calculator", "fire-calculator"] }),
+  define({ slug: "fire-calculator", name: "FIRE Calculator", description: "Estimate financial-independence corpus from annual spending.", category: "Investment", fields: [n("expense", "Monthly expenses", 75_000, "₹", 1_000, 1), n("withdrawalRate", "Safe withdrawal rate", 4, "%", 0.1, 0.5, 20), n("current", "Current invested corpus", 2_000_000, "₹", 10_000, 0)], resultLabel: "FIRE target", formula: "FIRE target = annual expenses ÷ withdrawal rate.", warnings: ["A sustainable withdrawal rate depends on portfolio, taxes, inflation, and retirement length."], related: ["retirement-calculator", "emergency-fund-calculator"] }),
+
+  define({ slug: "gst-calculator", name: "GST Calculator", description: "Add GST or extract it from an inclusive price.", category: "Tax India", popular: true, fields: [s("mode", "Calculation", 0, [{ label: "Add GST", value: 0 }, { label: "Extract included GST", value: 1 }]), n("amount", "Amount", 1_000, "₹", 100, 0), n("rate", "GST rate", 18, "%", 1, 0, 100)], resultLabel: "Calculated amount", formula: "Adds rate × base, or extracts tax using rate ÷ (100 + rate).", related: ["gst-inclusive-exclusive-calculator", "profit-margin-calculator"] }),
+  define({ slug: "income-tax-calculator", name: "Income Tax Basic Calculator", description: "Estimate Indian individual tax under AY 2026–27 new-regime slabs.", category: "Tax India", fields: [n("income", "Annual taxable income", 1_500_000, "₹", 10_000, 0)], resultLabel: "Estimated tax", formula: "Applies AY 2026–27 new-regime slabs, section 87A rebate and marginal relief, plus 4% cess.", warnings: ["Excludes surcharge and special-rate income."], source: { label: "Income Tax Department", url: "https://www.incometax.gov.in/" }, related: ["salary-in-hand-calculator", "hra-calculator"] }),
+  define({ slug: "hra-calculator", name: "HRA Calculator", description: "Estimate HRA exemption using the standard three-part rule.", category: "Tax India", fields: [n("hra", "Annual HRA received", 240_000, "₹", 1_000, 0), n("rent", "Annual rent paid", 300_000, "₹", 1_000, 0), n("basic", "Annual basic salary + DA", 600_000, "₹", 1_000, 1), s("metro", "Work location", 1, [{ label: "Metro", value: 1 }, { label: "Non-metro", value: 0 }])], resultLabel: "HRA exemption", formula: "Lowest of HRA, rent less 10% of basic, or 50% of basic in a metro / 40% elsewhere.", related: ["income-tax-calculator", "salary-in-hand-calculator"] }),
+  define({ slug: "salary-in-hand-calculator", name: "Salary In-hand Calculator", description: "Estimate monthly take-home salary from annual gross pay.", category: "Tax India", fields: [n("gross", "Annual gross salary", 1_500_000, "₹", 10_000, 1), n("basicPercent", "Basic salary share", 40, "%", 1, 1, 100), n("employeePf", "Employee PF rate", 12, "%", 0.1, 0, 100), n("otherDeductions", "Other monthly deductions", 2_000, "₹", 100, 0)], resultLabel: "Estimated monthly in-hand", formula: "Monthly gross less employee PF, estimated new-regime income tax, and other deductions.", warnings: ["Payroll structure, standard deduction, professional tax, benefits, and special-rate income vary."], related: ["income-tax-calculator", "gratuity-calculator"] }),
+  define({ slug: "gratuity-calculator", name: "Gratuity Calculator", description: "Estimate statutory gratuity for covered employees.", category: "Tax India", fields: [n("salary", "Last monthly basic + DA", 60_000, "₹", 1_000, 1), n("years", "Completed years of service", 8, "years", 1, 0, 60), n("extraMonths", "Additional service months", 7, "months", 1, 0, 11), s("covered", "Covered by Gratuity Act", 1, yesNo)], resultLabel: "Estimated gratuity", formula: "Covered: 15 ÷ 26 × salary × eligible service years; otherwise 15 ÷ 30.", warnings: ["Eligibility, tax exemption, employer policy, and statutory ceilings may apply."], related: ["salary-in-hand-calculator", "epf-calculator"] }),
+
+  define({ slug: "gold-loan-calculator", name: "Gold Loan Calculator", description: "Estimate eligible loan from gold weight, purity, and LTV.", category: "Gold", fields: [n("weight", "Gold weight", 25, "g", 0.1, 0.1), n("price", "24K gold price per gram", 7_000, "₹/g", 10, 1), n("purity", "Gold purity", 22, "karat", 1, 1, 24), n("ltv", "Loan-to-value ratio", 75, "%", 1, 1, 100)], resultLabel: "Eligible gold loan", formula: "Weight × 24K price × purity ÷ 24 × LTV.", warnings: ["Lenders may deduct stones, impurities, valuation margins, and fees."], related: ["gold-value-calculator", "gold-purity-calculator"] }),
+  define({ slug: "gold-purity-calculator", name: "Gold Purity Calculator", description: "Convert karat purity into fineness and pure-gold weight.", category: "Gold", fields: [n("weight", "Item weight", 10, "g", 0.01, 0), n("karat", "Purity", 22, "karat", 1, 1, 24)], resultLabel: "Pure gold weight", formula: "Pure gold weight = item weight × karat ÷ 24.", related: ["gold-value-calculator", "gold-loan-calculator"] }),
+  define({ slug: "gold-value-calculator", name: "Gold Value Calculator", description: "Estimate metal value from weight, purity, and market price.", category: "Gold", fields: [n("weight", "Gold weight", 10, "g", 0.01, 0), n("price", "24K price per gram", 7_000, "₹/g", 10, 0), n("purity", "Purity", 22, "karat", 1, 1, 24), n("deduction", "Dealer deduction", 2, "%", 0.1, 0, 100)], resultLabel: "Estimated gold value", formula: "Weight × 24K price × purity ÷ 24 × (1 − deduction).", warnings: ["Making charges, stones, taxes, and live market movements are excluded."], related: ["gold-purity-calculator", "gold-investment-return-calculator"] }),
+  define({ slug: "gold-investment-return-calculator", name: "Gold Investment Return Calculator", description: "Measure gold investment gain and annualised return.", category: "Gold", fields: [n("invested", "Purchase cost", 300_000, "₹", 1_000, 1), n("current", "Current value", 420_000, "₹", 1_000, 0), n("years", "Holding period", 4, "years", 0.1, 0.1, 100)], resultLabel: "Annualised return", formula: "CAGR = (current value ÷ purchase cost)^(1 ÷ years) − 1.", related: ["cagr-calculator", "gold-value-calculator"] }),
+
+  define({ slug: "rent-vs-buy-calculator", name: "Rent vs Buy Calculator", description: "Compare estimated housing costs over a chosen period.", category: "Property", fields: [n("property", "Property price", 8_000_000, "₹", 100_000, 1), n("downPayment", "Down payment", 1_600_000, "₹", 10_000, 0), n("rate", "Home-loan rate", 8.5, "%", 0.1, 0, 100), n("years", "Comparison period", 10, "years", 1, 1, 40), n("rent", "Current monthly rent", 25_000, "₹", 1_000, 0), n("rentGrowth", "Annual rent growth", 6, "%", 0.1, 0, 30), n("appreciation", "Property appreciation", 5, "%", 0.1, -50, 50)], resultLabel: "Estimated buy advantage", formula: "Compares rent paid with ownership cash outflow less principal repaid and estimated property gain.", warnings: ["Maintenance, taxes, transaction costs, investment opportunity cost, and sale liquidity are simplified."], related: ["home-affordability-calculator", "rental-yield-calculator"] }),
+  define({ slug: "rental-yield-calculator", name: "Rental Yield Calculator", description: "Calculate gross and net rental yield.", category: "Property", fields: [n("property", "Property value", 8_000_000, "₹", 100_000, 1), n("rent", "Monthly rent", 25_000, "₹", 1_000, 0), n("vacancy", "Vacancy allowance", 5, "%", 0.1, 0, 100), n("annualCosts", "Annual ownership costs", 40_000, "₹", 1_000, 0)], resultLabel: "Net rental yield", formula: "(Annual rent after vacancy − annual costs) ÷ property value.", related: ["rent-vs-buy-calculator", "property-appreciation-calculator"] }),
+  define({ slug: "stamp-duty-calculator", name: "Stamp Duty Basic Calculator", description: "Estimate property stamp duty and registration cost.", category: "Property", fields: [n("property", "Property value", 8_000_000, "₹", 100_000, 1), n("stampRate", "Stamp duty rate", 6, "%", 0.1, 0, 20), n("registrationRate", "Registration rate", 1, "%", 0.1, 0, 10), n("fixed", "Other fixed charges", 5_000, "₹", 100, 0)], resultLabel: "Estimated charges", formula: "Property value × (stamp rate + registration rate) + fixed charges.", warnings: ["Actual rates, caps, concessions, and bases vary by state and buyer profile."], related: ["home-affordability-calculator", "rent-vs-buy-calculator"] }),
+  define({ slug: "property-appreciation-calculator", name: "Property Appreciation Calculator", description: "Project property value using compound appreciation.", category: "Property", fields: [n("property", "Current property value", 8_000_000, "₹", 100_000, 0), n("rate", "Annual appreciation", 5, "%", 0.1, -50, 50), n("years", "Holding period", 10, "years", 1, 0, 100)], resultLabel: "Projected property value", formula: "Future value = current value × (1 + appreciation)^years.", related: ["rental-yield-calculator", "cagr-calculator"] }),
+
+  define({ slug: "fuel-cost-calculator", name: "Fuel Cost Calculator", description: "Estimate fuel required and cost for a journey.", category: "Vehicle", fields: [n("distance", "Journey distance", 500, "km", 1, 0), n("mileage", "Vehicle mileage", 15, "km/L", 0.5, 0.1, 200), n("price", "Fuel price", 105, "₹/L", 0.1, 0)], resultLabel: "Trip fuel cost", formula: "Distance ÷ mileage × price per litre.", related: ["mileage-calculator", "road-trip-cost-calculator"] }),
+  define({ slug: "mileage-calculator", name: "Mileage Calculator", description: "Calculate vehicle fuel efficiency and cost per kilometre.", category: "Vehicle", fields: [n("distance", "Distance travelled", 500, "km", 1, 0), n("fuel", "Fuel consumed", 35, "L", 0.1, 0.01), n("price", "Fuel price", 105, "₹/L", 0.1, 0)], resultLabel: "Vehicle mileage", formula: "Mileage = distance travelled ÷ fuel consumed.", related: ["fuel-cost-calculator", "ev-vs-petrol-savings-calculator"] }),
+  define({ slug: "ev-vs-petrol-savings-calculator", name: "EV vs Petrol Savings Calculator", description: "Compare estimated annual energy and ownership costs.", category: "Vehicle", fields: [n("distance", "Annual distance", 15_000, "km", 500, 0), n("petrolMileage", "Petrol mileage", 15, "km/L", 0.5, 0.1), n("petrolPrice", "Petrol price", 105, "₹/L", 0.1, 0), n("evEfficiency", "EV efficiency", 6, "km/kWh", 0.1, 0.1), n("electricityPrice", "Electricity price", 9, "₹/kWh", 0.1, 0), n("evPremium", "EV purchase premium", 300_000, "₹", 10_000, 0)], resultLabel: "Annual running-cost saving", formula: "Compares petrol litres × price with EV kWh × electricity price.", warnings: ["Maintenance, battery degradation, insurance, financing, and public-charging premiums are excluded."], related: ["fuel-cost-calculator", "car-loan-calculator"] }),
+  define({ slug: "road-trip-cost-calculator", name: "Road Trip Cost Calculator", description: "Plan fuel, toll, food, and accommodation costs.", category: "Vehicle", fields: [n("distance", "Round-trip distance", 1_000, "km", 10, 0), n("mileage", "Vehicle mileage", 15, "km/L", 0.5, 0.1), n("fuelPrice", "Fuel price", 105, "₹/L", 0.1, 0), n("tolls", "Tolls and parking", 2_000, "₹", 100, 0), n("people", "Travellers", 4, "people", 1, 1, 50), n("foodPerPerson", "Food per person", 2_000, "₹", 100, 0), n("stay", "Accommodation", 6_000, "₹", 100, 0)], resultLabel: "Total trip cost", formula: "Fuel cost + tolls + food per person + accommodation.", related: ["fuel-cost-calculator", "mileage-calculator"] }),
+
+  define({ slug: "profit-margin-calculator", name: "Profit Margin Calculator", description: "Calculate profit, margin, and markup.", category: "Business", fields: [n("revenue", "Revenue", 500_000, "₹", 1_000, 0), n("cost", "Total cost", 350_000, "₹", 1_000, 0)], resultLabel: "Profit margin", formula: "Margin = (revenue − cost) ÷ revenue; markup = profit ÷ cost.", related: ["break-even-calculator", "roi-calculator"] }),
+  define({ slug: "break-even-calculator", name: "Break-even Calculator", description: "Find units and revenue needed to cover fixed costs.", category: "Business", fields: [n("fixed", "Fixed costs", 500_000, "₹", 1_000, 0), n("price", "Selling price per unit", 1_000, "₹", 10, 0.01), n("variable", "Variable cost per unit", 600, "₹", 10, 0)], resultLabel: "Break-even units", formula: "Fixed costs ÷ (selling price − variable cost per unit).", related: ["profit-margin-calculator", "startup-runway-calculator"] }),
+  define({ slug: "roi-calculator", name: "ROI Calculator", description: "Measure return relative to investment cost.", category: "Business", fields: [n("gain", "Final value or proceeds", 750_000, "₹", 1_000, 0), n("cost", "Investment cost", 500_000, "₹", 1_000, 0.01)], resultLabel: "Return on investment", formula: "ROI = (gain − cost) ÷ cost × 100.", related: ["profit-margin-calculator", "cagr-calculator"] }),
+  define({ slug: "startup-runway-calculator", name: "Startup Runway Calculator", description: "Estimate how long available cash can fund net burn.", category: "Business", fields: [n("cash", "Cash available", 5_000_000, "₹", 10_000, 0), n("expense", "Monthly operating expenses", 800_000, "₹", 10_000, 0), n("revenue", "Monthly recurring revenue", 300_000, "₹", 10_000, 0)], resultLabel: "Estimated runway", formula: "Cash available ÷ monthly net burn.", related: ["break-even-calculator", "profit-margin-calculator"] }),
+  define({ slug: "gst-inclusive-exclusive-calculator", name: "GST Inclusive/Exclusive Calculator", description: "Convert between tax-exclusive and tax-inclusive prices.", category: "Business", fields: [s("mode", "Input price type", 0, [{ label: "Exclusive price", value: 0 }, { label: "Inclusive price", value: 1 }]), n("amount", "Amount", 1_180, "₹", 10, 0), n("rate", "GST rate", 18, "%", 1, 0, 100)], resultLabel: "Converted price", formula: "Exclusive × (1 + rate), or inclusive ÷ (1 + rate).", related: ["gst-calculator", "profit-margin-calculator"] }),
+
+  define({ slug: "bmi-calculator", name: "BMI Calculator", description: "Calculate body mass index and screening range.", category: "Health", popular: true, fields: [n("weight", "Weight", 70, "kg", 0.5, 1, 500), n("height", "Height", 175, "cm", 1, 30, 300)], resultLabel: "BMI", formula: "BMI = weight in kilograms ÷ height in metres².", warnings: ["BMI is a screening measure, not a diagnosis."], related: ["bmr-calculator", "tdee-calculator"] }),
+  define({ slug: "bmr-calculator", name: "BMR Calculator", description: "Estimate resting energy needs using Mifflin–St Jeor.", category: "Health", fields: [s("sex", "Sex used by formula", 1, sexOptions), n("weight", "Weight", 70, "kg", 0.5, 1, 500), n("height", "Height", 175, "cm", 1, 30, 300), n("age", "Age", 30, "years", 1, 13, 120)], resultLabel: "Estimated BMR", formula: "Mifflin–St Jeor: 10W + 6.25H − 5A, plus sex-specific constant.", warnings: ["This estimate does not replace clinical assessment."], related: ["tdee-calculator", "bmi-calculator"] }),
+  define({ slug: "tdee-calculator", name: "TDEE Calculator", description: "Estimate daily calories from BMR and activity level.", category: "Health", fields: [s("sex", "Sex used by formula", 1, sexOptions), n("weight", "Weight", 70, "kg", 0.5, 1, 500), n("height", "Height", 175, "cm", 1, 30, 300), n("age", "Age", 30, "years", 1, 13, 120), s("activity", "Activity level", 1.55, activityOptions)], resultLabel: "Estimated TDEE", formula: "Mifflin–St Jeor BMR × selected activity factor.", warnings: ["Individual energy needs vary; use trends and professional guidance."], related: ["bmr-calculator", "water-intake-calculator"] }),
+  define({ slug: "water-intake-calculator", name: "Water Intake Calculator", description: "Estimate a basic daily hydration target.", category: "Health", fields: [n("weight", "Weight", 70, "kg", 0.5, 1, 500), n("exercise", "Daily exercise", 30, "minutes", 5, 0, 600), s("hotClimate", "Hot climate", 0, yesNo)], resultLabel: "Daily water target", formula: "35 mL per kg, plus exercise and hot-climate allowances.", warnings: ["Medical conditions, pregnancy, medications, and extreme activity can change fluid needs."], related: ["tdee-calculator", "bmi-calculator"] }),
+
+  define({ slug: "age-calculator", name: "Age Calculator", description: "Calculate calendar age in years, months, and days.", category: "General", fields: [n("birthDay", "Birth day", 1, "day", 1, 1, 31), n("birthMonth", "Birth month", 1, "month", 1, 1, 12), n("birthYear", "Birth year", 1995, "year", 1, 1900, 2200), n("currentDay", "As-of day", 1, "day", 1, 1, 31), n("currentMonth", "As-of month", 1, "month", 1, 1, 12), n("currentYear", "As-of year", 2026, "year", 1, 1900, 2200)], resultLabel: "Calendar age", formula: "Subtracts dates using calendar years, months, and days.", related: ["percentage-calculator", "unit-converter"] }),
+  define({ slug: "percentage-calculator", name: "Percentage Calculator", description: "Find a percentage of any number.", category: "General", fields: [n("value", "Value", 5_000, "", 1, -1_000_000_000), n("percentage", "Percentage", 18, "%", 0.1, -10_000, 10_000)], resultLabel: "Result", formula: "Result = value × percentage ÷ 100.", related: ["discount-calculator", "gst-calculator"] }),
+  define({ slug: "discount-calculator", name: "Discount Calculator", description: "Calculate sale price and savings.", category: "General", fields: [n("price", "Original price", 4_999, "₹", 1, 0), n("discount", "Discount", 25, "%", 0.1, 0, 100)], resultLabel: "Sale price", formula: "Sale price = original price × (1 − discount ÷ 100).", related: ["percentage-calculator", "gst-calculator"] }),
+  define({ slug: "unit-converter", name: "Unit Converter", description: "Convert between common length units.", category: "General", fields: [n("value", "Value to convert", 10, "", 0.01, -1_000_000_000_000_000, 1_000_000_000_000_000), s("fromUnit", "From", 0, lengthUnits), s("toUnit", "To", 4, lengthUnits)], resultLabel: "Converted value", formula: "Converts the source to metres, then to the target unit.", related: ["percentage-calculator", "currency-converter"] }),
+  define({ slug: "currency-converter", name: "Currency Converter Mock", description: "Convert USD to INR using a clearly disclosed static rate.", category: "General", fields: [n("amount", "US dollar amount", 100, "USD", 1, 0), n("rate", "Static USD/INR rate", 83.5, "₹/USD", 0.1, 0.01)], resultLabel: "Indian rupee value", formula: "INR = USD × static rate entered.", warnings: ["This does not fetch live foreign-exchange rates. Verify the rate before a transaction."], related: ["percentage-calculator", "gst-calculator"] }),
 ];
 
 export const calculatorBySlug = (slug: string) => calculators.find((calculator) => calculator.slug === slug);
-
 export const searchCalculators = (query: string) => {
   const normalized = query.toLowerCase().trim();
-  return normalized
-    ? calculators.filter((calculator) => [calculator.name, calculator.slug, calculator.category, calculator.description, ...calculator.keywords].join(" ").toLowerCase().includes(normalized))
-    : calculators;
+  return normalized ? fuzzySearch(calculators, normalized, (calculator) => [calculator.name, calculator.slug, calculator.category, calculator.description, ...calculator.keywords].join(" ")) : calculators;
 };
-
-export function validateCalculatorInputs(calculator: CalculatorDefinition, values: Record<string, number>): string[] {
-  return calculator.fields.flatMap((field) => {
-    const value = values[field.key];
-    if (!Number.isFinite(value)) return [`Enter a valid value for ${field.label.toLowerCase()}.`];
-    if (field.input === "select" && !field.options?.some((option) => option.value === value)) return [`Choose a valid option for ${field.label.toLowerCase()}.`];
-    if (field.min !== undefined && value < field.min) return [`${field.label} must be at least ${field.min}.`];
-    if (field.max !== undefined && value > field.max) return [`${field.label} must be no more than ${field.max}.`];
-    return [];
-  });
-}

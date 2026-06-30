@@ -19,6 +19,9 @@ export default function AboutPage() {
     <main>
       <LegalHero eyebrow="About DataStorified" title="Decision Intelligence for Everyone" summary="A calm, mobile-first platform for turning everyday uncertainty into measurable trade-offs, useful calculations, and clearer next steps." />
       <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20">
+        <Card className="mb-8 overflow-hidden bg-gradient-to-br from-primary/[.035] via-white to-accent/[.05] p-6 sm:p-10">
+          <img className="mx-auto h-auto w-full max-w-2xl" src="/brand/logo-lockup.png" alt="DataStorified — Decision Intelligence for Everyone" />
+        </Card>
         <div className="grid gap-6 lg:grid-cols-2">
           <Card className="p-6 sm:p-8"><span className="grid size-12 place-items-center rounded-2xl bg-gradient-to-br from-primary to-accent text-white"><Target size={22} /></span><h2 className="mt-5 text-2xl font-bold">Why it exists</h2><p className="mt-3 text-[17px] leading-8 text-muted">Important decisions are often buried under fragmented information, unexplained formulas, and tools optimized for advertising rather than understanding. DataStorified exists to make the useful questions, numbers, and trade-offs easier to see.</p></Card>
           <Card className="p-6 sm:p-8"><span className="grid size-12 place-items-center rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 text-primary"><ChartNoAxesCombined size={22} /></span><h2 className="mt-5 text-2xl font-bold">What it offers</h2><p className="mt-3 text-[17px] leading-8 text-muted">The Decision Engine frames a question. Calculators make assumptions measurable. Utilities remove small workflow friction. Together they create a workspace that helps people move from uncertainty to an informed next action.</p></Card>
@@ -30,4 +33,3 @@ export default function AboutPage() {
     <Footer />
   </>;
 }
-

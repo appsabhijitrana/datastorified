@@ -23,7 +23,7 @@ export default function TrustPage() {
       <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20">
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{principles.map((item) => <TrustCard key={item.title} icon={item.icon} title={item.title}>{item.body}</TrustCard>)}</div>
         <Card className="mt-12 overflow-hidden border-0 bg-gradient-to-br from-primary to-accent p-7 text-white shadow-glow sm:p-10">
-          <div className="grid items-center gap-7 md:grid-cols-[1fr_auto]"><div><p className="text-sm font-semibold text-white/70">Responsible disclosure</p><h2 className="mt-2 text-3xl font-bold">Found a security concern?</h2><p className="mt-3 max-w-2xl leading-7 text-white/75">Report vulnerabilities privately with the affected URL, reproduction steps, and impact. Please avoid accessing other users’ data or disrupting service.</p></div><a href="mailto:security@datastorified.com"><Button variant="secondary">Contact security team</Button></a></div>
+          <div className="grid items-center gap-7 md:grid-cols-[1fr_auto]"><div><p className="text-sm font-semibold text-white/70">Responsible disclosure</p><h2 className="mt-2 text-3xl font-bold">Found a security concern?</h2><p className="mt-3 max-w-2xl leading-7 text-white/75">Check the official contact page for the currently supported private reporting method. Please avoid accessing other users’ data or disrupting service.</p></div><Link href="/contact#contact-intake"><Button variant="secondary">Security contact status</Button></Link></div>
         </Card>
         <div className="mt-12 text-center"><h2 className="text-3xl font-bold">Read the policies behind the promises</h2><p className="mx-auto mt-3 max-w-2xl leading-7 text-muted">Our legal hub covers privacy, security, AI disclosure, data sources, acceptable use, and accessibility in detail.</p><div className="mt-6 flex flex-wrap justify-center gap-3"><Link href="/legal"><Button>Open legal hub</Button></Link><Link href="/legal/privacy"><Button variant="secondary">Privacy policy</Button></Link><Link href="/legal/security"><Button variant="secondary">Security policy</Button></Link></div></div>
       </section>
@@ -31,4 +31,3 @@ export default function TrustPage() {
     <Footer />
   </>;
 }
-

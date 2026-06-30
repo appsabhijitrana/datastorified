@@ -18,10 +18,10 @@ export type LegalPolicy = {
   related: string[];
 };
 
-export const POLICY_EFFECTIVE_DATE = "29 June 2026";
-export const POLICY_UPDATED_DATE = "29 June 2026";
+export const POLICY_EFFECTIVE_DATE = "30 June 2026";
+export const POLICY_UPDATED_DATE = "30 June 2026";
 export const LEGAL_TEMPLATE_NOTICE = "This document is provided as a platform policy template and should be reviewed by qualified legal counsel before relying on it as legal advice.";
-export const LEGAL_EMAIL = "legal@datastorified.com";
+export const CONTACT_URL = "https://datastorified.com/contact";
 
 const section = (id: string, title: string, paragraph: string, bullets?: string[]): PolicySection => ({ id, title, paragraphs: [paragraph], bullets });
 const policy = (value: Omit<LegalPolicy, "effectiveDate" | "lastUpdated">): LegalPolicy => ({ ...value, effectiveDate: POLICY_EFFECTIVE_DATE, lastUpdated: POLICY_UPDATED_DATE });
@@ -46,12 +46,12 @@ export const legalPolicies: LegalPolicy[] = [
       section("how-we-share", "12. How we share information", "We do not sell personal information. We may share limited information with contracted infrastructure, analytics, communications, payment, authentication, or AI providers; professional advisers; authorities where lawfully required; or a successor in a properly structured business transaction."),
       section("third-party-services", "13. Third-party services", "Vercel and domain, analytics, payment, authentication, AI, or data providers may process information under their own terms. We select providers with relevant safeguards where practical, but their independent services and privacy practices are not controlled by this policy."),
       section("retention", "14. Data retention", "Local workspace data remains until you remove it, clear site data, or the browser removes it. Server-side records, if introduced, will be retained only as long as needed for the stated purpose, security, dispute resolution, accounting, or legal compliance, then deleted or de-identified."),
-      section("choices-rights", "15. User choices and rights", "You can clear local storage through browser settings and can decline optional features that require data transfer. Depending on your location, you may request access, correction, deletion, restriction, portability, or objection regarding eligible personal information by contacting us; identity verification may be required."),
+      section("choices-rights", "15. User choices, data rights, and grievances", `You can clear local storage through browser settings and decline optional features that require data transfer. Depending on applicable law, you may request access, correction, completion, updating, deletion, restriction, portability, objection, or withdrawal of consent through ${CONTACT_URL}. You may also raise a privacy grievance or, where applicable, nominate another individual to exercise rights in the event of death or incapacity. Identity and authority verification may be required before we act.`),
       section("children", "16. Children’s privacy", "DataStorified is not directed to children under 13, or a higher minimum age where local law requires it, and we do not knowingly collect their personal information. A parent or guardian who believes a child submitted information should contact us for review and deletion."),
       section("security", "17. Security", "We use proportionate technical and organizational safeguards, including reputable managed infrastructure, encrypted transport, limited access, dependency maintenance, and a responsible disclosure channel. No internet, browser, or storage system can guarantee absolute security."),
       section("international", "18. International users", "DataStorified and its providers may process information in countries other than yours. Where required, we will use recognized transfer mechanisms and contractual safeguards; users remain responsible for confirming that the service is appropriate in their jurisdiction."),
       section("changes", "19. Changes to this policy", "We may revise this policy as products, providers, or laws change. We will update the date above and provide additional notice for material changes when reasonably required; continued use after an effective change means the revised policy applies."),
-      section("contact", "20. Contact", `Privacy questions and rights requests may be sent to privacy@datastorified.com or ${LEGAL_EMAIL}. Include enough detail to identify the service and request, but do not email passwords, financial credentials, health records, or other unnecessary sensitive information.`),
+      section("contact", "20. Contact", `Use the official contact page at ${CONTACT_URL} for privacy questions and rights requests. Select Privacy or Legal and include enough detail to identify the service and request. Do not submit passwords, financial credentials, health records, or unnecessary sensitive information.`),
     ],
   }),
   policy({
@@ -80,7 +80,7 @@ export const legalPolicies: LegalPolicy[] = [
       section("indemnity", "19. Indemnity", "Where legally permitted, you agree to defend and indemnify DataStorified against third-party claims caused by your unlawful use, breach of these Terms, infringement, or content, except to the extent caused by DataStorified’s own misconduct."),
       section("governing-law", "20. Governing law", "These Terms are intended to be governed by the laws of India, without regard to conflict-of-law rules, with disputes subject to competent courts in Bengaluru, Karnataka, unless mandatory consumer law requires another forum. Legal counsel should confirm this provision before launch."),
       section("changes", "21. Changes to terms", "We may update these Terms for product, legal, security, or operational reasons. We will revise the date above and provide reasonable notice of material changes where required. Continued use after the effective date constitutes acceptance."),
-      section("contact", "22. Contact", `Questions about these Terms may be sent to ${LEGAL_EMAIL}. Notices to DataStorified should identify the sender, relevant service, issue, and requested resolution.`),
+      section("contact", "22. Contact", `Use the official contact page at ${CONTACT_URL} for questions or notices about these Terms. Select Legal and identify the sender, relevant service, issue, and requested resolution.`),
     ],
   }),
   policy({
@@ -97,7 +97,7 @@ export const legalPolicies: LegalPolicy[] = [
       section("third-party", "7. Third-party cookies", "Embedded or linked providers may set their own cookies when you interact with their services. Their policies control those cookies, and we will minimize embedded third-party content where practical."),
       section("managing", "8. Managing cookies", "Browser settings let you view, block, or delete cookies and site data. Blocking essential storage may prevent login, saved preferences, consent memory, or security features from working correctly."),
       section("changes", "9. Changes", "We will update this policy before materially changing cookie categories or purposes and will refresh consent where required."),
-      section("contact", "10. Contact", `Cookie and storage questions may be sent to privacy@datastorified.com or ${LEGAL_EMAIL}.`),
+      section("contact", "10. Contact", `Use the official contact page at ${CONTACT_URL} and select Privacy for cookie or browser-storage questions.`),
     ],
   }),
   policy({
@@ -116,7 +116,7 @@ export const legalPolicies: LegalPolicy[] = [
       section("data", "9. Data accuracy limitations", "Public datasets, provider APIs, manually entered rates, and editorial content may be delayed, incomplete, revised, or unavailable. Displaying a source does not guarantee its accuracy."),
       section("responsibility", "10. User responsibility", "You are responsible for validating inputs, understanding assumptions, considering alternatives, and deciding whether to act. Do not rely on a single DataStorified output for a consequential decision."),
       section("links", "11. External links", "External links are provided for convenience and do not imply endorsement. We do not control third-party content, security, availability, or transactions."),
-      section("contact", "12. Contact", `Report a material calculation, content, or sourcing concern to feedback@datastorified.com or ${LEGAL_EMAIL}.`),
+      section("contact", "12. Contact", `Use the official contact page at ${CONTACT_URL} and select Feedback to report a material calculation, content, or sourcing concern.`),
     ],
   }),
   policy({
@@ -134,7 +134,7 @@ export const legalPolicies: LegalPolicy[] = [
       section("responsibility", "8. User responsibility", "Do not use AI output to make an automated high-impact decision about another person or as the sole basis for financial, employment, housing, legal, medical, safety, or eligibility action."),
       section("providers", "9. Data sent to AI providers", "Before an external model receives content, the feature should disclose the transfer and relevant provider. Avoid submitting credentials, confidential records, personal identifiers, or regulated data unless the feature explicitly supports them."),
       section("safety", "10. AI safety", "We may apply input restrictions, output filters, rate limits, logging, model evaluation, and human escalation to reduce misuse. Controls are imperfect and do not transfer responsibility away from the user."),
-      section("feedback", "11. Feedback and correction", "Use in-product feedback when available or email feedback@datastorified.com with the prompt context, problematic output, and expected correction. Do not include unnecessary personal information."),
+      section("feedback", "11. Feedback and correction", `Use in-product feedback when available or the official contact page at ${CONTACT_URL}. Include the prompt context, problematic output, and expected correction without unnecessary personal information.`),
     ],
   }),
   policy({
@@ -149,9 +149,9 @@ export const legalPolicies: LegalPolicy[] = [
       section("encryption", "5. Encryption", "Production traffic uses HTTPS through managed infrastructure. Future sensitive server-side records should use provider-supported encryption at rest and narrowly scoped secret management."),
       section("files", "6. File handling", "Current file tools do not process uploads. Future tools will prefer in-browser processing and will clearly state when remote processing, temporary storage, limits, and deletion schedules apply."),
       section("disclosure", "7. Responsible disclosure", "Researchers should test only systems they own or have permission to assess, avoid privacy violations and disruption, use minimal proof, keep findings confidential while remediation is underway, and report promptly."),
-      section("reporting", "8. Vulnerability reporting", "Send reports to security@datastorified.com with the affected URL, reproduction steps, impact, supporting evidence, and safe contact details. Do not include live credentials or exploit unrelated accounts."),
+      section("reporting", "8. Vulnerability reporting", `Use the Security option on the official contact page at ${CONTACT_URL}. Include the affected URL, reproduction steps, impact, and supporting evidence. Do not include live credentials or exploit unrelated accounts.`),
       section("limitations", "9. Security limitations", "We cannot guarantee rewards, response timelines, or safe harbor for destructive, extortionate, illegal, privacy-invasive, social-engineering, denial-of-service, or third-party testing. Good-faith reports will be assessed reasonably."),
-      section("contact", "10. Contact security team", "Security reports: security@datastorified.com. General privacy matters should go to privacy@datastorified.com so urgent vulnerability reports remain visible."),
+      section("contact", "10. Contact security team", `Submit security reports through ${CONTACT_URL} using the Security topic. Use the Privacy topic for privacy matters so vulnerability reports remain clearly identified.`),
     ],
   }),
   policy({
@@ -166,7 +166,7 @@ export const legalPolicies: LegalPolicy[] = [
       section("harassment", "5. No harassment", "Harassment, hate, stalking, sexual exploitation, credible threats, and targeted humiliation are prohibited. Context, severity, repetition, and power imbalance may affect enforcement."),
       section("misleading", "6. No misleading activity", "Do not fabricate credentials, results, endorsements, identities, sources, or financial outcomes. Clearly label simulations, satire, sponsorships, and AI-generated material where confusion is likely."),
       section("manipulation", "7. No platform manipulation", "Do not buy or fabricate engagement, coordinate false reports, evade enforcement, abuse discovery systems, or interfere with platform metrics."),
-      section("reporting", "8. Reporting issues", "Report community concerns through available controls or support@datastorified.com with links and context. Do not organize harassment or republish harmful content unnecessarily."),
+      section("reporting", "8. Reporting issues", `Report community concerns through available controls or ${CONTACT_URL} using the Support topic. Include relevant links and context without republishing harmful content unnecessarily.`),
       section("enforcement", "9. Enforcement", "We may reduce distribution, remove content, limit features, warn, suspend, or terminate access based on context and risk. Appeals may be offered where practical, but immediate action may be necessary for safety or law."),
     ],
   }),
@@ -200,7 +200,7 @@ export const legalPolicies: LegalPolicy[] = [
       section("frequency", "6. Update frequency", "Update frequency varies by feature and source. Some data is static or manually maintained; other data may be fetched on demand. A displayed date is not a promise that no newer information exists."),
       section("accuracy", "7. Accuracy limitations", "Data can be delayed, incomplete, rounded, revised, mismatched to a jurisdiction, or incorrectly mapped. Service outages may cause fallbacks or stale values, which should be clearly labelled where possible."),
       section("methodology", "8. Methodology transparency", "Calculator formulas live in a centralized engine and pages explain key methods and assumptions. Decision and AI features should distinguish deterministic formulas, editorial rules, model output, and source data."),
-      section("errors", "9. Reporting errors", "Report suspected source or methodology errors to data@datastorified.com with the page, observed value, expected value, source link, date, and reasoning. We may preserve an audit note for material corrections."),
+      section("errors", "9. Reporting errors", `Use the Feedback topic at ${CONTACT_URL} to report suspected source or methodology errors. Include the page, observed value, expected value, source link, date, and reasoning. We may preserve an audit note for material corrections.`),
     ],
   }),
   policy({
@@ -211,24 +211,24 @@ export const legalPolicies: LegalPolicy[] = [
       section("ownership", "1. Ownership", "DataStorified owns or licenses its software, visual design, original text, brand assets, and compiled materials. Third-party names, datasets, and content remain the property of their respective owners."),
       section("user-content", "2. User content", "Users retain rights in content they lawfully submit and are responsible for permissions. The service receives only the limited license described in the Terms to provide and operate requested features."),
       section("complaints", "3. Copyright complaints", "A rights holder or authorized agent may report material believed to infringe copyright. We may remove or restrict access while assessing a complete, good-faith notice."),
-      section("takedown", "4. DMCA-style takedown request", "Send a signed notice to copyright@datastorified.com identifying the protected work and allegedly infringing material. This process is modeled on notice-and-takedown principles and should be reviewed for the operator’s applicable law."),
+      section("takedown", "4. Copyright takedown request", `Use the Legal topic at ${CONTACT_URL} to provide a signed notice identifying the protected work and allegedly infringing material. This process is modeled on notice-and-takedown principles and should be reviewed for the operator’s applicable law.`),
       section("required-info", "5. Required complaint information", "Include your contact details, authority to act, identification of the copyrighted work, precise location of the material, a good-faith belief statement, an accuracy and authority statement, and a physical or electronic signature."),
       section("counter-notice", "6. Counter-notice", "A user may respond with identification of removed material, a good-faith statement that removal resulted from mistake or misidentification, contact and jurisdiction statements required by applicable law, and a signature. We may forward it to the complainant."),
       section("repeat", "7. Repeat infringers", "Where appropriate and technically possible, we may terminate or restrict users who repeatedly infringe rights, considering valid notices, counter-notices, context, and applicable law."),
-      section("contact", "8. Contact", "Copyright notices: copyright@datastorified.com. Other intellectual-property or brand concerns may be sent to legal@datastorified.com. Knowingly false notices may create liability."),
+      section("contact", "8. Contact", `Submit copyright, intellectual-property, or brand concerns through ${CONTACT_URL} using the Legal topic. Knowingly false notices may create liability.`),
     ],
   }),
   policy({
     slug: "accessibility", title: "Accessibility Statement", icon: "accessibility",
     description: "Our commitment, standards target, current accessibility features, limitations, and feedback process.",
-    related: ["privacy", "community", "contact"],
+    related: ["privacy", "community", "acceptable-use"],
     sections: [
       section("commitment", "1. Accessibility commitment", "DataStorified aims to make decision tools understandable and usable across devices, abilities, input methods, and assistive technologies. Accessibility is part of product quality and ongoing maintenance."),
       section("standards", "2. Standards target", "Our target is substantial conformance with WCAG 2.1 Level AA for public product surfaces. A standards target is not a claim that every page or third-party integration is currently conformant."),
       section("features", "3. Accessibility features", "The design uses semantic headings, labelled form controls, keyboard-accessible interactions, visible focus styles, readable sizing, responsive layouts, color contrast targets, reduced clutter, and text alternatives for meaningful interface icons where applicable."),
       section("limitations", "4. Known limitations", "Complex charts, generated content, third-party widgets, browser-native controls, and future file previews may present limitations. Automated checks cannot replace keyboard, screen-reader, zoom, contrast, and cognitive usability testing."),
-      section("feedback", "5. Feedback process", "Send the page URL, device, browser, assistive technology, expected behavior, and problem encountered to accessibility@datastorified.com. We will prioritize barriers based on severity, reach, and available remediation."),
-      section("contact", "6. Contact", "Accessibility requests: accessibility@datastorified.com. If email is itself a barrier, use the general contact page and describe a preferred accessible response method."),
+      section("feedback", "5. Feedback process", `Use the Accessibility topic at ${CONTACT_URL}. Include the page URL, device, browser, assistive technology, expected behavior, and problem encountered. We prioritize barriers based on severity, reach, and available remediation.`),
+      section("contact", "6. Contact", `Submit accessibility requests through ${CONTACT_URL} and describe a preferred accessible response method.`),
     ],
   }),
 ];

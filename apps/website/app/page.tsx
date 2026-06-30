@@ -1,6 +1,6 @@
 "use client";
 import {useState} from "react";import {motion,AnimatePresence} from "framer-motion";import {ArrowRight,BrainCircuit,Calculator,CheckCircle2,Compass,ShieldCheck,Sparkles,Target,Wrench} from "lucide-react";
-import {Badge,BottomNav,Button,Card,Footer,Header,InsightCard,SearchBox} from "@datastorified/ui";import {trackSearch} from "@datastorified/analytics";
+import {Badge,BottomNav,Button,Card,Footer,Header,SearchBox} from "@datastorified/ui";import {trackSearch} from "@datastorified/analytics";
 const decisions=["Buy vs Rent","EV vs Petrol","SIP vs FD","Job Switch","Home Loan","Emergency Fund","Retirement Planning"];
 const calc=["EMI Calculator","SIP Calculator","Retirement Calculator","Home Affordability"];const tools=["JSON Formatter","Word Counter","Password Generator","PDF Merge"];
 export default function Home(){const[q,setQ]=useState("");const[result,setResult]=useState(false);const explore=()=>{if(!q.trim())return;trackSearch(q,"decisions");setResult(true)};return <><Header/><main>

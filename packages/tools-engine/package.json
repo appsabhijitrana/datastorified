@@ -1,1 +1,1 @@
-{"name":"@datastorified/tools-engine","version":"0.1.0","private":true,"main":"./index.ts"}
+{"name":"@datastorified/tools-engine","version":"0.1.0","private":true,"main":"./index.ts","exports":{".":"./index.ts","./registry":"./registry.ts","./files":"./files.ts"},"dependencies":{"@datastorified/utils":"workspace:*","js-yaml":"^4.1.0","pdf-lib":"^1.17.1","qrcode":"^1.5.4","zod":"^3.25.0"},"devDependencies":{"@types/js-yaml":"^4.0.9","@types/qrcode":"^1.5.5"}}

@@ -1,0 +1,5 @@
+"use client";
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import { formatINR } from "@datastorified/utils";
+import { Card } from "./components";
+export function ChartCard({data,title="Visual breakdown"}:{data:Array<{name:string;value:number}>;title?:string}){const colors=["#2563EB","#7C3AED","#10B981"];return <Card className="p-5"><p className="font-semibold">{title}</p><div className="mt-3 flex h-52 items-center"><div className="h-full flex-1"><ResponsiveContainer><PieChart><Pie data={data} dataKey="value" nameKey="name" innerRadius={48} outerRadius={76} paddingAngle={3}>{data.map((_,i)=><Cell key={i} fill={colors[i%colors.length]}/>)}</Pie><Tooltip formatter={(value)=>formatINR(Number(value))}/></PieChart></ResponsiveContainer></div><div className="space-y-3">{data.map((item,index)=><div key={item.name} className="flex items-center gap-2 text-sm"><span className="size-2.5 rounded-full" style={{background:colors[index%colors.length]}}/><span className="text-muted">{item.name}</span></div>)}</div></div></Card>}
