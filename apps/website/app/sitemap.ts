@@ -1,4 +1,29 @@
 import type { MetadataRoute } from "next";
 import { legalPolicies } from "../lib/legal-content";
-const base = "https://datastorified.com";
-export default function sitemap(): MetadataRoute.Sitemap { const now = new Date(); return ["", "/about", "/contact", "/trust", "/legal", ...legalPolicies.map(({slug}) => `/legal/${slug}`)].map((path) => ({ url: `${base}${path || "/"}`, lastModified: now, changeFrequency: path.startsWith("/legal") ? "monthly" : "weekly", priority: path === "" ? 1 : .7 })); }
+
+const baseUrl = "https://datastorified.com";
+const legalLastModified = "2026-06-30";
+
+export default function sitemap(): MetadataRoute.Sitemap {
+  const corePages: MetadataRoute.Sitemap = [
+    { url: `${baseUrl}/`, changeFrequency: "weekly", priority: 1 },
+    { url: `${baseUrl}/about`, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${baseUrl}/contact`, changeFrequency: "yearly", priority: 0.6 },
+    { url: `${baseUrl}/trust`, changeFrequency: "monthly", priority: 0.8 },
+    {
+      url: `${baseUrl}/legal`,
+      lastModified: legalLastModified,
+      changeFrequency: "monthly",
+      priority: 0.6,
+    },
+  ];
+
+  const policyPages: MetadataRoute.Sitemap = legalPolicies.map(({ slug }) => ({
+    url: `${baseUrl}/legal/${slug}`,
+    lastModified: legalLastModified,
+    changeFrequency: "yearly",
+    priority: 0.5,
+  }));
+
+  return [...corePages, ...policyPages];
+}
