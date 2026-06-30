@@ -6,7 +6,6 @@ Required GitHub/Vercel configuration:
 
 - `VERCEL_DEPLOY_ENABLED`, `VERCEL_ORG_ID`, and three project IDs as repository variables.
 - `VERCEL_TOKEN` as a GitHub secret.
-- `NEXT_PUBLIC_GA_MEASUREMENT_ID`, `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST`, `NEXT_PUBLIC_SENTRY_DSN`, and `SENTRY_DSN` as per-project environment variables when those providers are enabled.
-- `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, and `SENTRY_PROJECT` to upload production source maps.
+- `NEXT_PUBLIC_GA_MEASUREMENT_ID` in each project to enable Google Analytics 4.
 
 See [docs/deployment.md](docs/deployment.md) for project roots, DNS, smoke tests, release, and rollback steps.

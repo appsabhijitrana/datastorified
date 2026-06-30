@@ -53,16 +53,11 @@ Create one GitHub repository secret:
 | --- | --- |
 | `VERCEL_TOKEN` | A Vercel access token allowed to deploy all three projects |
 
-Configure the following environment variables in each Vercel project to activate observability. The application remains functional when optional provider keys are absent.
+Configure the following optional environment variable in each Vercel project to activate Google Analytics. The application remains functional when it is absent.
 
 | Variable | Purpose |
 | --- | --- |
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | GA4 browser events |
-| `NEXT_PUBLIC_POSTHOG_KEY` | PostHog browser events |
-| `NEXT_PUBLIC_POSTHOG_HOST` | PostHog regional ingest host |
-| `NEXT_PUBLIC_SENTRY_DSN` | Sentry browser errors and traces |
-| `SENTRY_DSN` | Sentry server/edge errors and traces |
-| `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` | Production source-map upload |
 
 The team and project IDs are shown in each Vercel project's **Settings → General** page. Create the token from Vercel account settings and store it only as a GitHub secret.
 

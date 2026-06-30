@@ -9,12 +9,12 @@ Updated: 30 June 2026.
 - Canonical/Open Graph/Twitter metadata; FAQ, breadcrumb, and software schemas; generated sitemaps and robots files.
 - Installable manifests, install prompt, service worker, offline routes, launch icons, and theme colors.
 - CSP and security headers, safe JSON-LD serialization, local file processing, and friendly validation.
-- Optional GA4, PostHog, and Sentry integrations controlled by deployment environment variables.
+- Optional GA4 integration controlled by one deployment environment variable.
 - CI/CD restricted to successful `main` releases, with three independent Vercel deploys and smoke tests.
 
 ## Launch configuration still required
 
-- Add production analytics and Sentry keys; confirm events and source maps in provider dashboards.
+- Add the production GA4 measurement ID and confirm events in Google Analytics DebugView.
 - Complete qualified legal review of policy templates and regulated-calculator disclaimers.
 - Re-run Lighthouse against final production domains after CDN/SSL are live. Local production mobile scores are: website **96/100/100/100**, calculators **95/100/100/100**, and tools **93/100/100/100** for Performance/Accessibility/Best Practices/SEO. Tools performance remains two points below the aspirational target.
 - Submit sitemaps and verify domain ownership in search consoles.

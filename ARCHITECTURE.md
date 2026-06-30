@@ -11,12 +11,12 @@ DataStorified is a pnpm workspace containing three independently deployed Next.j
 - `packages/ui`: shared interaction and presentation components.
 - `packages/storage`: defensive browser persistence. Invalid, unavailable, or quota-limited storage fails safely.
 - `packages/seo`: metadata and structured-data builders.
-- `packages/analytics`: provider-neutral typed product events, forwarded to configured GA4 and PostHog clients.
+- `packages/analytics`: typed product events forwarded to GA4 when configured.
 
 Server components own metadata, route generation, and JSON-LD. Client components own input state, browser storage, file APIs, analytics events, and animation. Calculations and transformations stay outside React so they remain deterministic and testable.
 
 ## Reliability and security
 
-Every application includes route-level loading, error, offline, and not-found states. Sentry captures client navigation, server, edge, and request errors when a DSN is configured. Security headers deny framing, MIME sniffing, unnecessary device APIs, and untrusted content origins. User files and calculator values are processed locally in the browser.
+Every application includes route-level loading, error, offline, and not-found states. Security headers deny framing, MIME sniffing, unnecessary device APIs, and untrusted content origins. User files and calculator values are processed locally in the browser.
 
 Production is released only by merging `dev` into protected `main`; CI must pass lint, strict TypeScript, coverage, builds, and Playwright before deployment.

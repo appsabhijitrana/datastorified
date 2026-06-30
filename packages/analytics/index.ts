@@ -2,14 +2,12 @@ export type AnalyticsValue = string | number | boolean | undefined;
 export type AnalyticsPayload = Record<string, AnalyticsValue>;
 type AnalyticsWindow = Window & {
   gtag?: (command: "event", name: string, payload: AnalyticsPayload) => void;
-  posthog?: { capture: (name: string, payload: AnalyticsPayload) => void };
 };
 
 export function trackEvent(name: string, payload: AnalyticsPayload = {}) {
   if (typeof window === "undefined") return;
   const browser = window as AnalyticsWindow;
   try { browser.gtag?.("event", name, payload); } catch { /* Analytics must never interrupt product use. */ }
-  try { browser.posthog?.capture(name, payload); } catch { /* Analytics must never interrupt product use. */ }
   window.dispatchEvent(new CustomEvent("datastorified:analytics", { detail: { name, payload } }));
 }
 export const trackToolUsed = (slug: string) => trackEvent("tool_used", { slug });
