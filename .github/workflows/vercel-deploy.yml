@@ -62,7 +62,12 @@ jobs:
         run: pnpm dlx vercel@${VERCEL_CLI_VERSION} pull --yes --environment=production --token="${VERCEL_TOKEN}"
 
       - name: Build Vercel output
-        run: pnpm dlx vercel@${VERCEL_CLI_VERSION} build --token="${VERCEL_TOKEN}"
+        run: |
+          build_args=(--token="${VERCEL_TOKEN}")
+          if [ "${{ inputs.deployment_target }}" = "production" ]; then
+            build_args+=(--prod)
+          fi
+          pnpm dlx vercel@${VERCEL_CLI_VERSION} build "${build_args[@]}"
 
       - name: Deploy output
         id: deploy
