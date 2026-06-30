@@ -53,6 +53,8 @@ export type SmartNumberInputProps = {
   maximumFractionDigits?: number;
   className?: string;
   compact?: boolean;
+  defaultView?: "simple" | "smart";
+  showSmartToggle?: boolean;
   onCalculator?: () => void;
 };
 
@@ -88,7 +90,7 @@ function SmartNumberInputComponent({
   label, description, value, onChange, onBlur, currency = "INR", locale = "en-IN", mode = "decimal", format = "indian",
   showWords = false, showSlider = false, showStepper = false, showChips = false, chips, actions = ["clear"], helperText,
   min, max, step = 1, allowNegative = false, allowDecimal = true, allowScientific = false, required = true, icon,
-  placeholder = "Enter a value", unit, name, id, disabled = false, defaultValue, maximumFractionDigits = 2, className, compact = false, onCalculator,
+  placeholder = "Enter a value", unit, name, id, disabled = false, defaultValue, maximumFractionDigits = 2, className, compact = false, defaultView = "simple", showSmartToggle = true, onCalculator,
 }: SmartNumberInputProps, forwardedRef: React.ForwardedRef<HTMLInputElement>) {
   const generatedId = React.useId();
   const inputId = id ?? generatedId;
@@ -98,6 +100,7 @@ function SmartNumberInputComponent({
   const initialValue = React.useRef(defaultValue ?? value);
   const timers = React.useRef<{ delay?: ReturnType<typeof setTimeout>; repeat?: ReturnType<typeof setInterval> }>({});
   const [focused, setFocused] = React.useState(false); const [touched, setTouched] = React.useState(false); const [shake, setShake] = React.useState(0);
+  const [smartOpen, setSmartOpen] = React.useState(defaultView === "smart");
 
   const formatValue = React.useCallback((numeric: number) => formatSmartNumber(numeric, mode, format, { currency, locale, unit, maximumFractionDigits }), [currency, format, locale, maximumFractionDigits, mode, unit]);
   const wordsFor = React.useCallback((numeric: number) => format === "international" ? numberToInternationalWords(numeric) : numberToIndianWords(numeric), [format]);
@@ -184,6 +187,7 @@ function SmartNumberInputComponent({
 
   const suggestion = /monthly\s+(salary|income)/iu.test(label) && parsedDisplay.numericValue !== null && parsedDisplay.numericValue >= 1_000_000 ? "This looks high for a monthly value. Did you mean annual salary?" : "";
   const activeChips = chips ?? defaultChips(mode);
+  const advancedVisible = smartOpen || showStepper || showSlider || showChips || activeChips.length > 0 || actions.length > 0 || Boolean(onCalculator);
 
   return <motion.div
     key={shake}
@@ -197,18 +201,29 @@ function SmartNumberInputComponent({
         <AnimatePresence mode="wait">{touched && valid && display && <motion.span initial={{ scale: .7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: .7, opacity: 0 }} className="grid size-7 place-items-center rounded-full bg-success/10 text-success" aria-label="Valid value"><Check size={15} /></motion.span>}</AnimatePresence>
       </div>
 
-      <div className="mt-4 flex items-center gap-2">
+      <div className="mt-4 flex items-start gap-2">
         <span className={cn("grid shrink-0 place-items-center rounded-xl bg-gradient-to-br from-primary/10 to-accent/10 text-primary", compact ? "size-9" : "size-11")}>{icon ?? defaultIcon(mode)}</span>
-        {showStepper && <button type="button" aria-label={`Decrease ${label}`} disabled={disabled} onPointerDown={() => startStepping(-1)} onPointerUp={stopStepping} onPointerLeave={stopStepping} className="grid size-10 shrink-0 place-items-center rounded-xl border border-border text-muted transition hover:border-primary/30 hover:text-primary disabled:opacity-40"><Minus size={17} /></button>}
-        <input
-          ref={assignRef} id={inputId} name={name} type="text" inputMode="decimal" autoComplete="off" spellCheck={false}
-          value={display} disabled={disabled} placeholder={placeholder} aria-label={label} aria-invalid={touched && !valid}
-          aria-describedby={[helperText || description ? helpId : "", touched && !valid ? errorId : "", showWords && words ? wordsId : ""].filter(Boolean).join(" ") || undefined}
-          onChange={handleInput} onKeyDown={handleKeyDown} onFocus={() => setFocused(true)}
-          onBlur={(event) => { setFocused(false); setTouched(true); commit(); onBlur?.(event); }}
-          className={cn("min-w-0 flex-1 bg-transparent font-bold tracking-[-.025em] text-ink outline-none placeholder:font-medium placeholder:tracking-normal placeholder:text-muted/60 disabled:cursor-not-allowed disabled:opacity-50", compact ? "text-xl" : "text-2xl sm:text-3xl")}
-        />
-        {showStepper && <button type="button" aria-label={`Increase ${label}`} disabled={disabled} onPointerDown={() => startStepping(1)} onPointerUp={stopStepping} onPointerLeave={stopStepping} className="grid size-10 shrink-0 place-items-center rounded-xl border border-border text-muted transition hover:border-primary/30 hover:text-primary disabled:opacity-40"><Plus size={17} /></button>}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <input
+              ref={assignRef} id={inputId} name={name} type="text" inputMode="decimal" autoComplete="off" spellCheck={false}
+              value={display} disabled={disabled} placeholder={placeholder} aria-label={label} aria-invalid={touched && !valid}
+              aria-describedby={[helperText || description ? helpId : "", touched && !valid ? errorId : "", showWords && words ? wordsId : ""].filter(Boolean).join(" ") || undefined}
+              onChange={handleInput} onKeyDown={handleKeyDown} onFocus={() => setFocused(true)}
+              onBlur={(event) => { setFocused(false); setTouched(true); commit(); onBlur?.(event); }}
+              className={cn("min-w-0 flex-1 bg-transparent font-bold tracking-[-.025em] text-ink outline-none placeholder:font-medium placeholder:tracking-normal placeholder:text-muted/60 disabled:cursor-not-allowed disabled:opacity-50", compact ? "text-xl" : "text-2xl sm:text-3xl")}
+            />
+            {showSmartToggle && advancedVisible && <button type="button" onClick={() => setSmartOpen((current) => !current)} className="shrink-0 rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-muted transition hover:border-primary/30 hover:text-primary">{smartOpen ? "Simple" : "Smart"}</button>}
+          </div>
+          {smartOpen && <div className="mt-3 rounded-2xl border border-border bg-soft/60 p-3">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[.14em] text-primary"><Database size={14} /> Platform DNA</div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-3">
+              <div className="rounded-xl bg-white p-3"><p className="text-[11px] font-semibold uppercase tracking-[.12em] text-muted">Simple</p><p className="mt-1 text-sm font-semibold text-ink">Primary input first</p></div>
+              <div className="rounded-xl bg-white p-3"><p className="text-[11px] font-semibold uppercase tracking-[.12em] text-muted">Smart</p><p className="mt-1 text-sm font-semibold text-ink">Reveal advanced controls</p></div>
+              <div className="rounded-xl bg-white p-3"><p className="text-[11px] font-semibold uppercase tracking-[.12em] text-muted">Mobile</p><p className="mt-1 text-sm font-semibold text-ink">Less clutter, more room</p></div>
+            </div>
+          </div>}
+        </div>
       </div>
 
       {showWords && words && <motion.p id={wordsId} key={words} initial={{ opacity: 0, y: 2 }} animate={{ opacity: 1, y: 0 }} aria-live="polite" className="mt-3 text-sm font-medium text-primary">{words}</motion.p>}
@@ -216,9 +231,15 @@ function SmartNumberInputComponent({
       {suggestion && valid && <p className="mt-2 rounded-xl bg-warning/10 px-3 py-2 text-xs font-medium text-warning">{suggestion}</p>}
       <AnimatePresence>{touched && errors.length > 0 && <motion.p id={errorId} role="alert" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="mt-3 text-xs font-semibold leading-5 text-danger">{errors[0]}</motion.p>}</AnimatePresence>
 
-      {showSlider && min !== undefined && max !== undefined && <div className="mt-5"><input aria-label={`${label} slider`} type="range" min={min} max={max} step={step} value={Math.min(max, Math.max(min, parsedDisplay.numericValue ?? min))} onChange={(event) => setNumericValue(Number(event.target.value))} className="h-2 w-full cursor-pointer accent-primary" /><div className="mt-1 flex justify-between text-[11px] font-medium text-muted"><span>{formatValue(min)}</span><span>{formatValue(max)}</span></div></div>}
-      {showChips && activeChips.length > 0 && <div className="mt-4 flex flex-wrap gap-2">{activeChips.map((chip) => <button type="button" key={chip.label} onClick={() => setNumericValue(chip.action === "add" ? (parsedDisplay.numericValue ?? 0) + chip.value : chip.value)} className="min-h-9 rounded-full border border-primary/10 bg-primary/[.045] px-3 text-xs font-bold text-primary transition hover:-translate-y-px hover:bg-primary/10">{chip.label}</button>)}</div>}
-      {actions.length > 0 && <div className="mt-4 flex flex-wrap gap-1 border-t border-border/70 pt-3">{actions.map((action) => <button type="button" key={action} disabled={disabled || action === "copy" && parsedDisplay.numericValue === null} onClick={() => void handleAction(action)} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold capitalize text-muted transition hover:bg-soft hover:text-primary disabled:opacity-40">{actionIcon[action]}{action}</button>)}</div>}
+      {advancedVisible && <div className="mt-4">
+        {!smartOpen && showSmartToggle && <button type="button" onClick={() => setSmartOpen(true)} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-border bg-white px-4 text-xs font-semibold text-muted transition hover:border-primary/30 hover:text-primary">Show smart controls</button>}
+        {smartOpen && <>
+          {showStepper && <div className="mt-4 flex items-center gap-2"><button type="button" aria-label={`Decrease ${label}`} disabled={disabled} onPointerDown={() => startStepping(-1)} onPointerUp={stopStepping} onPointerLeave={stopStepping} className="grid size-10 shrink-0 place-items-center rounded-xl border border-border text-muted transition hover:border-primary/30 hover:text-primary disabled:opacity-40"><Minus size={17} /></button><div className="rounded-xl bg-soft px-3 py-2 text-xs font-semibold text-muted">Quick step control</div><button type="button" aria-label={`Increase ${label}`} disabled={disabled} onPointerDown={() => startStepping(1)} onPointerUp={stopStepping} onPointerLeave={stopStepping} className="grid size-10 shrink-0 place-items-center rounded-xl border border-border text-muted transition hover:border-primary/30 hover:text-primary disabled:opacity-40"><Plus size={17} /></button></div>}
+          {showSlider && min !== undefined && max !== undefined && <div className="mt-5"><input aria-label={`${label} slider`} type="range" min={min} max={max} step={step} value={Math.min(max, Math.max(min, parsedDisplay.numericValue ?? min))} onChange={(event) => setNumericValue(Number(event.target.value))} className="h-2 w-full cursor-pointer accent-primary" /><div className="mt-1 flex justify-between text-[11px] font-medium text-muted"><span>{formatValue(min)}</span><span>{formatValue(max)}</span></div></div>}
+          {showChips && activeChips.length > 0 && <div className="mt-4 flex flex-wrap gap-2">{activeChips.map((chip) => <button type="button" key={chip.label} onClick={() => setNumericValue(chip.action === "add" ? (parsedDisplay.numericValue ?? 0) + chip.value : chip.value)} className="min-h-9 rounded-full border border-primary/10 bg-primary/[.045] px-3 text-xs font-bold text-primary transition hover:-translate-y-px hover:bg-primary/10">{chip.label}</button>)}</div>}
+          {actions.length > 0 && <div className="mt-4 flex flex-wrap gap-1 border-t border-border/70 pt-3">{actions.map((action) => <button type="button" key={action} disabled={disabled || action === "copy" && parsedDisplay.numericValue === null} onClick={() => void handleAction(action)} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold capitalize text-muted transition hover:bg-soft hover:text-primary disabled:opacity-40">{actionIcon[action]}{action}</button>)}</div>}
+        </>}
+      </div>}
     </div>
   </motion.div>;
 }

@@ -52,6 +52,7 @@ describe("SmartNumberInput", () => {
   it("keeps chips and slider synchronized", async () => {
     const user = userEvent.setup(); const onChange = vi.fn();
     render(<ControlledInput value={10} mode="percentage" min={0} max={100} showSlider showChips chips={[{ label: "+5", value: 5, action: "add" }]} onChange={onChange} />);
+    await user.click(screen.getByRole("button", { name: "Smart" }));
     await user.click(screen.getByRole("button", { name: "+5" })); expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ numericValue: 15 }));
     fireEvent.change(screen.getByLabelText("Loan amount slider"), { target: { value: "40" } }); expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ numericValue: 40 }));
   });
