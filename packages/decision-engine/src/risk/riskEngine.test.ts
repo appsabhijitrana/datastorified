@@ -1,0 +1,2 @@
+import {describe,expect,it} from "vitest";import {calculateRisk} from "./riskEngine";import type {RuleEvaluation} from "../types";
+describe("risk engine",()=>{it("raises risk for matched high penalties",()=>{const base={id:"x",label:"High",metric:"x",factor:"x",operator:"equals" as const,value:1,effect:{type:"penalty" as const,score:20,severity:"high" as const},message:"risk",matched:true};const result=calculateRisk([base, {...base,id:"y"}] as RuleEvaluation[]);expect(result.riskLevel).toBe("high");expect(result.risks).toHaveLength(2)})});

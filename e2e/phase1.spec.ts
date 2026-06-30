@@ -8,15 +8,38 @@ const tools = "http://127.0.0.1:3002";
 
 test("website homepage loads", async ({ page }) => {
   await page.goto(website);
-  await expect(page.getByRole("heading", { name: /Decision Intelligence/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Make the next move/i })).toBeVisible();
 });
 
 test("decision input accepts text and shows preview", async ({ page }) => {
   await page.goto(website);
-  await page.getByPlaceholder("Should I buy a house or keep renting?").fill("Should I buy an EV?");
-  await page.getByRole("button", { name: /Explore/i }).first().click();
-  await expect(page.getByRole("heading", { name: "Let’s make this decision measurable" })).toBeVisible();
+  await page.getByLabel("What decision are you trying to make?").fill("Should I buy a house?");
+  await page.getByRole("button", { name: /Analyze/i }).first().click();
+  await expect(page).toHaveURL(/\/decision\/buy-house/u);
+  await expect(page.getByRole("heading", { name: "Should I buy a house?" })).toBeVisible();
 });
+
+test("decision engine completes, changes scenario, saves, and reloads", async ({ page }) => {
+  await page.goto(`${website}/decision/buy-house`);
+  await page.getByRole("button", { name: /View recommendation/i }).click();
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("ds.decisions.recent"))).not.toBeNull();
+  await expect(page).toHaveURL(/\/decision\/result\//u);
+  await expect(page.getByText("Recommendation", { exact: true })).toBeVisible();
+  const resultUrl = page.url();
+  const before = await page.locator('[aria-label^="Property price slider"]').inputValue();
+  await page.locator('[aria-label^="Property price slider"]').fill(String(Number(before) + 500000));
+  await expect(page.getByText(/points in this scenario|No score change/u)).toBeVisible();
+  await page.getByRole("button", { name: /Save on this device/i }).click();
+  await page.reload();
+  await expect(page).toHaveURL(resultUrl);
+  await expect(page.getByRole("button", { name: "Saved" })).toBeVisible();
+});
+
+for (const slug of ["sip-vs-fd", "ev-vs-petrol"]) test(`${slug} decision flow renders`, async ({ page }) => {
+    await page.goto(`${website}/decision/${slug}`);
+    await expect(page.getByRole("button", { name: /View recommendation/i })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  });
 
 test("calculators homepage loads and search finds EMI", async ({ page }) => {
   await page.goto(calculators);
@@ -140,6 +163,7 @@ test("every registered calculator and utility route responds successfully", asyn
 test("representative pages produce no browser console errors", async ({ page }) => {
   const errors: string[] = [];
   page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });
+  page.on("pageerror", (error) => errors.push(error.message));
   for (const url of [website, `${calculators}/emi-calculator`, `${tools}/json-formatter`, `${tools}/pdf-merge`, `${website}/legal/privacy`]) {
     await page.goto(url); await page.waitForLoadState("networkidle");
   }

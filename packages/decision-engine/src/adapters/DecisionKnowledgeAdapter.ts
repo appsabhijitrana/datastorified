@@ -1,0 +1,1 @@
+export interface DecisionKnowledgeAdapter { getMarketData(topic: string): Promise<Record<string, number>>; getInterestRates(): Promise<Record<string, number>>; getInflationData(): Promise<Record<string, number>>; }
