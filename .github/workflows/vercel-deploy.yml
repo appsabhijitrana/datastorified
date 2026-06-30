@@ -59,7 +59,7 @@ jobs:
           cache: pnpm
 
       - name: Pull Vercel project settings
-        run: pnpm dlx vercel@${VERCEL_CLI_VERSION} pull --yes --environment=${{ inputs.deployment_target }} --token="${VERCEL_TOKEN}"
+        run: pnpm dlx vercel@${VERCEL_CLI_VERSION} pull --yes --environment=production --token="${VERCEL_TOKEN}"
 
       - name: Build Vercel output
         run: pnpm dlx vercel@${VERCEL_CLI_VERSION} build --token="${VERCEL_TOKEN}"
