@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   quality:
-    name: Production quality gates
+    name: Typecheck and build
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
