@@ -12,6 +12,11 @@ export type DecisionQuestionType =
   | "text"
   | "number"
   | "boolean"
+  | "currency"
+  | "percentage"
+  | "select"
+  | "slider"
+  | "duration"
   | "single-select"
   | "multi-select"
   | "date";
@@ -47,6 +52,8 @@ export type DecisionQuestion = {
   required?: boolean;
   defaultValue?: DecisionValue;
   helperText?: string;
+  unit?: string;
+  step?: number;
   options?: Array<{ label: string; value: DecisionValue }>;
   validation?: {
     min?: number;
@@ -120,6 +127,19 @@ export type DecisionRecommendation = {
   when?: DecisionConditionGroup;
 };
 
+export type DecisionActionPlanTemplate = {
+  id: string;
+  minScore: number;
+  maxScore: number;
+  actions: string[];
+  when?: DecisionConditionGroup;
+};
+
+export type DecisionFaq = {
+  question: string;
+  answer: string;
+};
+
 export type DecisionScenario = {
   id: string;
   label: string;
@@ -145,6 +165,7 @@ export type DecisionReport = {
   score: DecisionScore;
   risks: DecisionRisk[];
   recommendation?: DecisionRecommendation;
+  actionPlan: string[];
 };
 
 export type DecisionWorkflow = {
@@ -153,7 +174,9 @@ export type DecisionWorkflow = {
   pluginId: string;
   version: string;
   title: string;
+  category?: string;
   description: string;
+  aliases?: string[];
   intent: {
     keywords: string[];
     aliases?: string[];
@@ -163,6 +186,12 @@ export type DecisionWorkflow = {
   rules: DecisionRule[];
   weights: DecisionWeight[];
   recommendations: DecisionRecommendation[];
+  riskFactors?: Array<Omit<DecisionRisk, "sourceRuleId">>;
+  actionPlanTemplates?: DecisionActionPlanTemplate[];
+  relatedCalculators?: string[];
+  relatedTools?: string[];
+  assumptions?: string[];
+  faqs?: DecisionFaq[];
   scenarios?: DecisionScenario[];
   scoreBands?: Array<{ min: number; max: number; label: string }>;
   deriveFacts?: (answers: Readonly<DecisionAnswers>) => DecisionFacts;

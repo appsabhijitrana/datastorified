@@ -28,22 +28,22 @@ describe("DecisionPluginRegistry", () => {
   it("gets plugins and workflows by stable identifiers", () => {
     const registry = createStaticPluginRegistry();
     expect(registry.getPlugin("property")?.name).toBe("Property Decisions");
-    expect(registry.getWorkflowBySlug("rent-or-buy-home")?.pluginId).toBe("property");
-    expect(registry.getWorkflow("career:switch-jobs")?.slug).toBe("switch-jobs");
+    expect(registry.getWorkflowBySlug("rent-vs-buy")?.pluginId).toBe("property");
+    expect(registry.getWorkflow("job-switch")?.slug).toBe("job-switch");
   });
 
   it("searches workflow and plugin metadata", () => {
     const registry = createStaticPluginRegistry();
-    expect(registry.searchWorkflows("home mortgage")[0]?.slug).toBe("rent-or-buy-home");
+    expect(registry.searchWorkflows("rent home")[0]?.slug).toBe("rent-vs-buy");
     expect(registry.searchWorkflows("startup customer market")[0]?.slug).toBe("launch-or-delay-business-idea");
     expect(registry.searchWorkflows("unmatched-gibberish")).toEqual([]);
   });
 
   it.each([
-    ["Should I invest extra money or repay my loan?", "invest-or-repay-debt"],
-    ["Is it better to rent or buy a house?", "rent-or-buy-home"],
-    ["Should I get an electric vehicle or petrol car?", "electric-or-petrol-car"],
-    ["Should I accept this new job offer?", "switch-jobs"],
+    ["Should I invest through a SIP or use a fixed deposit?", "sip-vs-fd"],
+    ["Is it better to rent or buy a house?", "rent-vs-buy"],
+    ["Should I get an electric vehicle or petrol car?", "ev-vs-petrol"],
+    ["Should I accept this new job offer?", "job-switch"],
     ["Which degree should I study?", "choose-course-or-degree"],
     ["Should I purchase this product now or wait?", "buy-now-or-wait"],
     ["Where should I travel for my holiday?", "choose-travel-destination"],

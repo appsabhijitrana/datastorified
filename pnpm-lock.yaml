@@ -257,7 +257,11 @@ importers:
         specifier: workspace:*
         version: link:../calculators-engine
 
-  packages/decision-os: {}
+  packages/decision-os:
+    dependencies:
+      '@datastorified/calculators-engine':
+        specifier: workspace:*
+        version: link:../calculators-engine
 
   packages/seo: {}
 

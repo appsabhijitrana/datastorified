@@ -67,16 +67,18 @@ export class DecisionPluginRegistry {
     return this.listWorkflows()
       .map((workflow) => {
         const plugin = this.plugins.get(workflow.pluginId);
-        const searchable = normalizeText([
+        const workflowSearchable = normalizeText([
           workflow.title,
           workflow.description,
           ...workflow.intent.keywords,
           ...(workflow.intent.aliases ?? []),
           ...(workflow.intent.examples ?? []),
+        ].join(" "));
+        const pluginSearchable = normalizeText([
           ...(plugin?.categories ?? []),
           ...(plugin?.keywords ?? []),
         ].join(" "));
-        const score = queryTokens.reduce((total, token) => total + (searchable.includes(token) ? 1 : 0), 0);
+        const score = queryTokens.reduce((total, token) => total + (workflowSearchable.includes(token) ? 3 : pluginSearchable.includes(token) ? 1 : 0), 0);
         return { workflow, score };
       })
       .filter(({ score }) => score > 0)
@@ -86,17 +88,7 @@ export class DecisionPluginRegistry {
   }
 
   detectWorkflowFromText(input: string): DecisionWorkflow | undefined {
-    const workflows = this.listWorkflows().map((workflow) => {
-      const plugin = this.plugins.get(workflow.pluginId);
-      return {
-        ...workflow,
-        intent: {
-          ...workflow.intent,
-          keywords: [...new Set([...workflow.intent.keywords, ...(plugin?.keywords ?? []), ...(plugin?.categories ?? [])])],
-        },
-      };
-    });
-    const match = detectIntent(input, workflows, 1).bestMatch;
+    const match = detectIntent(input, this.listWorkflows(), 1).bestMatch;
     if (!match || match.matchedTerms.length === 0 || match.confidence < 0.2) return undefined;
     return this.workflows.get(match.workflowId);
   }

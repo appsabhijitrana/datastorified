@@ -1,7 +1,7 @@
 import { evaluateRules } from "./ruleEngine";
 import { calculateDecisionScore } from "./scoreEngine";
 import { identifyRisks } from "./riskEngine";
-import { selectRecommendation } from "./recommendationEngine";
+import { selectActionPlan, selectRecommendation } from "./recommendationEngine";
 import { createDecisionId } from "../utils/ids";
 import type { DecisionAnswers, DecisionFacts, DecisionReport, DecisionWorkflow } from "../types";
 
@@ -18,6 +18,8 @@ export function buildDecisionReport(workflow: DecisionWorkflow, answers: Decisio
   const facts = buildDecisionFacts(workflow, answers);
   const ruleEvaluations = evaluateRules(workflow.rules, facts);
   const score = calculateDecisionScore(workflow.weights, ruleEvaluations, workflow.scoreBands);
+  const recommendation = selectRecommendation(workflow.recommendations, score.value, facts);
+  const configuredActionPlan = selectActionPlan(workflow.actionPlanTemplates ?? [], score.value, facts);
   return {
     id: options.id ?? createDecisionId("report"),
     workflowId: workflow.id,
@@ -28,6 +30,7 @@ export function buildDecisionReport(workflow: DecisionWorkflow, answers: Decisio
     ruleEvaluations,
     score,
     risks: identifyRisks(ruleEvaluations),
-    recommendation: selectRecommendation(workflow.recommendations, score.value, facts),
+    recommendation,
+    actionPlan: configuredActionPlan.length > 0 ? configuredActionPlan : recommendation?.actions ?? [],
   };
 }
