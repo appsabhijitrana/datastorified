@@ -8,14 +8,55 @@ const tools = "http://127.0.0.1:3002";
 
 test("website homepage loads", async ({ page }) => {
   await page.goto(website);
-  await expect(page.getByRole("heading", { name: /Decision Intelligence/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Make the next move/i })).toBeVisible();
 });
 
 test("decision input accepts text and shows preview", async ({ page }) => {
   await page.goto(website);
-  await page.getByPlaceholder("Should I buy a house or keep renting?").fill("Should I buy an EV?");
-  await page.getByRole("button", { name: /Explore/i }).first().click();
-  await expect(page.getByRole("heading", { name: "Let’s make this decision measurable" })).toBeVisible();
+  await page.getByLabel("What decision are you trying to make?").fill("Should I buy a house?");
+  await page.getByRole("button", { name: /Analyze/i }).first().click();
+  await expect(page).toHaveURL(/\/decision\/buy-house/u);
+  await expect(page.getByRole("heading", { name: "Should I buy a house?" })).toBeVisible();
+});
+
+test("decision engine completes, changes scenario, saves, and reloads", async ({ page }) => {
+  await page.goto(`${website}/decision/buy-house`);
+  await page.getByRole("button", { name: /View recommendation/i }).click();
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("ds.decisions.recent"))).not.toBeNull();
+  await expect(page).toHaveURL(/\/decision\/result\//u);
+  await expect(page.getByText("Recommendation", { exact: true })).toBeVisible();
+  const resultUrl = page.url();
+  const before = await page.locator('[aria-label^="Property price slider"]').inputValue();
+  await page.locator('[aria-label^="Property price slider"]').fill(String(Number(before) + 500000));
+  await expect(page.getByText(/points in this scenario|No score change/u)).toBeVisible();
+  await page.getByRole("button", { name: /Save on this device/i }).click();
+  await page.reload();
+  await expect(page).toHaveURL(resultUrl);
+  await expect(page.getByRole("button", { name: "Saved" })).toBeVisible();
+});
+
+for (const slug of ["sip-vs-fd", "ev-vs-petrol"]) test(`${slug} decision flow renders`, async ({ page }) => {
+    await page.goto(`${website}/decision/${slug}`);
+    await expect(page.getByRole("button", { name: /View recommendation/i })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  });
+
+test("loaded decision flow completes while offline", async ({ page, context }) => {
+  await page.goto(`${website}/decision/emergency-fund`);
+  await context.setOffline(true);
+  await page.getByRole("button", { name: /View recommendation/i }).click();
+  await expect(page).toHaveURL(/\/decision\/result\//u);
+  await expect(page.getByText("Recommendation", { exact: true })).toBeVisible();
+  await context.setOffline(false);
+});
+
+test("mobile decision flow shows one question at a time without overflow", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(`${website}/decision/sip-vs-fd`);
+  await expect(page.locator('main input[type="text"]:visible')).toHaveCount(1);
+  await page.getByRole("button", { name: /Next question/i }).click();
+  await expect(page.locator('main input[type="text"]:visible')).toHaveCount(1);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 });
 
 test("calculators homepage loads and search finds EMI", async ({ page }) => {
@@ -117,6 +158,32 @@ test("product pages expose canonical, social, FAQ, breadcrumb, and application m
   const jsonLd = await page.locator('script[type="application/ld+json"]').textContent(); expect(jsonLd).toContain("FAQPage"); expect(jsonLd).toContain("BreadcrumbList"); expect(jsonLd).toContain("SoftwareApplication");
 });
 
+test("decision URLs have canonical structured data and private results stay unindexed", async ({ page, request }) => {
+  await page.goto(`${website}/decision`);
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", "https://datastorified.com/decision");
+  const landingSchemas = JSON.parse(await page.locator('script[type="application/ld+json"]').textContent() ?? "[]") as Array<{ "@type": string }>;
+  expect(landingSchemas.map((schema) => schema["@type"])).toEqual(expect.arrayContaining(["CollectionPage", "BreadcrumbList"]));
+
+  await page.goto(`${website}/decision/buy-house`);
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", "https://datastorified.com/decision/buy-house");
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /index, follow/u);
+  const flowSchemas = JSON.parse(await page.locator('script[type="application/ld+json"]').textContent() ?? "[]") as Array<{ "@type": string }>;
+  expect(flowSchemas.map((schema) => schema["@type"])).toEqual(expect.arrayContaining(["FAQPage", "WebPage", "BreadcrumbList"]));
+
+  const sitemap = await (await request.get(`${website}/sitemap.xml`)).text();
+  expect(sitemap).toContain("https://datastorified.com/decision/buy-house");
+  expect(sitemap).not.toContain("/decision/result/");
+  const robots = await (await request.get(`${website}/robots.txt`)).text();
+  expect(robots).not.toContain("Disallow: /decision/result");
+
+  const privateResult = await request.get(`${website}/decision/result/seo-check`);
+  expect(privateResult.headers()["x-robots-tag"]).toContain("noindex");
+  await page.goto(`${website}/decision/result/seo-check`);
+  const privateRobots = await page.locator('meta[name="robots"]').getAttribute("content");
+  for (const directive of ["noindex", "nofollow", "noimageindex", "nosnippet"]) expect(privateRobots).toContain(directive);
+  await expect(page.locator('link[rel="canonical"]')).toHaveCount(0);
+});
+
 test("security headers protect every surface", async ({ request }) => {
   for (const origin of [website, calculators, tools]) { const response = await request.get(origin); expect(response.headers()["x-content-type-options"]).toBe("nosniff"); expect(response.headers()["x-frame-options"]).toBe("DENY"); expect(response.headers()["content-security-policy"]).toContain("frame-ancestors 'none'"); }
 });
@@ -140,6 +207,7 @@ test("every registered calculator and utility route responds successfully", asyn
 test("representative pages produce no browser console errors", async ({ page }) => {
   const errors: string[] = [];
   page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });
+  page.on("pageerror", (error) => errors.push(error.message));
   for (const url of [website, `${calculators}/emi-calculator`, `${tools}/json-formatter`, `${tools}/pdf-merge`, `${website}/legal/privacy`]) {
     await page.goto(url); await page.waitForLoadState("networkidle");
   }
