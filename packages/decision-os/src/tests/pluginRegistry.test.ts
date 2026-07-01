@@ -55,4 +55,8 @@ describe("DecisionPluginRegistry", () => {
   it("does not invent a workflow for unrelated text", () => {
     expect(createStaticPluginRegistry().detectWorkflowFromText("zebra quantum nebula")).toBeUndefined();
   });
+
+  it("routes the homepage acceptance query to the house workflow", () => {
+    expect(createStaticPluginRegistry().detectWorkflowFromText("Should I buy a house?")?.slug).toBe("buy-house");
+  });
 });

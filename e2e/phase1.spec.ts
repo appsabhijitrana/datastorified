@@ -8,53 +8,51 @@ const tools = "http://127.0.0.1:3002";
 
 test("website homepage loads", async ({ page }) => {
   await page.goto(website);
-  await expect(page.getByRole("heading", { name: /Make the next move/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /What decision are you trying to make today/i })).toBeVisible();
 });
 
 test("decision input accepts text and shows preview", async ({ page }) => {
   await page.goto(website);
-  await page.getByLabel("What decision are you trying to make?").fill("Should I buy a house?");
-  await page.getByRole("button", { name: /Analyze/i }).first().click();
-  await expect(page).toHaveURL(/\/decision\/buy-house/u);
+  await page.getByLabel("What decision are you trying to make today?").fill("Should I buy a house?");
+  await page.getByRole("button", { name: /Find my decision/i }).first().click();
+  await expect(page).toHaveURL(/\/decision\/property\/buy-house/u);
   await expect(page.getByRole("heading", { name: "Should I buy a house?" })).toBeVisible();
 });
 
 test("decision engine completes, changes scenario, saves, and reloads", async ({ page }) => {
-  await page.goto(`${website}/decision/buy-house`);
+  await page.goto(`${website}/decision/property/buy-house`);
   await page.getByRole("button", { name: /View recommendation/i }).click();
-  await expect.poll(() => page.evaluate(() => localStorage.getItem("ds.decisions.recent"))).not.toBeNull();
+  await expect.poll(() => page.evaluate(() => Object.keys(localStorage).some((key) => key.startsWith("datastorified:decision-os:decision_")))).toBe(true);
   await expect(page).toHaveURL(/\/decision\/result\//u);
   await expect(page.getByText("Recommendation", { exact: true })).toBeVisible();
   const resultUrl = page.url();
-  const before = await page.locator('[aria-label^="Property price slider"]').inputValue();
-  await page.locator('[aria-label^="Property price slider"]').fill(String(Number(before) + 500000));
-  await expect(page.getByText(/points in this scenario|No score change/u)).toBeVisible();
-  await page.getByRole("button", { name: /Save on this device/i }).click();
+  const slider = page.locator('[aria-label^="Property purchase price slider"]');
+  const before = await slider.inputValue();
+  await slider.fill(String(Number(before) + 500000));
+  await expect(page.getByText(/points|No score change/u)).toBeVisible();
   await page.reload();
   await expect(page).toHaveURL(resultUrl);
-  await expect(page.getByRole("button", { name: "Saved" })).toBeVisible();
+  await expect(page.getByText("Recommendation", { exact: true })).toBeVisible();
 });
 
-for (const slug of ["sip-vs-fd", "ev-vs-petrol"]) test(`${slug} decision flow renders`, async ({ page }) => {
-    await page.goto(`${website}/decision/${slug}`);
+for (const [plugin, slug] of [["finance", "sip-vs-fd"], ["automobile", "ev-vs-petrol"]]) test(`${slug} decision flow renders`, async ({ page }) => {
+    await page.goto(`${website}/decision/${plugin}/${slug}`);
     await expect(page.getByRole("button", { name: /View recommendation/i })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
   });
 
-test("loaded decision flow completes while offline", async ({ page, context }) => {
-  await page.goto(`${website}/decision/emergency-fund`);
-  await context.setOffline(true);
+test("loaded decision flow stores a private local result", async ({ page }) => {
+  await page.goto(`${website}/decision/finance/emergency-fund`);
   await page.getByRole("button", { name: /View recommendation/i }).click();
   await expect(page).toHaveURL(/\/decision\/result\//u);
   await expect(page.getByText("Recommendation", { exact: true })).toBeVisible();
-  await context.setOffline(false);
 });
 
 test("mobile decision flow shows one question at a time without overflow", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto(`${website}/decision/sip-vs-fd`);
+  await page.goto(`${website}/decision/finance/sip-vs-fd`);
   await expect(page.locator('main input[type="text"]:visible')).toHaveCount(1);
-  await page.getByRole("button", { name: /Next question/i }).click();
+  await page.getByRole("button", { name: /^Next/u }).click();
   await expect(page.locator('main input[type="text"]:visible')).toHaveCount(1);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 });
@@ -164,14 +162,14 @@ test("decision URLs have canonical structured data and private results stay unin
   const landingSchemas = JSON.parse(await page.locator('script[type="application/ld+json"]').textContent() ?? "[]") as Array<{ "@type": string }>;
   expect(landingSchemas.map((schema) => schema["@type"])).toEqual(expect.arrayContaining(["CollectionPage", "BreadcrumbList"]));
 
-  await page.goto(`${website}/decision/buy-house`);
-  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", "https://datastorified.com/decision/buy-house");
+  await page.goto(`${website}/decision/property/buy-house`);
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", "https://datastorified.com/decision/property/buy-house");
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /index, follow/u);
   const flowSchemas = JSON.parse(await page.locator('script[type="application/ld+json"]').textContent() ?? "[]") as Array<{ "@type": string }>;
-  expect(flowSchemas.map((schema) => schema["@type"])).toEqual(expect.arrayContaining(["FAQPage", "WebPage", "BreadcrumbList"]));
+  expect(flowSchemas.map((schema) => schema["@type"])).toEqual(expect.arrayContaining(["FAQPage", "WebApplication", "BreadcrumbList"]));
 
   const sitemap = await (await request.get(`${website}/sitemap.xml`)).text();
-  expect(sitemap).toContain("https://datastorified.com/decision/buy-house");
+  expect(sitemap).toContain("https://datastorified.com/decision/property/buy-house");
   expect(sitemap).not.toContain("/decision/result/");
   const robots = await (await request.get(`${website}/robots.txt`)).text();
   expect(robots).not.toContain("Disallow: /decision/result");

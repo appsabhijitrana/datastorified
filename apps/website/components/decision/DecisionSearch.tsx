@@ -1,3 +1,59 @@
 "use client";
-import {useMemo,useState} from "react";import {useRouter} from "next/navigation";import {ArrowRight,Search} from "lucide-react";import {Button,Card} from "@datastorified/ui";import {decisionById,detectIntent} from "@datastorified/decision-engine";import {trackDecisionEvent} from "@datastorified/analytics";import {DecisionSuggestionCard} from "./DecisionSuggestionCard";
-export function DecisionSearch({large=false,initialValue=""}:{large?:boolean;initialValue?:string}){const router=useRouter();const[query,setQuery]=useState(initialValue);const[searched,setSearched]=useState(false);const result=useMemo(()=>query.trim().length>=2?detectIntent(query):undefined,[query]);const suggestions=result?.suggestions.map(x=>({match:x,decision:decisionById(x.decisionId)!})).filter(x=>x.decision)??[];const submit=()=>{if(!result)return;setSearched(true);trackDecisionEvent("decision_search_started",{query_length:query.length});trackDecisionEvent("decision_intent_detected",{decision_id:result.decisionId,confidence:result.confidence});if(result.confidence>=.55)router.push(`/decision/${result.decisionId}`)};return <div><Card className={`flex items-center gap-3 p-2 shadow-lift ${large?"rounded-3xl sm:p-3":"rounded-2xl"}`}><Search className="ml-2 shrink-0 text-primary"/><input aria-label="What decision are you trying to make?" value={query} onChange={e=>{setQuery(e.target.value);setSearched(false)}} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="What decision are you trying to make?" className={`min-w-0 flex-1 bg-transparent px-1 outline-none placeholder:text-muted/70 ${large?"min-h-12 text-base sm:text-lg":"min-h-10"}`}/><Button onClick={submit}>Analyze <ArrowRight size={16}/></Button></Card>{searched&&suggestions.length>0&&<div className="mt-5"><p className="mb-3 text-sm font-semibold text-muted">{result!.confidence>=.55?"Best match":"A few possible matches"}</p><div className="grid gap-3 sm:grid-cols-3">{suggestions.map(({match,decision})=><DecisionSuggestionCard key={decision.id} decision={decision} confidence={match.confidence}/>)}</div></div>}</div>}
+
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { ArrowRight, Search, Sparkles } from "lucide-react";
+import { Button, Card } from "@datastorified/ui";
+import { detectIntent, decisionPluginRegistry } from "@datastorified/decision-os";
+import { decisionRouteFromText } from "../../lib/decision-routing";
+import { DecisionSuggestionCard } from "./DecisionSuggestionCard";
+
+export function DecisionSearch({ large = false, initialValue = "" }: { large?: boolean; initialValue?: string }) {
+  const router = useRouter();
+  const [query, setQuery] = useState(initialValue);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const intent = useMemo(() => query.trim().length >= 2 ? detectIntent(query, decisionPluginRegistry.listWorkflows(), 3) : undefined, [query]);
+  const suggestions = useMemo(() => {
+    if (!query.trim()) return [];
+    const matches = decisionPluginRegistry.searchWorkflows(query, 3);
+    return matches.length ? matches : (intent?.matches ?? []).map((match) => decisionPluginRegistry.getWorkflow(match.workflowId)).filter(Boolean);
+  }, [intent, query]);
+
+  const submit = () => {
+    const route = decisionRouteFromText(query);
+    if (route) router.push(route);
+    else setShowSuggestions(true);
+  };
+
+  return (
+    <div className="min-w-0">
+      <Card className={`flex min-w-0 items-center gap-2 border-primary/10 bg-white/95 p-2 shadow-lift backdrop-blur ${large ? "rounded-[28px] sm:p-3" : "rounded-2xl"}`}>
+        <span className="ml-1 grid size-10 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary sm:ml-2"><Search size={20} /></span>
+        <input
+          aria-label="What decision are you trying to make today?"
+          value={query}
+          onChange={(event) => { setQuery(event.target.value); setShowSuggestions(true); }}
+          onFocus={() => setShowSuggestions(true)}
+          onKeyDown={(event) => event.key === "Enter" && submit()}
+          placeholder="Should I buy a house?"
+          className={`min-w-0 flex-1 bg-transparent px-1 font-medium outline-none placeholder:text-muted/60 ${large ? "min-h-14 text-base sm:text-lg" : "min-h-11"}`}
+        />
+        <Button onClick={submit} className="shrink-0 rounded-2xl px-3 sm:px-5">
+          <span className="hidden sm:inline">Find my decision</span><Sparkles className="sm:hidden" size={17} /><ArrowRight size={16} />
+        </Button>
+      </Card>
+      {showSuggestions && query.trim().length >= 2 && suggestions.length > 0 && (
+        <div className="mt-5">
+          <p className="mb-3 text-sm font-semibold text-muted">Best matching decision flows</p>
+          <div className="grid min-w-0 gap-3 sm:grid-cols-3">
+            {suggestions.map((workflow) => {
+              if (!workflow) return null;
+              const confidence = intent?.matches.find((match) => match.workflowId === workflow.id)?.confidence;
+              return <DecisionSuggestionCard key={workflow.id} workflow={workflow} confidence={confidence} />;
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
