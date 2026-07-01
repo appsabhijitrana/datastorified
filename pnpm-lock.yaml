@@ -257,6 +257,8 @@ importers:
         specifier: workspace:*
         version: link:../calculators-engine
 
+  packages/decision-os: {}
+
   packages/seo: {}
 
   packages/storage:
