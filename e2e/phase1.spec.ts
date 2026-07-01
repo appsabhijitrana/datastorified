@@ -41,6 +41,24 @@ for (const slug of ["sip-vs-fd", "ev-vs-petrol"]) test(`${slug} decision flow re
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
   });
 
+test("loaded decision flow completes while offline", async ({ page, context }) => {
+  await page.goto(`${website}/decision/emergency-fund`);
+  await context.setOffline(true);
+  await page.getByRole("button", { name: /View recommendation/i }).click();
+  await expect(page).toHaveURL(/\/decision\/result\//u);
+  await expect(page.getByText("Recommendation", { exact: true })).toBeVisible();
+  await context.setOffline(false);
+});
+
+test("mobile decision flow shows one question at a time without overflow", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(`${website}/decision/sip-vs-fd`);
+  await expect(page.locator('main input[type="text"]:visible')).toHaveCount(1);
+  await page.getByRole("button", { name: /Next question/i }).click();
+  await expect(page.locator('main input[type="text"]:visible')).toHaveCount(1);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+});
+
 test("calculators homepage loads and search finds EMI", async ({ page }) => {
   await page.goto(calculators);
   await expect(page.getByRole("heading", { name: /Smart calculators/i })).toBeVisible();
@@ -138,6 +156,32 @@ test("product pages expose canonical, social, FAQ, breadcrumb, and application m
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", "https://calculators.datastorified.com/emi-calculator");
   await expect(page.locator('meta[property="og:image"]')).toHaveCount(1);
   const jsonLd = await page.locator('script[type="application/ld+json"]').textContent(); expect(jsonLd).toContain("FAQPage"); expect(jsonLd).toContain("BreadcrumbList"); expect(jsonLd).toContain("SoftwareApplication");
+});
+
+test("decision URLs have canonical structured data and private results stay unindexed", async ({ page, request }) => {
+  await page.goto(`${website}/decision`);
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", "https://datastorified.com/decision");
+  const landingSchemas = JSON.parse(await page.locator('script[type="application/ld+json"]').textContent() ?? "[]") as Array<{ "@type": string }>;
+  expect(landingSchemas.map((schema) => schema["@type"])).toEqual(expect.arrayContaining(["CollectionPage", "BreadcrumbList"]));
+
+  await page.goto(`${website}/decision/buy-house`);
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", "https://datastorified.com/decision/buy-house");
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /index, follow/u);
+  const flowSchemas = JSON.parse(await page.locator('script[type="application/ld+json"]').textContent() ?? "[]") as Array<{ "@type": string }>;
+  expect(flowSchemas.map((schema) => schema["@type"])).toEqual(expect.arrayContaining(["FAQPage", "WebPage", "BreadcrumbList"]));
+
+  const sitemap = await (await request.get(`${website}/sitemap.xml`)).text();
+  expect(sitemap).toContain("https://datastorified.com/decision/buy-house");
+  expect(sitemap).not.toContain("/decision/result/");
+  const robots = await (await request.get(`${website}/robots.txt`)).text();
+  expect(robots).not.toContain("Disallow: /decision/result");
+
+  const privateResult = await request.get(`${website}/decision/result/seo-check`);
+  expect(privateResult.headers()["x-robots-tag"]).toContain("noindex");
+  await page.goto(`${website}/decision/result/seo-check`);
+  const privateRobots = await page.locator('meta[name="robots"]').getAttribute("content");
+  for (const directive of ["noindex", "nofollow", "noimageindex", "nosnippet"]) expect(privateRobots).toContain(directive);
+  await expect(page.locator('link[rel="canonical"]')).toHaveCount(0);
 });
 
 test("security headers protect every surface", async ({ request }) => {
