@@ -1,2 +1,11 @@
 export * from "./pluginTypes";
 export * from "./pluginRegistry";
+export * from "./staticPlugins";
+export { financePlugin } from "./finance";
+export { propertyPlugin } from "./property";
+export { automobilePlugin } from "./automobile";
+export { careerPlugin } from "./career";
+export { educationPlugin } from "./education";
+export { shoppingPlugin } from "./shopping";
+export { travelPlugin } from "./travel";
+export { businessPlugin } from "./business";

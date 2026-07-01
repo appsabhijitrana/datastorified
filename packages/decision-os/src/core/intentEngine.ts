@@ -41,6 +41,7 @@ function matchWorkflow(input: string, workflow: DecisionWorkflow): DecisionInten
   return {
     pluginId: workflow.pluginId,
     workflowId: workflow.id,
+    workflowSlug: workflow.slug,
     title: workflow.title,
     confidence: round(confidence, 3),
     matchedTerms,

@@ -7,6 +7,14 @@
     ".": "./src/index.ts",
     "./core": "./src/core/index.ts",
     "./plugins": "./src/plugins/index.ts",
+    "./plugins/finance": "./src/plugins/finance/index.ts",
+    "./plugins/property": "./src/plugins/property/index.ts",
+    "./plugins/automobile": "./src/plugins/automobile/index.ts",
+    "./plugins/career": "./src/plugins/career/index.ts",
+    "./plugins/education": "./src/plugins/education/index.ts",
+    "./plugins/shopping": "./src/plugins/shopping/index.ts",
+    "./plugins/travel": "./src/plugins/travel/index.ts",
+    "./plugins/business": "./src/plugins/business/index.ts",
     "./storage": "./src/storage/localDecisionStorage.ts"
   },
   "scripts": {

@@ -149,6 +149,7 @@ export type DecisionReport = {
 
 export type DecisionWorkflow = {
   id: string;
+  slug: string;
   pluginId: string;
   version: string;
   title: string;
@@ -172,6 +173,14 @@ export type DecisionPlugin = {
   name: string;
   version: string;
   description?: string;
+  categories: string[];
+  keywords: string[];
+  relatedCalculators: string[];
+  relatedTools: string[];
+  knowledgeAssumptions: Array<{
+    id: string;
+    description: string;
+  }>;
   workflows: DecisionWorkflow[];
   metadata?: Record<string, string>;
 };
@@ -179,6 +188,7 @@ export type DecisionPlugin = {
 export type DecisionIntentMatch = {
   pluginId: string;
   workflowId: string;
+  workflowSlug: string;
   title: string;
   confidence: number;
   matchedTerms: string[];

@@ -2,6 +2,7 @@ import type { DecisionWorkflow } from "../types";
 
 export const workflow: DecisionWorkflow = {
   id: "workspace-choice",
+  slug: "workspace-choice",
   pluginId: "test-plugin",
   version: "1.0.0",
   title: "Choose a workspace",
@@ -39,6 +40,7 @@ export const workflow: DecisionWorkflow = {
 export const learningWorkflow: DecisionWorkflow = {
   ...workflow,
   id: "learning-path",
+  slug: "learning-path",
   title: "Choose a learning path",
   intent: { keywords: ["course", "learning", "study"], aliases: ["choose a course", "pick a learning path"] },
 };
