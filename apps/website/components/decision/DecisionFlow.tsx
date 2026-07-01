@@ -36,14 +36,30 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
   const progress = questions.length ? ((Math.min(step, questions.length - 1) + 1) / questions.length) * 100 : 100;
 
   useEffect(() => {
-    const raw = window.localStorage.getItem(`datastorified:decision-os:draft:${workflow.id}`);
-    if (!raw) return;
-    try { setAnswers((current) => ({ ...current, ...JSON.parse(raw) as DecisionAnswers })); } catch { /* Ignore malformed local drafts. */ }
-  }, [workflow.id]);
+    const savedDraft = localDecisionStorage.getDraft(workflow.id);
+    if (savedDraft) {
+      setAnswers((current) => ({ ...current, ...savedDraft.answers }));
+      setStep(typeof savedDraft.step === "number" ? savedDraft.step : 0);
+      return;
+    }
+    const legacyKey = `datastorified:decision-os:draft:${workflow.id}`;
+    try {
+      if (typeof window === "undefined") return;
+      const raw = window.localStorage.getItem(legacyKey);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as DecisionAnswers;
+      setAnswers((current) => ({ ...current, ...parsed }));
+      localDecisionStorage.saveDraft({ workflowId: workflow.id, pluginId: workflow.pluginId, answers: parsed, updatedAt: new Date().toISOString() });
+      window.localStorage.removeItem(legacyKey);
+    } catch { /* Ignore malformed local drafts. */ }
+  }, [workflow.id, workflow.pluginId]);
   useEffect(() => {
-    const timer = window.setTimeout(() => window.localStorage.setItem(`datastorified:decision-os:draft:${workflow.id}`, JSON.stringify(answers)), 250);
-    return () => window.clearTimeout(timer);
-  }, [answers, workflow.id]);
+    const draft = { workflowId: workflow.id, pluginId: workflow.pluginId, answers, step, updatedAt: new Date().toISOString() };
+    localDecisionStorage.saveDraft(draft);
+  }, [answers, step, workflow.id, workflow.pluginId]);
+  useEffect(() => {
+    localDecisionStorage.saveProfile({ lastOpenedWorkflow: { workflowId: workflow.id, pluginId: workflow.pluginId, slug, openedAt: new Date().toISOString() } });
+  }, [workflow.id, workflow.pluginId, slug]);
 
   const update = (id: string, value: DecisionValue) => {
     setAnswers((current) => ({ ...current, [id]: value }));
@@ -55,7 +71,7 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
     if (Object.keys(nextErrors).length) { setErrors((current) => ({ ...current, ...nextErrors })); return; }
     setStep((current) => Math.min(current + 1, questions.length - 1));
   };
-  const reset = () => { setAnswers(createDefaultAnswers(workflow.questions)); setErrors({}); setStep(0); window.localStorage.removeItem(`datastorified:decision-os:draft:${workflow.id}`); };
+  const reset = () => { setAnswers(createDefaultAnswers(workflow.questions)); setErrors({}); setStep(0); localDecisionStorage.clearDraft(workflow.id); };
   const complete = () => {
     const nextErrors = validateAnswers(questions, answers, facts);
     setErrors(nextErrors);
@@ -69,7 +85,7 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
     const finalReport = buildDecisionReport(workflow, answers, { id: `report_${id}`, generatedAt: now });
     const stored: StoredDecision = { id, workflowId: workflow.id, pluginId: workflow.pluginId, answers, report: finalReport, createdAt: now, updatedAt: now };
     localDecisionStorage.save(stored);
-    window.localStorage.removeItem(`datastorified:decision-os:draft:${workflow.id}`);
+    localDecisionStorage.clearDraft(workflow.id);
     router.push(`/decision/result/${id}`);
   };
 

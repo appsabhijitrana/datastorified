@@ -8,7 +8,7 @@ import { localDecisionStorage, decisionPluginRegistry, type StoredDecision } fro
 
 export function DecisionRecent() {
   const [items, setItems] = useState<StoredDecision[]>([]);
-  useEffect(() => setItems(localDecisionStorage.list().slice(0, 4)), []);
+  useEffect(() => setItems(localDecisionStorage.listRecent().slice(0, 4)), []);
   if (!items.length) return null;
   return (
     <section className="mx-auto max-w-7xl px-4 pb-16 sm:px-6">

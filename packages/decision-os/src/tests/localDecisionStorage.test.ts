@@ -28,4 +28,26 @@ describe("local decision storage", () => {
     storage.remove(decision.id);
     expect(storage.load(decision.id)).toBeUndefined();
   });
+
+  it("tracks recent, saved, drafts, history, and profile entries locally", () => {
+    const storage = new LocalDecisionStorage(new TestStorage());
+    const decision: StoredDecision = {
+      id: "saved-2",
+      workflowId: "workspace-choice",
+      pluginId: "test-plugin",
+      answers: { workStyle: "team" },
+      createdAt: "2026-01-02T00:00:00.000Z",
+      updatedAt: "2026-01-02T00:00:00.000Z",
+    };
+
+    storage.save(decision);
+    storage.saveDraft({ workflowId: decision.workflowId, pluginId: decision.pluginId, answers: decision.answers, step: 3, updatedAt: decision.updatedAt });
+    storage.saveProfile({ lastOpenedWorkflow: { workflowId: decision.workflowId, pluginId: decision.pluginId, slug: "workspace-choice", openedAt: decision.updatedAt } });
+
+    expect(storage.listRecent()).toEqual([decision]);
+    expect(storage.listSaved()).toEqual([decision]);
+    expect(storage.listHistory()).toEqual([decision]);
+    expect(storage.getDraft(decision.workflowId)).toMatchObject({ answers: decision.answers, step: 3 });
+    expect(storage.getProfile()).toMatchObject({ lastOpenedWorkflow: { workflowId: decision.workflowId, slug: "workspace-choice" } });
+  });
 });
