@@ -17,7 +17,7 @@ export class StaticExplanationAdapter implements DecisionAIAdapter {
   async answerFollowUpQuestion(_question: string, analysis: DecisionAnalysis) { return `Review ${analysis.recommendation.nextBestAction.toLocaleLowerCase()} and rerun the scenario with a conservative assumption.`; }
 }
 export class StaticKnowledgeAdapter implements DecisionKnowledgeAdapter {
-  async getMarketData(_topic: string) { return {}; }
+  async getMarketData() { return {}; }
   async getInterestRates() { return { homeLoan: 8.5, carLoan: 9, fixedDeposit: 7 }; }
   async getInflationData() { return { planningRate: 6 }; }
 }
