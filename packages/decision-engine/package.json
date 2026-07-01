@@ -1,0 +1,14 @@
+{
+  "name": "@datastorified/decision-engine",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./adapters": "./src/adapters/index.ts",
+    "./registry": "./src/registry/decisions.ts"
+  },
+  "dependencies": {
+    "@datastorified/calculators-engine": "workspace:*"
+  }
+}

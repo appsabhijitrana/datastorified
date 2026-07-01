@@ -1,0 +1,2 @@
+import {CheckCircle2} from "lucide-react";import {Card} from "@datastorified/ui";
+export function DecisionActionPlan({items}:{items:string[]}){return <Card className="p-6"><h2 className="text-xl font-bold">Your action plan</h2><div className="mt-4 space-y-3">{items.map((item,index)=><div key={item} className="flex gap-3 rounded-xl bg-soft p-3"><CheckCircle2 className="mt-0.5 shrink-0 text-primary" size={18}/><div><span className="text-xs font-bold text-primary">STEP {index+1}</span><p className="mt-1 text-sm font-semibold">{item}</p></div></div>)}</div></Card>}

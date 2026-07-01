@@ -1,0 +1,1 @@
+export const decisionDisclaimer = "DataStorified provides educational and informational decision support only. This is not financial, legal, tax, medical, or investment advice. Please verify important decisions with qualified professionals.";

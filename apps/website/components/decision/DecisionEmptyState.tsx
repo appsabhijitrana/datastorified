@@ -1,0 +1,2 @@
+import Link from "next/link";import {Compass} from "lucide-react";import {Button,Card} from "@datastorified/ui";
+export function DecisionEmptyState(){return <Card className="mx-auto max-w-xl p-10 text-center"><Compass className="mx-auto text-primary" size={34}/><h1 className="mt-4 text-2xl font-bold">Decision not found on this device</h1><p className="mt-2 text-muted">This result may have been cleared or created in another browser.</p><Link href="/decision"><Button className="mt-6">Start a new decision</Button></Link></Card>}
