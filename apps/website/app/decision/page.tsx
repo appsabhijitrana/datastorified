@@ -5,12 +5,13 @@ import { breadcrumbSchema, canonical, createMetadata, serializeJsonLd } from "@d
 import { DecisionHero } from "../../components/decision/DecisionHero";
 import { DecisionSuggestionCard } from "../../components/decision/DecisionSuggestionCard";
 import { DecisionRecent } from "../../components/decision/DecisionRecent";
+import { decisionHubSeo } from "../../lib/decision-seo";
 
 const url = canonical("datastorified.com", "/decision");
 
 export const metadata = createMetadata(
-  "Free Decision Engine — Scores, Risks & Scenarios | DataStorified",
-  "Compare important life and money decisions with transparent scores, risk checks, what-if scenarios, and practical action plans.",
+  decisionHubSeo.title,
+  decisionHubSeo.description,
   "datastorified.com",
   "/decision",
 );
