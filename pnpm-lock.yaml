@@ -190,6 +190,9 @@ importers:
       '@datastorified/decision-engine':
         specifier: workspace:*
         version: link:../../packages/decision-engine
+      '@datastorified/decision-os':
+        specifier: workspace:*
+        version: link:../../packages/decision-os
       '@datastorified/seo':
         specifier: workspace:*
         version: link:../../packages/seo
@@ -252,6 +255,12 @@ importers:
         version: 3.25.76
 
   packages/decision-engine:
+    dependencies:
+      '@datastorified/calculators-engine':
+        specifier: workspace:*
+        version: link:../calculators-engine
+
+  packages/decision-os:
     dependencies:
       '@datastorified/calculators-engine':
         specifier: workspace:*

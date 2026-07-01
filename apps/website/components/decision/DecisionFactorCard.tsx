@@ -1,2 +1,7 @@
-import {Card} from "@datastorified/ui";import type {ScoreFactor} from "@datastorified/decision-engine";
-export function DecisionFactorCard({factor}:{factor:ScoreFactor}){return <Card className="p-4"><div className="flex justify-between gap-3"><div><h3 className="font-bold">{factor.label}</h3><p className="mt-1 text-xs text-muted">Weight {Math.round(factor.weight)}%</p></div><span className={`text-xl font-bold ${factor.status==="good"?"text-success":factor.status==="risk"?"text-danger":"text-warning"}`}>{factor.score}</span></div><div className="mt-3 h-2 rounded-full bg-soft"><div className="h-full rounded-full bg-gradient-to-r from-primary to-accent" style={{width:`${factor.score}%`}}/></div><p className="mt-3 text-sm leading-6 text-muted">{factor.explanation}</p></Card>}
+import { Card } from "@datastorified/ui";
+import type { DecisionFactorScore } from "@datastorified/decision-os";
+
+export function DecisionFactorCard({ factor }: { factor: DecisionFactorScore }) {
+  const tone = factor.score >= 65 ? "text-success" : factor.score >= 40 ? "text-warning" : "text-danger";
+  return <Card className="min-w-0 p-4"><div className="flex justify-between gap-3"><div className="min-w-0"><h3 className="truncate font-bold">{factor.label}</h3><p className="mt-1 text-xs text-muted">Weight {Math.round(factor.normalizedWeight * 100)}% · contributes {factor.contribution}</p></div><span className={`shrink-0 text-xl font-bold ${tone}`}>{Math.round(factor.score)}</span></div><div className="mt-3 h-2 overflow-hidden rounded-full bg-soft"><div className="h-full rounded-full bg-gradient-to-r from-primary to-accent" style={{ width: `${factor.score}%` }} /></div></Card>;
+}

@@ -1,0 +1,28 @@
+{
+  "name": "@datastorified/decision-os",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./core": "./src/core/index.ts",
+    "./plugins": "./src/plugins/index.ts",
+    "./plugins/finance": "./src/plugins/finance/index.ts",
+    "./plugins/property": "./src/plugins/property/index.ts",
+    "./plugins/automobile": "./src/plugins/automobile/index.ts",
+    "./plugins/career": "./src/plugins/career/index.ts",
+    "./plugins/education": "./src/plugins/education/index.ts",
+    "./plugins/shopping": "./src/plugins/shopping/index.ts",
+    "./plugins/travel": "./src/plugins/travel/index.ts",
+    "./plugins/business": "./src/plugins/business/index.ts",
+    "./storage": "./src/storage/localDecisionStorage.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --root ../.. packages/decision-os/src/tests"
+  },
+  "dependencies": {
+    "@datastorified/calculators-engine": "workspace:*"
+  }
+}

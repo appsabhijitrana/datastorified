@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { legalPolicies } from "../lib/legal-content";
-import { decisions } from "@datastorified/decision-engine";
+import { decisionPluginRegistry } from "@datastorified/decision-os";
 
 const baseUrl = "https://datastorified.com";
 const legalLastModified = "2026-06-30";
@@ -27,6 +27,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.5,
   }));
 
-  const decisionPages: MetadataRoute.Sitemap = decisions.map(({ id }) => ({ url: `${baseUrl}/decision/${id}`, changeFrequency: "monthly", priority: 0.8 }));
+  const decisionPages: MetadataRoute.Sitemap = decisionPluginRegistry.listWorkflows().map(({ pluginId, slug }) => ({ url: `${baseUrl}/decision/${pluginId}/${slug}`, changeFrequency: "monthly", priority: 0.8 }));
   return [...corePages, ...decisionPages, ...policyPages];
 }
