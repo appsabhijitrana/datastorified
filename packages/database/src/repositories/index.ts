@@ -1,11 +1,9 @@
 import type { PrismaClient } from "@prisma/client";
 
-type DecisionCreateData = Parameters<PrismaClient["decision"]["create"]>[0]["data"];
-type ProfileCreateData = Omit<Parameters<PrismaClient["profile"]["create"]>[0]["data"], "user" | "userId">;
-type ProfileUpdateData = Omit<Parameters<PrismaClient["profile"]["update"]>[0]["data"], "user" | "userId">;
-type ProfileUpsertData = Partial<ProfileCreateData> & Partial<ProfileUpdateData>;
-type HistoryItemCreateData = Parameters<PrismaClient["historyItem"]["create"]>[0]["data"];
-type SyncLogCreateData = Parameters<PrismaClient["syncLog"]["create"]>[0]["data"];
+type DecisionCreateData = Record<string, unknown>;
+type ProfileUpsertData = Record<string, unknown>;
+type HistoryItemCreateData = Record<string, unknown>;
+type SyncLogCreateData = Record<string, unknown>;
 
 export type RepositoryContext = {
   prisma: PrismaClient;
@@ -15,7 +13,7 @@ export class DecisionRepository {
   constructor(private readonly context: RepositoryContext) {}
 
   create(data: DecisionCreateData) {
-    return this.context.prisma.decision.create({ data });
+    return this.context.prisma.decision.create({ data: data as never });
   }
 
   findById(id: string) {
@@ -33,8 +31,8 @@ export class ProfileRepository {
   upsertForUser(userId: string, data: ProfileUpsertData) {
     return this.context.prisma.profile.upsert({
       where: { userId },
-      create: { ...data, userId },
-      update: { ...data, userId },
+      create: { ...data, userId } as never,
+      update: { ...data, userId } as never,
     });
   }
 
@@ -51,7 +49,7 @@ export class HistoryRepository {
   }
 
   create(data: HistoryItemCreateData) {
-    return this.context.prisma.historyItem.create({ data });
+    return this.context.prisma.historyItem.create({ data: data as never });
   }
 }
 
@@ -59,7 +57,7 @@ export class SyncLogRepository {
   constructor(private readonly context: RepositoryContext) {}
 
   create(data: SyncLogCreateData) {
-    return this.context.prisma.syncLog.create({ data });
+    return this.context.prisma.syncLog.create({ data: data as never });
   }
 
   listByDecision(decisionId: string) {
