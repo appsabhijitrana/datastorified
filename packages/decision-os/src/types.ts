@@ -102,6 +102,55 @@ export type DecisionWeight = {
   baselineScore?: number;
 };
 
+export type DecisionScoreDirection = "higher_better" | "lower_better";
+
+export type DecisionScoreFactor = {
+  id: string;
+  label: string;
+  weight: number;
+  direction?: DecisionScoreDirection;
+  questionId?: string;
+  min?: number;
+  max?: number;
+  explanation?: string;
+  missingScore?: number;
+  evaluate?: (answers: Readonly<DecisionAnswers>, workflow: Readonly<DecisionWorkflow>, option: Readonly<DecisionScoringOption>) => number | null | undefined;
+};
+
+export type DecisionScoringOption = {
+  id: string;
+  label: string;
+  description?: string;
+  factors: DecisionScoreFactor[];
+};
+
+export type DecisionScoringConfig = {
+  missingAnswerScore?: number;
+  options: DecisionScoringOption[];
+};
+
+export type DecisionScoringFactorBreakdown = {
+  factorId: string;
+  label: string;
+  weight: number;
+  rawScore: number | null;
+  normalizedScore: number;
+  direction: DecisionScoreDirection;
+  explanation?: string;
+  contribution: number;
+  missing: boolean;
+};
+
+export type DecisionOptionScore = {
+  optionId: string;
+  label: string;
+  totalScore: number;
+  confidence: number;
+  factors: DecisionScoringFactorBreakdown[];
+  strengths: string[];
+  weaknesses: string[];
+};
+
 export type DecisionFactorScore = {
   factorId: string;
   label: string;
@@ -206,6 +255,7 @@ export type DecisionWorkflow = {
   scenarios?: readonly DecisionScenario[];
   scenarioVariables?: readonly DecisionScenarioVariable[];
   scoreBands?: Array<{ min: number; max: number; label: string }>;
+  scoring?: DecisionScoringConfig;
   deriveFacts?: (answers: Readonly<DecisionAnswers>) => DecisionFacts;
 };
 

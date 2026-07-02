@@ -9,3 +9,4 @@ export * from "./scenarioEngine";
 export * from "./reportEngine";
 export * from "./foundation";
 export * from "./flowEngine";
+export * from "./scoringEngine";
