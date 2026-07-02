@@ -14,6 +14,7 @@ export const decisionProfileSchema = z.object({
   dependents: z.number().int().min(0).optional(),
   occupation: z.string().trim().min(1).max(120).optional(),
   employmentType: z.enum(profileEmploymentTypes).optional(),
+  preferences: z.record(z.union([z.string(), z.number(), z.boolean(), z.null()])).optional(),
   monthlyIncome: z.number().min(0).optional(),
   monthlyExpenses: z.number().min(0).optional(),
   emergencyFund: z.number().min(0).optional(),

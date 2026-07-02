@@ -1,6 +1,7 @@
 import { getProfileCompleteness } from "@datastorified/profile";
 import { localProfileStorage } from "@datastorified/profile";
 import type { DecisionProfile, DecisionProfileEnvelope } from "@datastorified/profile";
+import { createDataStorifiedClient } from "@datastorified/sdk";
 import type { DecisionMemoryDraft, DecisionMemoryProfile, StoredDecision } from "../types";
 import { localDecisionStorage } from "../storage/localDecisionStorage";
 import type { DecisionAIAdapter } from "./DecisionAIAdapter";
@@ -31,17 +32,40 @@ export class LocalDecisionPersistenceAdapter implements DecisionPersistenceAdapt
 }
 
 export class LocalProfileAdapter implements DecisionProfileAdapter {
+  private readonly client = createDataStorifiedClient();
+
+  private async readRemoteProfile(): Promise<DecisionProfileEnvelope | null> {
+    const result = await this.client.profile.get();
+    if (!result.ok) return null;
+    return result.data;
+  }
+
+  private async writeRemoteProfile(profile: Partial<DecisionProfile>): Promise<DecisionProfileEnvelope | null> {
+    const result = await this.client.profile.update(profile);
+    if (!result.ok) return null;
+    return result.data;
+  }
+
   async getProfile() {
+    const remote = await this.readRemoteProfile();
+    if (remote) return remote;
     return localProfileStorage.getProfile();
   }
 
   async updateProfile(profile: Partial<DecisionProfile>) {
+    const remote = await this.writeRemoteProfile(profile);
+    if (remote) {
+      localProfileStorage.saveEnvelope(remote);
+      return remote;
+    }
     localProfileStorage.saveProfile(profile);
     return localProfileStorage.getProfile();
   }
 
   async getCompleteness() {
-    return getProfileCompleteness(localProfileStorage.getCurrentProfile());
+    const envelope = await this.getProfile();
+    const profile = "profile" in envelope ? envelope.profile : envelope;
+    return getProfileCompleteness(profile);
   }
 }
 

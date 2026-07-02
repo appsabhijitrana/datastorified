@@ -52,6 +52,7 @@ export type ProfileFieldName =
   | "dependents"
   | "occupation"
   | "employmentType"
+  | "preferences"
   | "monthlyIncome"
   | "monthlyExpenses"
   | "emergencyFund"
@@ -73,6 +74,7 @@ export type DecisionProfile = {
   dependents?: number;
   occupation?: string;
   employmentType?: ProfileEmploymentType;
+  preferences?: Record<string, string | number | boolean | null>;
   monthlyIncome?: number;
   monthlyExpenses?: number;
   emergencyFund?: number;

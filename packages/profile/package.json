@@ -9,6 +9,7 @@
     "./schema": "./src/schema.ts",
     "./completeness": "./src/completeness.ts",
     "./recommendation": "./src/recommendation.ts",
+    "./localProfile": "./src/localProfile.ts",
     "./storage": "./src/storage/localProfileStorage.ts"
   },
   "scripts": {

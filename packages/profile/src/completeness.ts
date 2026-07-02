@@ -19,6 +19,7 @@ export const PROFILE_FIELD_DEFINITIONS: readonly ProfileFieldDefinition[] = [
   { name: "employmentType", label: "Employment type", weight: 1.75, description: "Helps tailor stability assumptions and cash-flow patterns." },
   { name: "riskProfile", label: "Risk profile", weight: 1.75, description: "Helps match recommendations to comfort with uncertainty." },
   { name: "investmentExperience", label: "Investment experience", weight: 1.75, description: "Helps tune explanation depth and caution level." },
+  { name: "preferences", label: "Preferences", weight: 1.6, description: "Helps tailor defaults, format, and decision-style assumptions." },
   { name: "occupation", label: "Occupation", weight: 1.5, description: "Helps infer context for career and income-sensitive decisions." },
   { name: "goals", label: "Goals", weight: 1.5, description: "Helps prioritize long- and short-term trade-offs." },
   { name: "dependents", label: "Dependents", weight: 1.25, description: "Helps weigh stability, protection, and family obligations." },

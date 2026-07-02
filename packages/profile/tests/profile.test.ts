@@ -22,6 +22,7 @@ describe("progressive profile analysis", () => {
       country: "India",
       preferredCurrency: "INR",
       goals: ["buy a house"],
+      preferences: { currencyDisplay: "compact" },
     };
 
     const completeness = getProfileCompleteness(profile);
