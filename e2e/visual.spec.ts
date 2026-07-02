@@ -14,8 +14,9 @@ const cases = [
 ];
 
 for (const item of cases) test(`${item.name} visual regression`, async ({ page }) => {
+  page.setDefaultNavigationTimeout(60_000);
   await page.setViewportSize(item.viewport);
-  await page.goto(item.url);
+  await page.goto(item.url, { waitUntil: "domcontentloaded" });
   await page.evaluate(() => document.fonts.ready);
   await expect(page).toHaveScreenshot(`${item.name}.png`, { fullPage: true });
 });

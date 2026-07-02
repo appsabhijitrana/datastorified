@@ -20,7 +20,7 @@ export function DecisionSearch({ large = false, initialValue = "" }: { large?: b
   }, [intent, query]);
 
   const submit = () => {
-    const route = decisionRouteFromText(query);
+    const route = decisionRouteFromText(query) ?? (suggestions[0] ? `/decision/${suggestions[0].pluginId}/${suggestions[0].slug}` : undefined);
     if (route) router.push(route);
     else setShowSuggestions(true);
   };

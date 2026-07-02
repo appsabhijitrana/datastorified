@@ -21,6 +21,12 @@ import {
 const sipShortHorizonRisk = risk("short-horizon", "Short investment horizon", "Market-linked returns may be unsuitable for money needed soon.", "high", "Use a capital-stable allocation for near-term needs.");
 const sipLiquidityRisk = risk("liquidity-gap", "Emergency-fund gap", "Investing without an adequate liquid buffer can force an early withdrawal.", "high", "Build accessible emergency savings first.");
 const sipVolatilityRisk = risk("volatility-mismatch", "Volatility mismatch", "Low tolerance for market falls weakens the fit of an equity-oriented SIP.", "medium", "Reduce market exposure or use a blended allocation.");
+const sipScenarioVariables = [
+  { id: "sip-investment", questionId: "investmentAmount", label: "Monthly investment", chips: [10_000, 20_000, 50_000] },
+  { id: "sip-return", questionId: "sipReturn", label: "Expected return", chips: [9, 11, 14] },
+  { id: "sip-inflation", questionId: "inflationRate", label: "Inflation", chips: [4, 6, 8] },
+  { id: "sip-horizon", questionId: "timeHorizon", label: "Time horizon", chips: [3, 7, 12] },
+] as const;
 
 export const sipVsFdWorkflow: DecisionWorkflow = {
   id: "sip-vs-fd",
@@ -76,6 +82,12 @@ export const sipVsFdWorkflow: DecisionWorkflow = {
     { id: "blend", minScore: 40, maxScore: 64.99, title: "Consider a blended SIP and FD allocation", summary: "The inputs support balancing growth with stability rather than making an all-or-nothing choice.", actions: ["Assign near-term goals to stable assets", "Use SIP only for the longer-horizon portion"] },
     { id: "sip-aligned", minScore: 65, maxScore: 100, title: "A SIP-oriented allocation is better aligned", summary: "The horizon, buffer, and risk tolerance support greater market-linked exposure under the stated assumptions.", actions: ["Choose a diversified suitable fund", "Automate and review the SIP annually"] },
   ],
+  scenarios: [
+    { id: "sip-bearish", label: "Lower returns", description: "Stress-test the SIP with a more cautious return outlook.", overrides: { sipReturn: 9, inflationRate: 7, timeHorizon: 5 } },
+    { id: "sip-strong", label: "Long horizon", description: "Test whether a longer horizon improves the case for SIPs.", overrides: { timeHorizon: 12, sipReturn: 12, inflationRate: 5 } },
+    { id: "sip-safe", label: "Keep more in FD", description: "See how a stronger liquidity buffer changes the result.", overrides: { emergencyMonths: 12, riskTolerance: 2 } },
+  ],
+  scenarioVariables: sipScenarioVariables,
   actionPlanTemplates: [
     { id: "fd-plan", minScore: 0, maxScore: 39.99, actions: ["Ring-fence emergency savings", "Match FD tenure to the goal date", "Compare post-tax rates and premature-withdrawal terms", "Reassess SIP readiness later"] },
     { id: "blend-plan", minScore: 40, maxScore: 64.99, actions: ["Separate short- and long-term goals", "Set the FD allocation for stability", "Start a manageable SIP for long-term growth", "Review the allocation annually"] },

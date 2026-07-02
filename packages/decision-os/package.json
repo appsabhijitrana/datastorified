@@ -7,6 +7,7 @@
     ".": "./src/index.ts",
     "./core": "./src/core/index.ts",
     "./plugins": "./src/plugins/index.ts",
+    "./adapters": "./src/adapters/index.ts",
     "./plugins/finance": "./src/plugins/finance/index.ts",
     "./plugins/property": "./src/plugins/property/index.ts",
     "./plugins/automobile": "./src/plugins/automobile/index.ts",
@@ -23,6 +24,8 @@
     "test": "vitest run --root ../.. packages/decision-os/src/tests"
   },
   "dependencies": {
-    "@datastorified/calculators-engine": "workspace:*"
+    "@datastorified/calculators-engine": "workspace:*",
+    "@datastorified/profile": "workspace:*",
+    "@datastorified/sdk": "workspace:*"
   }
 }

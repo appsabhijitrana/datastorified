@@ -21,6 +21,18 @@ import {
 const chargingRisk = risk("charging-access", "Charging access is unreliable", "Lack of dependable charging can add cost and daily friction.", "high", "Verify home, work, and nearby charging before choosing an EV.");
 const evPaybackRisk = risk("long-ev-payback", "Long EV premium payback", "Expected energy savings may not recover the upfront premium during ownership.", "medium", "Compare current on-road prices and total ownership costs for both cars.");
 const lowUsageRisk = risk("low-vehicle-use", "Low expected usage", "Low driving reduces the value and economic advantage of ownership.", "medium", "Compare taxis, rentals, subscriptions, or public transport first.");
+const evScenarioVariables = [
+  { id: "ev-usage", questionId: "monthlyKm", label: "Monthly kilometers", chips: [800, 1_250, 1_800] },
+  { id: "ev-fuel", questionId: "petrolPrice", label: "Fuel price", chips: [95, 105, 125] },
+  { id: "ev-electricity", questionId: "electricityPrice", label: "Electricity cost", chips: [7, 9, 12] },
+  { id: "ev-premium", questionId: "evPremium", label: "Vehicle price difference", chips: [200_000, 300_000, 500_000] },
+] as const;
+const carScenarioVariables = [
+  { id: "car-income", questionId: "monthlyIncome", label: "Monthly income", chips: [80_000, 100_000, 150_000] },
+  { id: "car-price", questionId: "carPrice", label: "Car price", chips: [1_000_000, 1_200_000, 1_600_000] },
+  { id: "car-rate", questionId: "interestRate", label: "Interest rate", chips: [8, 9, 11] },
+  { id: "car-use", questionId: "monthlyUseDays", label: "Monthly use days", chips: [8, 18, 24] },
+] as const;
 
 export const evVsPetrolWorkflow: DecisionWorkflow = {
   id: "ev-vs-petrol", slug: "ev-vs-petrol", pluginId: "automobile", version: "1.0.0",
@@ -67,7 +79,14 @@ export const evVsPetrolWorkflow: DecisionWorkflow = {
   actionPlanTemplates: actionPlanTemplates("the EV-versus-petrol choice"),
   relatedCalculators: ["ev-vs-petrol-savings-calculator", "fuel-cost-calculator", "car-loan-calculator"], relatedTools: ["percentage-calculator"],
   assumptions: ["Running-cost savings come from the existing calculator engine.", "Battery health, insurance, maintenance, resale, and financing require model-specific checks.", "Fuel and electricity prices can change."],
-  faqs: [{ question: "Is battery replacement included?", answer: "No. Verify model-specific battery warranty, expected degradation, and replacement exposure." }, { question: "Can an EV work without home charging?", answer: "Possibly, but the workflow treats unreliable charging as a material risk." }], scoreBands: standardScoreBands,
+  faqs: [{ question: "Is battery replacement included?", answer: "No. Verify model-specific battery warranty, expected degradation, and replacement exposure." }, { question: "Can an EV work without home charging?", answer: "Possibly, but the workflow treats unreliable charging as a material risk." }],
+  scenarios: [
+    { id: "ev-high-usage", label: "High usage", description: "Higher driving usually improves EV economics.", overrides: { monthlyKm: 1_800, holdingYears: 7 } },
+    { id: "ev-cheap-charge", label: "Cheaper charging", description: "Test the impact of lower electricity cost.", overrides: { electricityPrice: 7, homeCharging: true } },
+    { id: "ev-big-premium", label: "Higher premium", description: "Stress-test a more expensive EV model.", overrides: { evPremium: 500_000, chargingConfidence: 3 } },
+  ],
+  scenarioVariables: evScenarioVariables,
+  scoreBands: standardScoreBands,
 };
 
 const carAffordabilityRisk = risk("car-affordability", "Car payment is too high", "The estimated car payment consumes too much monthly income.", "high", "Choose a lower price, larger safe down payment, or delay the purchase.");
@@ -112,7 +131,14 @@ export const buyCarWorkflow: DecisionWorkflow = {
   recommendations: recommendationTemplates("buy the car"), actionPlanTemplates: actionPlanTemplates("the car purchase"),
   relatedCalculators: ["car-loan-calculator", "fuel-cost-calculator", "road-trip-cost-calculator"], relatedTools: ["percentage-calculator"],
   assumptions: ["Loan payment comes from the existing car-loan calculator.", "Insurance, maintenance, parking, depreciation, and repairs need separate estimates.", "Expected use should reflect normal months."],
-  faqs: [{ question: "Does the score include depreciation?", answer: "The decision treats depreciation as an ownership concern, while the score focuses on affordability, resilience, and usefulness." }, { question: "Should I use emergency savings for the down payment?", answer: "The workflow assumes the emergency reserve remains available after purchase." }], scoreBands: standardScoreBands,
+  faqs: [{ question: "Does the score include depreciation?", answer: "The decision treats depreciation as an ownership concern, while the score focuses on affordability, resilience, and usefulness." }, { question: "Should I use emergency savings for the down payment?", answer: "The workflow assumes the emergency reserve remains available after purchase." }],
+  scenarios: [
+    { id: "car-better-use", label: "Stronger use case", description: "See how regular usage changes the score.", overrides: { monthlyUseDays: 24, needStrength: 5 } },
+    { id: "car-tight-budget", label: "Tighter budget", description: "Stress-test a smaller cash buffer.", overrides: { emergencySavings: 200_000, downPayment: 150_000 } },
+    { id: "car-higher-emi", label: "Higher EMI", description: "See the impact of a more expensive car.", overrides: { carPrice: 1_600_000, interestRate: 10.5 } },
+  ],
+  scenarioVariables: carScenarioVariables,
+  scoreBands: standardScoreBands,
 };
 
 export const automobileDecisionWorkflows = [evVsPetrolWorkflow, buyCarWorkflow];

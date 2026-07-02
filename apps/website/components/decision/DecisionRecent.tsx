@@ -4,11 +4,15 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Clock3 } from "lucide-react";
 import { Card } from "@datastorified/ui";
-import { localDecisionStorage, decisionPluginRegistry, type StoredDecision } from "@datastorified/decision-os";
+import { decisionPluginRegistry, type StoredDecision } from "@datastorified/decision-os";
+import { getDecisionAdapters } from "@datastorified/decision-os/adapters";
 
 export function DecisionRecent() {
+  const adapters = getDecisionAdapters();
   const [items, setItems] = useState<StoredDecision[]>([]);
-  useEffect(() => setItems(localDecisionStorage.list().slice(0, 4)), []);
+  useEffect(() => {
+    void adapters.memory.listRecent().then((recent) => setItems(recent.slice(0, 4)));
+  }, [adapters]);
   if (!items.length) return null;
   return (
     <section className="mx-auto max-w-7xl px-4 pb-16 sm:px-6">

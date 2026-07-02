@@ -147,6 +147,15 @@ export type DecisionScenario = {
   overrides: DecisionAnswers;
 };
 
+export type DecisionScenarioVariable = {
+  id: string;
+  questionId: string;
+  label: string;
+  description?: string;
+  chips?: readonly number[];
+  relativeTo?: string;
+};
+
 export type DecisionScenarioResult = {
   scenario: DecisionScenario;
   answers: DecisionAnswers;
@@ -192,7 +201,8 @@ export type DecisionWorkflow = {
   relatedTools?: string[];
   assumptions?: string[];
   faqs?: DecisionFaq[];
-  scenarios?: DecisionScenario[];
+  scenarios?: readonly DecisionScenario[];
+  scenarioVariables?: readonly DecisionScenarioVariable[];
   scoreBands?: Array<{ min: number; max: number; label: string }>;
   deriveFacts?: (answers: Readonly<DecisionAnswers>) => DecisionFacts;
 };
@@ -237,4 +247,32 @@ export type StoredDecision = {
   report?: DecisionReport;
   createdAt: string;
   updatedAt: string;
+};
+
+export type DecisionMemoryDraft = {
+  workflowId: string;
+  pluginId: string;
+  slug?: string;
+  answers: DecisionAnswers;
+  currentStep?: number;
+  step?: number;
+  updatedAt: string;
+};
+
+export type DecisionMemoryProfile = {
+  lastOpenedWorkflow?: {
+    workflowId: string;
+    pluginId: string;
+    slug: string;
+    openedAt: string;
+  };
+  updatedAt?: string;
+};
+
+export type DecisionMemoryKeys = {
+  recent: "ds.decision.recent";
+  saved: "ds.decision.saved";
+  drafts: "ds.decision.drafts";
+  history: "ds.decision.history";
+  profile: "ds.decision.profile.local";
 };

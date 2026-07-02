@@ -1,9 +1,17 @@
 import Link from "next/link";
 import { ArrowUpRight, Clock3 } from "lucide-react";
 import { Badge, Card } from "@datastorified/ui";
-import type { DecisionWorkflow } from "@datastorified/decision-os";
 
-export function DecisionSuggestionCard({ workflow, confidence }: { workflow: DecisionWorkflow; confidence?: number }) {
+type WorkflowCardData = {
+  id: string;
+  slug: string;
+  pluginId: string;
+  title: string;
+  description: string;
+  category?: string;
+};
+
+export function DecisionSuggestionCard({ workflow, confidence }: { workflow: WorkflowCardData; confidence?: number }) {
   return (
     <Link href={`/decision/${workflow.pluginId}/${workflow.slug}`} className="group block h-full min-w-0">
       <Card className="flex h-full min-w-0 flex-col overflow-hidden p-5 transition duration-300 group-hover:-translate-y-1 group-hover:border-primary/20 group-hover:shadow-lift">

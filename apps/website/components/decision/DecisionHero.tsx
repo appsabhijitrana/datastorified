@@ -1,4 +1,5 @@
-import { Badge } from "@datastorified/ui";
+import Link from "next/link";
+import { Badge, Button } from "@datastorified/ui";
 import { BrainCircuit, LockKeyhole, Sparkles } from "lucide-react";
 import { DecisionSearch } from "./DecisionSearch";
 
@@ -15,6 +16,9 @@ export function DecisionHero() {
           Describe the choice in your own words. Decision OS finds the right guided workflow, scores the evidence, and gives you risks and next steps.
         </p>
         <div className="mx-auto mt-8 max-w-4xl text-left sm:mt-10"><DecisionSearch large /></div>
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
+          <Link href="/decision/saved"><Button variant="secondary">View saved decisions</Button></Link>
+        </div>
         <div className="mt-6 flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs font-semibold text-muted sm:text-sm">
           <span className="inline-flex items-center gap-1.5"><BrainCircuit size={15} className="text-primary" /> Transparent scoring</span>
           <span className="inline-flex items-center gap-1.5"><LockKeyhole size={15} className="text-primary" /> Saved only on this device</span>

@@ -11,12 +11,14 @@ import {
   createDefaultAnswers,
   decisionPluginRegistry,
   getVisibleQuestions,
-  localDecisionStorage,
   validateAnswers,
   type DecisionAnswers,
   type DecisionValue,
-  type StoredDecision,
 } from "@datastorified/decision-os";
+import { getProfileAnalysis, type DecisionProfileEnvelope } from "@datastorified/profile";
+import { getDecisionAdapters } from "@datastorified/decision-os/adapters";
+import { authClient } from "@datastorified/auth";
+import { HybridDecisionRepository, buildDecisionRecord } from "@datastorified/decision-repository";
 import { DecisionAccuracyBadge } from "./DecisionAccuracyBadge";
 import { DecisionProgress } from "./DecisionProgress";
 import { DecisionQuestion } from "./DecisionQuestion";
@@ -26,24 +28,39 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
   const workflow = decisionPluginRegistry.getWorkflowBySlug(slug);
   if (!workflow || workflow.pluginId !== pluginId) throw new Error(`Unknown Decision OS workflow: ${pluginId}/${slug}`);
   const router = useRouter();
+  const adapters = getDecisionAdapters();
+  const { data: session } = authClient.useSession();
+  const repository = useMemo(() => new HybridDecisionRepository({ authenticated: Boolean(session?.user) }), [session?.user]);
+  const [profile, setProfile] = useState<DecisionProfileEnvelope | null>(null);
   const [answers, setAnswers] = useState<DecisionAnswers>(() => createDefaultAnswers(workflow.questions));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [step, setStep] = useState(0);
   const facts = useMemo(() => buildDecisionFacts(workflow, answers), [answers, workflow]);
   const questions = useMemo(() => getVisibleQuestions(workflow.questions, answers, facts), [answers, facts, workflow.questions]);
   const report = useMemo(() => buildDecisionReport(workflow, answers), [answers, workflow]);
+  const profileAnalysis = useMemo(() => getProfileAnalysis(profile?.profile), [profile]);
   const currentQuestion = questions[Math.min(step, Math.max(0, questions.length - 1))];
   const progress = questions.length ? ((Math.min(step, questions.length - 1) + 1) / questions.length) * 100 : 100;
 
   useEffect(() => {
-    const raw = window.localStorage.getItem(`datastorified:decision-os:draft:${workflow.id}`);
-    if (!raw) return;
-    try { setAnswers((current) => ({ ...current, ...JSON.parse(raw) as DecisionAnswers })); } catch { /* Ignore malformed local drafts. */ }
-  }, [workflow.id]);
+    void adapters.profile.getProfile().then(setProfile);
+  }, [adapters.profile]);
   useEffect(() => {
-    const timer = window.setTimeout(() => window.localStorage.setItem(`datastorified:decision-os:draft:${workflow.id}`, JSON.stringify(answers)), 250);
-    return () => window.clearTimeout(timer);
-  }, [answers, workflow.id]);
+    void adapters.memory.getDraft(workflow.id).then((savedDraft) => {
+      if (!savedDraft) return;
+      setAnswers((current) => ({ ...current, ...savedDraft.answers }));
+      setStep(typeof savedDraft.currentStep === "number" ? savedDraft.currentStep : typeof savedDraft.step === "number" ? savedDraft.step : 0);
+    });
+  }, [adapters.memory, workflow.id]);
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      void adapters.memory.saveDraft({ workflowId: workflow.id, pluginId: workflow.pluginId, slug, answers, currentStep: step, updatedAt: new Date().toISOString() });
+    }, 250);
+    return () => window.clearTimeout(timeout);
+  }, [adapters.memory, answers, step, slug, workflow.id, workflow.pluginId]);
+  useEffect(() => {
+    void adapters.memory.saveProfile({ lastOpenedWorkflow: { workflowId: workflow.id, pluginId: workflow.pluginId, slug, openedAt: new Date().toISOString() } });
+  }, [adapters.memory, workflow.id, workflow.pluginId, slug]);
 
   const update = (id: string, value: DecisionValue) => {
     setAnswers((current) => ({ ...current, [id]: value }));
@@ -55,8 +72,8 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
     if (Object.keys(nextErrors).length) { setErrors((current) => ({ ...current, ...nextErrors })); return; }
     setStep((current) => Math.min(current + 1, questions.length - 1));
   };
-  const reset = () => { setAnswers(createDefaultAnswers(workflow.questions)); setErrors({}); setStep(0); window.localStorage.removeItem(`datastorified:decision-os:draft:${workflow.id}`); };
-  const complete = () => {
+  const reset = () => { setAnswers(createDefaultAnswers(workflow.questions)); setErrors({}); setStep(0); void adapters.memory.clearDraft(workflow.id); };
+  const complete = async () => {
     const nextErrors = validateAnswers(questions, answers, facts);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) {
@@ -67,13 +84,13 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
     const id = createDecisionId("decision");
     const now = new Date().toISOString();
     const finalReport = buildDecisionReport(workflow, answers, { id: `report_${id}`, generatedAt: now });
-    const stored: StoredDecision = { id, workflowId: workflow.id, pluginId: workflow.pluginId, answers, report: finalReport, createdAt: now, updatedAt: now };
-    localDecisionStorage.save(stored);
-    window.localStorage.removeItem(`datastorified:decision-os:draft:${workflow.id}`);
-    router.push(`/decision/result/${id}`);
+    const stored = buildDecisionRecord({ id, workflow, answers, report: finalReport, createdAt: now, updatedAt: now });
+    await repository.saveDecision(stored);
+    await adapters.memory.clearDraft(workflow.id);
+    router.push(`/decision/result/${stored.id}`);
   };
 
-  return <main className="mx-auto max-w-7xl overflow-x-hidden px-4 py-8 sm:px-6 sm:py-12"><div className="flex max-w-4xl flex-wrap items-center gap-2"><Badge>{workflow.category ?? workflow.pluginId}</Badge><DecisionAccuracyBadge /></div><h1 className="mt-4 max-w-4xl text-balance text-3xl font-bold tracking-[-.035em] sm:text-5xl">{workflow.title}</h1><p className="mt-3 max-w-3xl text-base leading-7 text-muted sm:text-lg">{workflow.description}</p><div className="mt-6 max-w-3xl"><DecisionProgress value={progress} current={Math.min(step + 1, questions.length)} total={questions.length} /></div>
+  return <main className="mx-auto max-w-7xl overflow-x-hidden px-4 py-8 sm:px-6 sm:py-12"><div className="flex max-w-4xl flex-wrap items-center gap-2"><Badge>{workflow.category ?? workflow.pluginId}</Badge><DecisionAccuracyBadge analysis={profileAnalysis} /></div><h1 className="mt-4 max-w-4xl text-balance text-3xl font-bold tracking-[-.035em] sm:text-5xl">{workflow.title}</h1><p className="mt-3 max-w-3xl text-base leading-7 text-muted sm:text-lg">{workflow.description}</p><div className="mt-6 max-w-3xl"><DecisionProgress value={progress} current={Math.min(step + 1, questions.length)} total={questions.length} /></div>
     <div className="mt-8 grid min-w-0 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
       <div className="min-w-0">
         <div className="md:hidden">{currentQuestion && <DecisionQuestion question={currentQuestion} value={answers[currentQuestion.id]} onChange={(value) => update(currentQuestion.id, value)} error={errors[currentQuestion.id]} />}</div>
