@@ -10,9 +10,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body>
-        <PlatformNoticeProvider>{children}</PlatformNoticeProvider>
+        <LegalAcceptanceGate>
+          <PlatformNoticeProvider>{children}</PlatformNoticeProvider>
+        </LegalAcceptanceGate>
         <PlatformClient />
-        <LegalAcceptanceGate />
         <AnalyticsScripts />
       </body>
     </html>

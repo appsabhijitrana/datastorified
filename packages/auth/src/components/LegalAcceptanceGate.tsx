@@ -2,9 +2,14 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { authClient } from "../client";
-import type { LegalAcceptanceStatus, LegalAcceptanceMarker } from "@datastorified/legal";
-import { buildPendingAcceptanceMarker, buildLegalAcceptanceInput, parseLegalAcceptanceMarker, CURRENT_LEGAL_VERSIONS } from "@datastorified/legal";
+import { authClient, signOut } from "../client";
+import type { LegalAcceptanceMarker, LegalAcceptanceStatus } from "@datastorified/legal";
+import {
+  buildPendingAcceptanceMarker,
+  buildLegalAcceptanceInput,
+  parseLegalAcceptanceMarker,
+  CURRENT_LEGAL_VERSIONS,
+} from "@datastorified/legal";
 import { TermsAcceptanceModal } from "./TermsAcceptanceModal";
 
 const pendingKey = "ds.legal.acceptance.pending";
@@ -43,66 +48,113 @@ async function persistAcceptance(marker: LegalAcceptanceMarker) {
 export function LegalAcceptanceGate({ children, mode = "global" }: LegalAcceptanceGateProps) {
   const router = useRouter();
   const { data: session } = authClient.useSession();
+  const [statusLoaded, setStatusLoaded] = useState(!session?.user);
   const [requiresAcceptance, setRequiresAcceptance] = useState(false);
   const [open, setOpen] = useState(false);
-  const [statusLoaded, setStatusLoaded] = useState(mode === "global");
   const [pendingMarker, setPendingMarker] = useState<LegalAcceptanceMarker | null>(null);
 
   useEffect(() => {
-    try {
-      setPendingMarker(parseLegalAcceptanceMarker(window.sessionStorage.getItem(pendingKey)));
-    } catch {
-      setPendingMarker(null);
-    }
-  }, [session?.user]);
+    let cancelled = false;
 
-  useEffect(() => {
-    const marker = parseLegalAcceptanceMarker(window.sessionStorage.getItem(pendingKey));
-    if (!session?.user || !marker) return;
-    void persistAcceptance(marker).finally(() => {
-      try {
-        window.sessionStorage.removeItem(pendingKey);
-      } catch {
-        // ignore
-      }
-    });
-  }, [session?.user]);
-
-  useEffect(() => {
-    if (mode !== "account" || !session?.user) {
+    if (!session?.user) {
       setStatusLoaded(true);
       setRequiresAcceptance(false);
-      return;
+      setOpen(false);
+      setPendingMarker(null);
+      return () => {
+        cancelled = true;
+      };
     }
+
     setStatusLoaded(false);
+
+    let marker: LegalAcceptanceMarker | null = null;
+    try {
+      marker = parseLegalAcceptanceMarker(window.sessionStorage.getItem(pendingKey));
+    } catch {
+      marker = null;
+    }
+    setPendingMarker(marker);
+
+    if (marker) {
+      void persistAcceptance(marker)
+        .then(() => {
+          try {
+            window.sessionStorage.removeItem(pendingKey);
+          } catch {
+            // ignore storage issues
+          }
+          if (cancelled) return;
+          setRequiresAcceptance(false);
+          setOpen(false);
+          router.refresh();
+        })
+        .catch(() => {
+          if (cancelled) return;
+          setRequiresAcceptance(true);
+          setOpen(true);
+        })
+        .finally(() => {
+          if (!cancelled) setStatusLoaded(true);
+        });
+      return () => {
+        cancelled = true;
+      };
+    }
+
     void fetchStatus()
       .then((status) => {
+        if (cancelled) return;
         setRequiresAcceptance(status.requiresAcceptance);
         setOpen(status.requiresAcceptance);
       })
-      .finally(() => setStatusLoaded(true));
-  }, [mode, session?.user]);
+      .catch(() => {
+        if (cancelled) return;
+        setRequiresAcceptance(true);
+        setOpen(true);
+      })
+      .finally(() => {
+        if (!cancelled) setStatusLoaded(true);
+      });
 
-  if (mode !== "account") return <>{children ?? null}</>;
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.user]);
+
+  if (!session?.user) {
+    return <>{children ?? null}</>;
+  }
+
+  if (!statusLoaded) {
+    return null;
+  }
+
+  if (!requiresAcceptance) {
+    return <>{children ?? null}</>;
+  }
 
   return (
-    <>
-      <div className={open ? "pointer-events-none select-none opacity-50" : ""}>{children}</div>
-      {session?.user && statusLoaded && requiresAcceptance && (
-        <TermsAcceptanceModal
-          open={open}
-          mode="account"
-          onClose={() => router.push("/")}
-          continueLabel="Accept and continue"
-          onContinue={async () => {
-            const marker = pendingMarker ?? buildPendingAcceptanceMarker(new Date().toISOString());
-            await persistAcceptance(marker);
-            setOpen(false);
-            setRequiresAcceptance(false);
-            router.refresh();
-          }}
-        />
-      )}
-    </>
+    <TermsAcceptanceModal
+      open={open}
+      mode={mode === "account" ? "account" : "account"}
+      onClose={async () => {
+        await signOut();
+        router.push("/");
+      }}
+      continueLabel="Accept and continue"
+      onContinue={async () => {
+        const marker = pendingMarker ?? buildPendingAcceptanceMarker(new Date().toISOString());
+        await persistAcceptance(marker);
+        try {
+          window.sessionStorage.removeItem(pendingKey);
+        } catch {
+          // ignore
+        }
+        setOpen(false);
+        setRequiresAcceptance(false);
+        router.refresh();
+      }}
+    />
   );
 }

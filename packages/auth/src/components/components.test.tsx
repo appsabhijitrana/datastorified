@@ -3,18 +3,31 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { GoogleSignInButton } from "./GoogleSignInButton";
+import { LegalAcceptanceGate } from "./LegalAcceptanceGate";
 
 const mocks = vi.hoisted(() => ({
   signInWithGoogle: vi.fn(),
+  signOut: vi.fn(),
+  useSession: vi.fn(),
+  fetch: vi.fn(),
+  router: { push: vi.fn(), refresh: vi.fn() },
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => mocks.router,
 }));
 
 vi.mock("../client", () => ({
+  authClient: { useSession: mocks.useSession },
   signInWithGoogle: mocks.signInWithGoogle,
+  signOut: mocks.signOut,
 }));
 
 beforeEach(() => {
   vi.clearAllMocks();
   window.sessionStorage.clear();
+  vi.stubGlobal("fetch", mocks.fetch);
+  mocks.useSession.mockReturnValue({ data: null, isPending: false, isRefetching: false, error: null, refetch: vi.fn() });
 });
 
 describe("GoogleSignInButton and TermsAcceptanceModal", () => {
@@ -62,5 +75,41 @@ describe("GoogleSignInButton and TermsAcceptanceModal", () => {
     await user.click(screen.getAllByRole("button", { name: /Continue with Google/i })[1]);
 
     expect(mocks.signInWithGoogle).toHaveBeenCalledWith({ callbackURL: "/decision" });
+  });
+
+  it("blocks authenticated content until legal acceptance is resolved", async () => {
+    mocks.useSession.mockReturnValue({
+      data: { user: { id: "user-1", email: "user@example.com" } },
+      isPending: false,
+      isRefetching: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+    mocks.fetch.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          acceptedCurrentTerms: false,
+          acceptedCurrentPrivacy: false,
+          acceptedCurrentLegal: false,
+          requiresAcceptance: true,
+          currentVersions: {
+            termsVersion: "terms-v1.0",
+            privacyVersion: "privacy-v1.0",
+            legalAcceptanceVersion: "legal-v1.0",
+          },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    render(
+      <LegalAcceptanceGate>
+        <div>protected content</div>
+      </LegalAcceptanceGate>,
+    );
+
+    expect(await screen.findByRole("dialog")).toBeTruthy();
+    expect(screen.queryByText("protected content")).toBeNull();
+    expect(mocks.fetch).toHaveBeenCalledWith("/api/legal/acceptance/status", expect.any(Object));
   });
 });
