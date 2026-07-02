@@ -83,6 +83,7 @@ model Profile {
   dependents            Int?
   occupation            String?
   employmentType        String?
+  preferences           Json?
   monthlyIncome         Decimal? @db.Decimal(14, 2)
   monthlyExpenses       Decimal? @db.Decimal(14, 2)
   emergencyFund         Decimal? @db.Decimal(14, 2)
@@ -90,7 +91,7 @@ model Profile {
   liabilities           Decimal? @db.Decimal(14, 2)
   activeLoans           Int?
   monthlyEmis           Decimal? @db.Decimal(14, 2)
-  goals                 String?
+  goals                 Json?
   riskProfile           String?
   investmentExperience  String?
   preferredCurrency     String?

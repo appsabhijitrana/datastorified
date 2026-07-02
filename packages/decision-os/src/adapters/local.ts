@@ -31,17 +31,55 @@ export class LocalDecisionPersistenceAdapter implements DecisionPersistenceAdapt
 }
 
 export class LocalProfileAdapter implements DecisionProfileAdapter {
+  private async readRemoteProfile(): Promise<DecisionProfileEnvelope | null> {
+    if (typeof fetch !== "function") return null;
+    try {
+      const response = await fetch("/api/profile", { credentials: "include" });
+      if (!response.ok) return null;
+      const payload = (await response.json()) as DecisionProfileEnvelope & { source?: string };
+      return payload.source === "authenticated" ? payload : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private async writeRemoteProfile(profile: Partial<DecisionProfile>): Promise<DecisionProfileEnvelope | null> {
+    if (typeof fetch !== "function") return null;
+    try {
+      const response = await fetch("/api/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(profile),
+      });
+      if (!response.ok) return null;
+      const payload = (await response.json()) as DecisionProfileEnvelope & { source?: string };
+      return payload.source === "authenticated" ? payload : null;
+    } catch {
+      return null;
+    }
+  }
+
   async getProfile() {
+    const remote = await this.readRemoteProfile();
+    if (remote) return remote;
     return localProfileStorage.getProfile();
   }
 
   async updateProfile(profile: Partial<DecisionProfile>) {
+    const remote = await this.writeRemoteProfile(profile);
+    if (remote) {
+      localProfileStorage.saveEnvelope(remote);
+      return remote;
+    }
     localProfileStorage.saveProfile(profile);
     return localProfileStorage.getProfile();
   }
 
   async getCompleteness() {
-    return getProfileCompleteness(localProfileStorage.getCurrentProfile());
+    const envelope = await this.getProfile();
+    const profile = "profile" in envelope ? envelope.profile : envelope;
+    return getProfileCompleteness(profile);
   }
 }
 

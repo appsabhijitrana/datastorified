@@ -190,6 +190,9 @@ importers:
       '@datastorified/auth':
         specifier: workspace:*
         version: link:../../packages/auth
+      '@datastorified/database':
+        specifier: workspace:*
+        version: link:../../packages/database
       '@datastorified/decision-engine':
         specifier: workspace:*
         version: link:../../packages/decision-engine
