@@ -1,26 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { StatusService } from "./lib/status/service";
 
-const ALLOWED_PATHS = new Set(["/maintenance", "/status", "/api/health"]);
-
 export function middleware(request: NextRequest) {
-  const maintenance = StatusService.getMaintenance();
-  if (!maintenance.enabled) return NextResponse.next();
-
   const { pathname } = request.nextUrl;
-  if (
-    pathname.startsWith("/_next") ||
-    pathname.startsWith("/api/auth") ||
-    pathname.startsWith("/api/health") ||
-    pathname.startsWith("/favicon") ||
-    pathname.startsWith("/brand") ||
-    pathname.startsWith("/manifest") ||
-    pathname.startsWith("/robots") ||
-    pathname.startsWith("/sitemap") ||
-    ALLOWED_PATHS.has(pathname)
-  ) {
+  if (pathname.startsWith("/_next") || pathname.startsWith("/api") || pathname.startsWith("/favicon") || pathname.startsWith("/brand") || pathname.startsWith("/manifest") || pathname.startsWith("/robots") || pathname.startsWith("/sitemap") || pathname === "/maintenance" || pathname === "/admin" || pathname.startsWith("/admin/")) {
     return NextResponse.next();
   }
+
+  if (!StatusService.shouldBlockPublicPath(pathname)) return NextResponse.next();
 
   const url = request.nextUrl.clone();
   url.pathname = "/maintenance";
@@ -31,4 +18,3 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)"],
 };
-

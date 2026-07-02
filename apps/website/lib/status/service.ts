@@ -1,94 +1,81 @@
-import { defaultStatusServices, sampleIncidents } from "./config";
-import type { BannerConfig, HealthResponse, HealthServiceStatus, MaintenanceConfig, ServiceState, ServiceStatus, SystemStatus } from "./types";
+import type { BannerConfig, HealthResponse, MaintenanceConfig } from "./types";
 
 declare const process: {
   env: Record<string, string | undefined> & {
-    MAINTENANCE_MODE?: string;
-    MAINTENANCE_MESSAGE?: string;
-    MAINTENANCE_ETA?: string;
-    OUTAGE_BANNER_ENABLED?: string;
-    OUTAGE_BANNER_LEVEL?: string;
-    OUTAGE_BANNER_TITLE?: string;
-    OUTAGE_BANNER_MESSAGE?: string;
-    OUTAGE_BANNER_LINK?: string;
-    OUTAGE_BANNER_VERSION?: string;
+    NEXT_PUBLIC_MAINTENANCE_ENABLED?: string;
+    NEXT_PUBLIC_MAINTENANCE_MODE?: string;
+    NEXT_PUBLIC_MAINTENANCE_MESSAGE?: string;
+    NEXT_PUBLIC_MAINTENANCE_START?: string;
+    NEXT_PUBLIC_MAINTENANCE_END?: string;
+    NEXT_PUBLIC_OUTAGE_ENABLED?: string;
+    NEXT_PUBLIC_OUTAGE_MESSAGE?: string;
+    NEXT_PUBLIC_SCHEDULED_MAINTENANCE_ENABLED?: string;
+    NEXT_PUBLIC_SCHEDULED_MAINTENANCE_MESSAGE?: string;
     NEXT_PUBLIC_APP_VERSION?: string;
   };
 };
 
 const readBool = (value: string | undefined) => value === "true";
-const readBannerLevel = (value: string | undefined): BannerConfig["level"] => {
-  if (value === "info" || value === "success" || value === "warning" || value === "critical") return value;
-  return "warning";
-};
+const readMode = (value: string | undefined): MaintenanceConfig["mode"] => (value === "page" ? "page" : "banner");
 
-const cloneServices = (state: ServiceState): ServiceStatus[] =>
-  defaultStatusServices.map((service) => ({ ...service, state, updatedAt: new Date().toISOString() }));
-
-const stateToHealth: Record<ServiceState, HealthServiceStatus> = {
-  operational: "healthy",
-  degraded: "degraded",
-  maintenance: "maintenance",
-  outage: "outage",
-};
-
-const startedAt = Date.now();
+const getVersion = () => process.env.NEXT_PUBLIC_APP_VERSION?.trim() || "1.0.0";
 
 export const StatusService = {
   getMaintenance(): MaintenanceConfig {
     return {
-      enabled: readBool(process.env.MAINTENANCE_MODE),
-      message: process.env.MAINTENANCE_MESSAGE?.trim() || "We’re making improvements and will be back shortly.",
-      eta: process.env.MAINTENANCE_ETA?.trim() || undefined,
+      enabled: readBool(process.env.NEXT_PUBLIC_MAINTENANCE_ENABLED),
+      mode: readMode(process.env.NEXT_PUBLIC_MAINTENANCE_MODE),
+      message: process.env.NEXT_PUBLIC_MAINTENANCE_MESSAGE?.trim() || "We’re taking a short pause to make things better.",
+      start: process.env.NEXT_PUBLIC_MAINTENANCE_START?.trim() || undefined,
+      end: process.env.NEXT_PUBLIC_MAINTENANCE_END?.trim() || undefined,
     };
   },
 
-  getBanner(): BannerConfig {
-    const version = process.env.OUTAGE_BANNER_VERSION?.trim() || process.env.NEXT_PUBLIC_APP_VERSION?.trim() || "1";
+  getOutageBanner(): BannerConfig {
     return {
-      enabled: readBool(process.env.OUTAGE_BANNER_ENABLED),
-      level: readBannerLevel(process.env.OUTAGE_BANNER_LEVEL),
-      title: process.env.OUTAGE_BANNER_TITLE?.trim() || "Service notice",
-      message: process.env.OUTAGE_BANNER_MESSAGE?.trim() || "We’re actively monitoring a service update.",
-      link: process.env.OUTAGE_BANNER_LINK?.trim() || "/status",
-      version,
+      enabled: readBool(process.env.NEXT_PUBLIC_OUTAGE_ENABLED),
+      variant: "outage",
+      message: process.env.NEXT_PUBLIC_OUTAGE_MESSAGE?.trim() || "We’re seeing a temporary issue and are working on it.",
     };
   },
 
-  getServices(): ServiceStatus[] {
-    const maintenance = this.getMaintenance();
-    if (maintenance.enabled) {
-      return cloneServices("maintenance");
-    }
-    return defaultStatusServices.map((service) => ({ ...service }));
+  getScheduledMaintenanceBanner(): BannerConfig {
+    return {
+      enabled: readBool(process.env.NEXT_PUBLIC_SCHEDULED_MAINTENANCE_ENABLED),
+      variant: "scheduled",
+      message: process.env.NEXT_PUBLIC_SCHEDULED_MAINTENANCE_MESSAGE?.trim() || "A short maintenance window is planned soon.",
+    };
   },
 
-  getIncidents() {
-    return sampleIncidents.map((incident) => ({ ...incident }));
-  },
-
-  getSystemStatus(): SystemStatus {
+  getMaintenanceBanner(): BannerConfig {
     const maintenance = this.getMaintenance();
-    if (maintenance.enabled) return "maintenance";
-    const services = this.getServices();
-    if (services.some((service) => service.state === "outage")) return "major_outage";
-    if (services.some((service) => service.state === "degraded")) return "degraded";
-    if (services.some((service) => service.state === "maintenance")) return "maintenance";
-    return "operational";
+    return {
+      enabled: maintenance.enabled && maintenance.mode === "banner",
+      variant: "maintenance",
+      message: maintenance.message,
+    };
   },
 
   getHealth(): HealthResponse {
-    const services = this.getServices();
-    const systemStatus = this.getSystemStatus();
-    const status: HealthResponse["status"] =
-      systemStatus === "operational" ? "healthy" : systemStatus;
+    const maintenance = this.getMaintenance();
+    const banner = this.getMaintenanceBanner();
+    const outage = this.getOutageBanner();
+    const scheduled = this.getScheduledMaintenanceBanner();
+    const status: HealthResponse["status"] = maintenance.enabled && maintenance.mode === "page" ? "maintenance" : banner.enabled || outage.enabled || scheduled.enabled ? "notice" : "operational";
+
     return {
       status,
-      systemStatus,
-      version: process.env.NEXT_PUBLIC_APP_VERSION?.trim() || "1.0.0",
+      message: maintenance.enabled ? maintenance.message : outage.enabled ? outage.message : scheduled.enabled ? scheduled.message : undefined,
+      version: getVersion(),
       timestamp: new Date().toISOString(),
-      uptime: Math.floor((Date.now() - startedAt) / 1000),
-      services: Object.fromEntries(services.map((service) => [service.id, stateToHealth[service.state]])) as HealthResponse["services"],
     };
+  },
+
+  shouldBlockPublicPath(pathname: string): boolean {
+    const maintenance = this.getMaintenance();
+    if (!maintenance.enabled || maintenance.mode !== "page") return false;
+    if (pathname === "/admin" || pathname.startsWith("/admin/")) return false;
+    if (pathname.startsWith("/_next") || pathname.startsWith("/api") || pathname.startsWith("/favicon") || pathname.startsWith("/brand") || pathname.startsWith("/manifest") || pathname.startsWith("/robots") || pathname.startsWith("/sitemap")) return false;
+    return pathname !== "/maintenance";
   },
 };
