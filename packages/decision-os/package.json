@@ -6,6 +6,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./core": "./src/core/index.ts",
+    "./core/flowEngine": "./src/core/flowEngine.ts",
     "./plugins": "./src/plugins/index.ts",
     "./plugins/workflowRegistry": "./src/plugins/workflowRegistry.ts",
     "./adapters": "./src/adapters/index.ts",

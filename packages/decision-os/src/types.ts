@@ -9,6 +9,8 @@ export type DecisionAnswer = {
 };
 
 export type DecisionQuestionType =
+  | "single_choice"
+  | "multi_choice"
   | "text"
   | "number"
   | "boolean"
