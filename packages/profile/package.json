@@ -1,0 +1,22 @@
+{
+  "name": "@datastorified/profile",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./types": "./src/types.ts",
+    "./schema": "./src/schema.ts",
+    "./completeness": "./src/completeness.ts",
+    "./recommendation": "./src/recommendation.ts",
+    "./storage": "./src/storage/localProfileStorage.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --root ../.. packages/profile/tests"
+  },
+  "dependencies": {
+    "zod": "^3.25.0"
+  }
+}

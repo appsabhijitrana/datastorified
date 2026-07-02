@@ -17,6 +17,7 @@ import {
   type DecisionValue,
   type StoredDecision,
 } from "@datastorified/decision-os";
+import { getProfileAnalysis, localProfileStorage } from "@datastorified/profile";
 import { DecisionAccuracyBadge } from "./DecisionAccuracyBadge";
 import { DecisionProgress } from "./DecisionProgress";
 import { DecisionQuestion } from "./DecisionQuestion";
@@ -26,15 +27,20 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
   const workflow = decisionPluginRegistry.getWorkflowBySlug(slug);
   if (!workflow || workflow.pluginId !== pluginId) throw new Error(`Unknown Decision OS workflow: ${pluginId}/${slug}`);
   const router = useRouter();
+  const [profile, setProfile] = useState<ReturnType<typeof localProfileStorage.getProfile> | null>(null);
   const [answers, setAnswers] = useState<DecisionAnswers>(() => createDefaultAnswers(workflow.questions));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [step, setStep] = useState(0);
   const facts = useMemo(() => buildDecisionFacts(workflow, answers), [answers, workflow]);
   const questions = useMemo(() => getVisibleQuestions(workflow.questions, answers, facts), [answers, facts, workflow.questions]);
   const report = useMemo(() => buildDecisionReport(workflow, answers), [answers, workflow]);
+  const profileAnalysis = useMemo(() => getProfileAnalysis(profile?.profile), [profile]);
   const currentQuestion = questions[Math.min(step, Math.max(0, questions.length - 1))];
   const progress = questions.length ? ((Math.min(step, questions.length - 1) + 1) / questions.length) * 100 : 100;
 
+  useEffect(() => {
+    setProfile(localProfileStorage.getProfile());
+  }, []);
   useEffect(() => {
     const savedDraft = localDecisionStorage.getDraft(workflow.id);
     if (savedDraft) {
@@ -91,7 +97,7 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
     router.push(`/decision/result/${id}`);
   };
 
-  return <main className="mx-auto max-w-7xl overflow-x-hidden px-4 py-8 sm:px-6 sm:py-12"><div className="flex max-w-4xl flex-wrap items-center gap-2"><Badge>{workflow.category ?? workflow.pluginId}</Badge><DecisionAccuracyBadge /></div><h1 className="mt-4 max-w-4xl text-balance text-3xl font-bold tracking-[-.035em] sm:text-5xl">{workflow.title}</h1><p className="mt-3 max-w-3xl text-base leading-7 text-muted sm:text-lg">{workflow.description}</p><div className="mt-6 max-w-3xl"><DecisionProgress value={progress} current={Math.min(step + 1, questions.length)} total={questions.length} /></div>
+  return <main className="mx-auto max-w-7xl overflow-x-hidden px-4 py-8 sm:px-6 sm:py-12"><div className="flex max-w-4xl flex-wrap items-center gap-2"><Badge>{workflow.category ?? workflow.pluginId}</Badge><DecisionAccuracyBadge analysis={profileAnalysis} /></div><h1 className="mt-4 max-w-4xl text-balance text-3xl font-bold tracking-[-.035em] sm:text-5xl">{workflow.title}</h1><p className="mt-3 max-w-3xl text-base leading-7 text-muted sm:text-lg">{workflow.description}</p><div className="mt-6 max-w-3xl"><DecisionProgress value={progress} current={Math.min(step + 1, questions.length)} total={questions.length} /></div>
     <div className="mt-8 grid min-w-0 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
       <div className="min-w-0">
         <div className="md:hidden">{currentQuestion && <DecisionQuestion question={currentQuestion} value={answers[currentQuestion.id]} onChange={(value) => update(currentQuestion.id, value)} error={errors[currentQuestion.id]} />}</div>
