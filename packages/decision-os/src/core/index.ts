@@ -7,3 +7,4 @@ export * from "./riskEngine";
 export * from "./recommendationEngine";
 export * from "./scenarioEngine";
 export * from "./reportEngine";
+export * from "./foundation";
