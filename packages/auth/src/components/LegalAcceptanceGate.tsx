@@ -120,7 +120,7 @@ export function LegalAcceptanceGate({ children, mode = "global" }: LegalAcceptan
     return () => {
       cancelled = true;
     };
-  }, [session?.user]);
+  }, [router, session?.user]);
 
   if (!session?.user) {
     return <>{children ?? null}</>;

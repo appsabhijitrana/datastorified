@@ -7,6 +7,7 @@
     ".": "./src/index.ts",
     "./core": "./src/core/index.ts",
     "./plugins": "./src/plugins/index.ts",
+    "./plugins/workflowRegistry": "./src/plugins/workflowRegistry.ts",
     "./adapters": "./src/adapters/index.ts",
     "./plugins/finance": "./src/plugins/finance/index.ts",
     "./plugins/property": "./src/plugins/property/index.ts",
