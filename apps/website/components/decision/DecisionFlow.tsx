@@ -14,10 +14,11 @@ import {
   validateAnswers,
   type DecisionAnswers,
   type DecisionValue,
-  type StoredDecision,
 } from "@datastorified/decision-os";
 import { getProfileAnalysis, type DecisionProfileEnvelope } from "@datastorified/profile";
 import { getDecisionAdapters } from "@datastorified/decision-os/adapters";
+import { authClient } from "@datastorified/auth";
+import { HybridDecisionRepository, buildDecisionRecord } from "@datastorified/decision-repository";
 import { DecisionAccuracyBadge } from "./DecisionAccuracyBadge";
 import { DecisionProgress } from "./DecisionProgress";
 import { DecisionQuestion } from "./DecisionQuestion";
@@ -28,6 +29,8 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
   if (!workflow || workflow.pluginId !== pluginId) throw new Error(`Unknown Decision OS workflow: ${pluginId}/${slug}`);
   const router = useRouter();
   const adapters = getDecisionAdapters();
+  const { data: session } = authClient.useSession();
+  const repository = useMemo(() => new HybridDecisionRepository({ authenticated: Boolean(session?.user) }), [session?.user]);
   const [profile, setProfile] = useState<DecisionProfileEnvelope | null>(null);
   const [answers, setAnswers] = useState<DecisionAnswers>(() => createDefaultAnswers(workflow.questions));
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -70,7 +73,7 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
     setStep((current) => Math.min(current + 1, questions.length - 1));
   };
   const reset = () => { setAnswers(createDefaultAnswers(workflow.questions)); setErrors({}); setStep(0); void adapters.memory.clearDraft(workflow.id); };
-  const complete = () => {
+  const complete = async () => {
     const nextErrors = validateAnswers(questions, answers, facts);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) {
@@ -81,9 +84,10 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
     const id = createDecisionId("decision");
     const now = new Date().toISOString();
     const finalReport = buildDecisionReport(workflow, answers, { id: `report_${id}`, generatedAt: now });
-    const stored: StoredDecision = { id, workflowId: workflow.id, pluginId: workflow.pluginId, answers, report: finalReport, createdAt: now, updatedAt: now };
-    void adapters.memory.saveResult(stored).then(() => adapters.memory.clearDraft(workflow.id));
-    router.push(`/decision/result/${id}`);
+    const stored = buildDecisionRecord({ id, workflow, answers, report: finalReport, createdAt: now, updatedAt: now });
+    await repository.saveDecision(stored);
+    await adapters.memory.clearDraft(workflow.id);
+    router.push(`/decision/result/${stored.id}`);
   };
 
   return <main className="mx-auto max-w-7xl overflow-x-hidden px-4 py-8 sm:px-6 sm:py-12"><div className="flex max-w-4xl flex-wrap items-center gap-2"><Badge>{workflow.category ?? workflow.pluginId}</Badge><DecisionAccuracyBadge analysis={profileAnalysis} /></div><h1 className="mt-4 max-w-4xl text-balance text-3xl font-bold tracking-[-.035em] sm:text-5xl">{workflow.title}</h1><p className="mt-3 max-w-3xl text-base leading-7 text-muted sm:text-lg">{workflow.description}</p><div className="mt-6 max-w-3xl"><DecisionProgress value={progress} current={Math.min(step + 1, questions.length)} total={questions.length} /></div>

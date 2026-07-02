@@ -118,12 +118,16 @@ model Decision {
   title             String
   category          String?
   question          String?
+  pluginName        String?
   answers           Json
   facts             Json?
   score             Json?
+  confidence       Float?
+  riskLevel        String?
   risks             Json?
   recommendation    Json?
   actionPlan        Json?
+  assumptions       Json?
   scenario          Json?
   reportVersion     String?
   source            String          @default("local")

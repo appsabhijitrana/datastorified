@@ -4,19 +4,24 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Clock3, History, Trash2 } from "lucide-react";
 import { Badge, Button, Card } from "@datastorified/ui";
-import { decisionPluginRegistry, type DecisionMemoryDraft, type DecisionMemoryProfile, type StoredDecision } from "@datastorified/decision-os";
+import { decisionPluginRegistry, type DecisionMemoryDraft, type DecisionMemoryProfile } from "@datastorified/decision-os";
 import { getDecisionAdapters } from "@datastorified/decision-os/adapters";
+import { authClient } from "@datastorified/auth";
+import { HybridDecisionRepository } from "@datastorified/decision-repository";
+import type { DecisionRepositoryDecision } from "@datastorified/decision-repository";
 
 export function DecisionSavedPage() {
   const router = useRouter();
   const adapters = getDecisionAdapters();
-  const [saved, setSaved] = useState<StoredDecision[]>([]);
+  const { data: session } = authClient.useSession();
+  const repository = useMemo(() => new HybridDecisionRepository({ authenticated: Boolean(session?.user) }), [session?.user]);
+  const [saved, setSaved] = useState<DecisionRepositoryDecision[]>([]);
   const [drafts, setDrafts] = useState<DecisionMemoryDraft[]>([]);
   const [profile, setProfile] = useState<DecisionMemoryProfile>({});
 
   const refresh = useCallback(() => {
     void Promise.all([
-      adapters.memory.listSaved(),
+      repository.listDecisions(),
       adapters.memory.listDrafts(),
       adapters.memory.getProfile(),
     ]).then(([savedItems, draftItems, profileItem]) => {
@@ -24,7 +29,7 @@ export function DecisionSavedPage() {
       setDrafts(draftItems);
       setProfile(profileItem);
     });
-  }, [adapters.memory]);
+  }, [adapters.memory, repository]);
 
   useEffect(() => {
     refresh();
@@ -34,14 +39,18 @@ export function DecisionSavedPage() {
     if (!profile.lastOpenedWorkflow) return undefined;
     return decisionPluginRegistry.getWorkflow(profile.lastOpenedWorkflow.workflowId);
   }, [profile]);
+  const storageLabel = session?.user ? "Synced memory" : "Local memory";
+  const storageDescription = session?.user
+    ? "Saved decisions sync to your account, while drafts still stay on this device."
+    : "Everything here stays on this device. Resume drafts, revisit saved results, and continue where you left off.";
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <Badge>Local memory</Badge>
+          <Badge>{storageLabel}</Badge>
           <h1 className="mt-4 text-3xl font-bold tracking-[-.035em] sm:text-4xl">Saved decisions and drafts</h1>
-          <p className="mt-3 max-w-2xl text-base leading-7 text-muted">Everything here stays on this device. Resume drafts, revisit saved results, and continue where you left off.</p>
+          <p className="mt-3 max-w-2xl text-base leading-7 text-muted">{storageDescription}</p>
         </div>
         <Button variant="secondary" onClick={() => router.push("/decision")}>Start a new decision</Button>
       </div>
@@ -109,7 +118,7 @@ export function DecisionSavedPage() {
                       <h3 className="mt-2 text-lg font-semibold">{workflow?.title ?? item.workflowId}</h3>
                       <p className="mt-2 text-sm text-muted">Updated {new Date(item.updatedAt).toLocaleString("en-IN")}</p>
                     </div>
-                    <Button variant="ghost" onClick={() => { void adapters.memory.deleteSaved(item.id).then(refresh); }}><Trash2 size={16} /></Button>
+                    <Button variant="ghost" onClick={() => { void repository.deleteDecision(item.id).then(refresh); }}><Trash2 size={16} /></Button>
                   </div>
                   <div className="mt-4 flex flex-wrap gap-2">
                     <Button onClick={() => router.push(`/decision/result/${item.id}`)}>Open result</Button>
