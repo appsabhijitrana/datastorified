@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ArrowLeftRight, Calculator, Check, ChevronRight, Clock3, Compass, Copy, Heart, Home, Layers3, LogOut, Menu, Search, ShieldCheck, Sparkles, UserRound, Wrench, X } from "lucide-react";
 import { cn, formatINR, formatNumber } from "@datastorified/utils";
 import { authClient, signInWithGoogle, signOut } from "@datastorified/auth";
+import { getLocalDecisionSyncSnapshot, syncLocalToCloud, type SyncSummary } from "@datastorified/sync";
 
 export function Button({className,variant="primary",children,...props}:React.ButtonHTMLAttributes<HTMLButtonElement>&{variant?:"primary"|"secondary"|"ghost"|"danger"}){return <button className={cn("inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50",variant==="primary"&&"bg-gradient-to-br from-primary to-accent text-white shadow-glow hover:-translate-y-0.5",variant==="secondary"&&"border border-border bg-white text-ink shadow-soft hover:border-primary/30",variant==="ghost"&&"text-muted hover:bg-soft hover:text-ink",variant==="danger"&&"bg-danger text-white",className)} {...props}>{children}</button>}
 export function Card({className,children,...props}:React.HTMLAttributes<HTMLDivElement>){return <div className={cn("rounded-3xl border border-border/80 bg-white shadow-soft",className)} {...props}>{children}</div>}
@@ -24,6 +25,20 @@ export function Header({active="home",surface="website"}:{active?:string;surface
 function AuthMenu({mobile = false}: { mobile?: boolean }) {
   const { data: session, isPending } = authClient.useSession();
   const isSignedIn = Boolean(session?.user);
+  const [syncSnapshot, setSyncSnapshot] = React.useState<ReturnType<typeof getLocalDecisionSyncSnapshot> | null>(null);
+  const [syncSummary, setSyncSummary] = React.useState<SyncSummary | null>(null);
+  const [syncing, setSyncing] = React.useState(false);
+  const [syncError, setSyncError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (!isSignedIn) {
+      setSyncSnapshot(null);
+      setSyncSummary(null);
+      setSyncError(null);
+      return;
+    }
+    setSyncSnapshot(getLocalDecisionSyncSnapshot());
+  }, [isSignedIn]);
 
   if (isPending) {
     return <Badge className={mobile ? "mt-3 inline-flex w-full justify-center" : ""}>Checking account…</Badge>;
@@ -55,6 +70,10 @@ function AuthMenu({mobile = false}: { mobile?: boolean }) {
   const user = session?.user;
   const name = user?.name ?? user?.email ?? "Account";
   const initials = (name.trim().split(/\s+/u).slice(0, 2).map((part) => part[0]).join("").slice(0, 2) || "A").toUpperCase();
+  const hasPendingSync = (syncSnapshot?.hasPendingSync ?? false) || !syncSummary;
+  const syncLabel = syncSummary
+    ? `${syncSummary.decisionsSynced} decisions synced`
+    : `${syncSnapshot?.decisions ?? 0} local decisions ready`;
 
   return (
     <details className={cn("relative", mobile ? "w-full" : "")}>
@@ -67,6 +86,43 @@ function AuthMenu({mobile = false}: { mobile?: boolean }) {
         <div className="rounded-xl bg-soft px-3 py-2">
           <p className="text-xs font-bold uppercase tracking-[.14em] text-muted">Signed in</p>
           <p className="mt-1 truncate text-sm font-semibold text-ink">{user?.email ?? "Google account"}</p>
+        </div>
+        <div className="mt-3 rounded-2xl border border-primary/10 bg-gradient-to-br from-primary/[.05] to-accent/[.06] p-4">
+          <p className="text-xs font-bold uppercase tracking-[.14em] text-primary">Sync your local decisions to your account</p>
+          <p className="mt-2 text-sm leading-6 text-muted">
+            {hasPendingSync
+              ? `We found ${syncSnapshot?.decisions ?? 0} decisions, ${syncSnapshot?.favorites ?? 0} favorites, and ${syncSnapshot?.history ?? 0} history items stored on this device.`
+              : "Your local decision memory is already in good shape."}
+          </p>
+          <Button
+            variant="secondary"
+            className="mt-3 w-full"
+            onClick={async () => {
+              setSyncing(true);
+              setSyncError(null);
+              try {
+                const result = await syncLocalToCloud();
+                setSyncSummary(result);
+                setSyncSnapshot(getLocalDecisionSyncSnapshot());
+              } catch (error) {
+                setSyncError(error instanceof Error ? error.message : "Sync failed.");
+              } finally {
+                setSyncing(false);
+              }
+            }}
+            disabled={syncing}
+          >
+            {syncing ? "Syncing…" : "Sync now"}
+          </Button>
+          {syncSummary && (
+            <div className="mt-3 grid gap-1 text-xs text-muted">
+              <p>{syncSummary.decisionsSynced} decisions synced</p>
+              <p>{syncSummary.favoritesSynced} favorites synced</p>
+              <p>{syncSummary.profileUpdated ? "Profile updated" : "Profile unchanged"}</p>
+            </div>
+          )}
+          {syncError && <p className="mt-2 text-xs font-medium text-danger">{syncError}</p>}
+          {!syncSummary && !syncError && <p className="mt-2 text-xs text-muted">{syncLabel}</p>}
         </div>
         <div className="mt-3 flex flex-col gap-2">
           <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-left text-sm font-semibold text-muted hover:bg-soft hover:text-ink" onClick={() => void signOut()}>

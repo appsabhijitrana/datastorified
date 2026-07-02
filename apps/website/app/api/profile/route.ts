@@ -83,6 +83,7 @@ export async function PATCH(request: NextRequest) {
     where: { userId: session.user.id },
     create: {
       userId: session.user.id,
+      sourceUpdatedAt: parsed.data.updatedAt ? new Date(parsed.data.updatedAt) : new Date(),
       ageRange: nextProfile.ageRange ?? null,
       city: nextProfile.city ?? null,
       state: nextProfile.state ?? null,
@@ -107,6 +108,7 @@ export async function PATCH(request: NextRequest) {
       metadata: { source: "authenticated" },
     },
     update: {
+      sourceUpdatedAt: parsed.data.updatedAt ? new Date(parsed.data.updatedAt) : new Date(),
       ageRange: nextProfile.ageRange ?? null,
       city: nextProfile.city ?? null,
       state: nextProfile.state ?? null,

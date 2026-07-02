@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@datastorified/auth";
 import { prisma } from "@datastorified/database";
 import { decisionPluginRegistry } from "@datastorified/decision-os";
+import { createFingerprint } from "@datastorified/sync";
 import type { DecisionRepositoryDecision, DecisionRepositoryInput } from "@datastorified/decision-repository";
 
 function buildDecision(row: Awaited<ReturnType<typeof prisma.decision.findFirst>>): DecisionRepositoryDecision | undefined {
@@ -94,6 +95,9 @@ export async function POST(request: NextRequest) {
     create: {
       id,
       userId: session.user.id,
+      localId: body.id ?? id,
+      fingerprint: createFingerprint({ pluginId: workflow.pluginId, workflowId: workflow.id, answers: body.answers ?? {} }),
+      sourceUpdatedAt: body.updatedAt ? new Date(body.updatedAt) : new Date(now),
       pluginId: body.pluginId ?? plugin.id,
       pluginName: plugin.name ?? plugin.id,
       workflowId: body.workflowId ?? workflow.id,
@@ -116,6 +120,9 @@ export async function POST(request: NextRequest) {
     },
     update: {
       userId: session.user.id,
+      localId: body.id ?? id,
+      fingerprint: createFingerprint({ pluginId: workflow.pluginId, workflowId: workflow.id, answers: body.answers ?? {} }),
+      sourceUpdatedAt: body.updatedAt ? new Date(body.updatedAt) : new Date(now),
       pluginId: body.pluginId ?? plugin.id,
       pluginName: plugin.name ?? plugin.id,
       workflowId: body.workflowId ?? workflow.id,

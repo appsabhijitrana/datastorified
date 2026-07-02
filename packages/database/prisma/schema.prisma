@@ -76,6 +76,7 @@ model Verification {
 model Profile {
   id                    String   @id @default(cuid())
   userId                String?
+  sourceUpdatedAt       DateTime?
   ageRange              String?
   city                  String?
   state                 String?
@@ -109,6 +110,9 @@ model Profile {
 
 model Decision {
   id                String          @id @default(cuid())
+  localId           String?
+  fingerprint       String?
+  sourceUpdatedAt   DateTime?
   userId            String?
   sessionId         String?         @unique
   pluginId          String
@@ -145,6 +149,8 @@ model Decision {
   @@index([userId])
   @@index([sessionId])
   @@index([pluginId, workflowSlug])
+  @@index([userId, localId])
+  @@index([userId, fingerprint])
   @@index([updatedAt])
   @@map("decisions")
 }
@@ -166,6 +172,9 @@ model DecisionAnswer {
 
 model Favorite {
   id         String   @id @default(cuid())
+  localId    String?
+  fingerprint String?
+  sourceUpdatedAt DateTime?
   userId     String?
   decisionId String
   label      String?
@@ -175,6 +184,8 @@ model Favorite {
   decision   Decision @relation(fields: [decisionId], references: [id], onDelete: Cascade)
 
   @@unique([userId, decisionId])
+  @@index([userId, localId])
+  @@index([userId, fingerprint])
   @@index([decisionId])
   @@index([userId])
   @@map("favorites")
@@ -182,6 +193,9 @@ model Favorite {
 
 model HistoryItem {
   id          String   @id @default(cuid())
+  localId    String?
+  fingerprint String?
+  sourceUpdatedAt DateTime?
   userId      String?
   decisionId  String
   title       String
@@ -195,6 +209,8 @@ model HistoryItem {
   decision    Decision @relation(fields: [decisionId], references: [id], onDelete: Cascade)
 
   @@index([userId, openedAt])
+  @@index([userId, localId])
+  @@index([userId, fingerprint])
   @@index([decisionId])
   @@map("history_items")
 }
