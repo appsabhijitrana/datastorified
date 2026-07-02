@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createDataStorifiedClient, OfflineError, UnauthorizedError } from "../src";
+import { createDataStorifiedClient, OfflineError, ParseError, UnauthorizedError } from "../src";
 
 describe("sdk", () => {
   it("returns offline errors without crashing", async () => {
@@ -22,5 +22,16 @@ describe("sdk", () => {
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error("expected unauthorized error");
     expect(result.error).toBeInstanceOf(UnauthorizedError);
+  });
+
+  it("returns parse errors when the server body is invalid JSON", async () => {
+    Object.defineProperty(globalThis, "navigator", { value: { onLine: true }, configurable: true });
+    const client = createDataStorifiedClient({
+      fetcher: async () => new Response("not-json", { status: 200, headers: { "Content-Type": "application/json" } }),
+    });
+    const result = await client.decisions.get("id");
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error("expected parse error");
+    expect(result.error).toBeInstanceOf(ParseError);
   });
 });

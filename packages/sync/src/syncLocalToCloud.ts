@@ -9,7 +9,6 @@ import type {
   SyncFavoriteRecord,
   SyncHistoryRecord,
   SyncPayload,
-  SyncResponse,
   SyncSummary,
 } from "./types";
 

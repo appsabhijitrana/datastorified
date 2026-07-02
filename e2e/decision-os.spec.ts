@@ -10,6 +10,7 @@ test("homepage loads", async ({ page }) => {
   await page.goto(website, { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { name: /What decision are you trying to make today/i })).toBeVisible();
   await expect(page.getByLabel("What decision are you trying to make today?")).toBeVisible();
+  await expect(page.getByRole("button", { name: /Sign in with Google/i })).toBeVisible();
 });
 
 test('searching "buy house" opens the buy-house workflow', async ({ page }) => {
@@ -81,6 +82,53 @@ for (const [plugin, slug, title] of [
 test("saved page empty state renders", async ({ page }) => {
   await page.goto(`${website}/decision/saved`, { waitUntil: "domcontentloaded" });
   await expect(page.getByText(/No saved decisions yet/i)).toBeVisible();
+});
+
+test("saved decisions page prompts login when anonymous", async ({ page }) => {
+  await page.goto(`${website}/decision/saved`, { waitUntil: "domcontentloaded" });
+  await expect(page.getByRole("heading", { name: /Sign in when you’re ready to keep these decisions with your account/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Sign in with Google/i })).toBeVisible();
+});
+
+test("profile page prompts login when anonymous", async ({ page }) => {
+  await page.goto(`${website}/profile`, { waitUntil: "domcontentloaded" });
+  await expect(page.getByRole("heading", { name: /Your decision profile/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Sign in with Google/i })).toBeVisible();
+});
+
+test("sync banner appears after login mock", async ({ page }) => {
+  await page.route("**/api/auth/**", async (route) => {
+    const url = new URL(route.request().url());
+    if (!url.pathname.includes("get-session")) {
+      await route.continue();
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        session: {
+          id: "session-1",
+          token: "token-1",
+          userId: "user-1",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
+        },
+        user: {
+          id: "user-1",
+          name: "Ada Lovelace",
+          email: "ada@example.com",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      }),
+    });
+  });
+
+  await page.goto(website, { waitUntil: "domcontentloaded" });
+  await expect(page.getByText(/Sync your local decisions to your account/i)).toBeVisible();
+  await expect(page.getByRole("button", { name: /Sync now/i })).toBeVisible();
 });
 
 test("invalid inputs surface validation errors", async ({ page }) => {

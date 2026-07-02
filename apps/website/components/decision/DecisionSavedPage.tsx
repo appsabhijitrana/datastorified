@@ -6,7 +6,7 @@ import { ArrowRight, Clock3, History, Trash2 } from "lucide-react";
 import { Badge, Button, Card } from "@datastorified/ui";
 import { decisionPluginRegistry, type DecisionMemoryDraft, type DecisionMemoryProfile } from "@datastorified/decision-os";
 import { getDecisionAdapters } from "@datastorified/decision-os/adapters";
-import { authClient } from "@datastorified/auth";
+import { authClient, signInWithGoogle } from "@datastorified/auth";
 import { HybridDecisionRepository } from "@datastorified/decision-repository";
 import type { DecisionRepositoryDecision } from "@datastorified/decision-repository";
 
@@ -54,6 +54,19 @@ export function DecisionSavedPage() {
         </div>
         <Button variant="secondary" onClick={() => router.push("/decision")}>Start a new decision</Button>
       </div>
+
+      {!session?.user && (
+        <Card className="mt-8 border-primary/15 bg-primary/[.04] p-5">
+          <p className="text-xs font-bold uppercase tracking-[.14em] text-primary">Need to sync later?</p>
+          <h2 className="mt-2 text-xl font-bold">Sign in when you’re ready to keep these decisions with your account.</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
+            Anonymous users can keep working locally now. A Google sign-in later will unlock sync across devices without losing the current browser copy.
+          </p>
+          <Button className="mt-4" variant="secondary" onClick={() => void signInWithGoogle()}>
+            Sign in with Google
+          </Button>
+        </Card>
+      )}
 
       {profile.lastOpenedWorkflow && (
         <Card className="mt-8 border-primary/20 bg-primary/[.04] p-5">

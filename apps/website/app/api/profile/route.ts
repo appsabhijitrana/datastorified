@@ -55,7 +55,7 @@ function buildResponse(profile: DecisionProfile | null, source: ProfileResponse[
 export async function GET(request: NextRequest) {
   const session = await getAuthSession(request.headers);
   if (!session?.user?.id) {
-    return NextResponse.json(buildResponse(null, "anonymous"));
+    return NextResponse.json({ error: "Anonymous profile access requires local storage." }, { status: 401 });
   }
 
   const record = await prisma.profile.findUnique({ where: { userId: session.user.id } });
