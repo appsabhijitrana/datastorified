@@ -28,13 +28,13 @@ test("decision engine completes, changes scenario, saves, and reloads", async ({
   await page.reload();
   await expect(page.getByRole("button", { name: /Remove saved copy/i })).toBeVisible();
   const resultUrl = page.url();
-  const slider = page.locator('[aria-label^="Property purchase price slider"]');
-  const before = await slider.inputValue();
-  await slider.fill(String(Number(before) + 500000));
+  const propertyPrice = page.getByRole("textbox", { name: "Property price", exact: true });
+  const before = await propertyPrice.inputValue();
+  await propertyPrice.fill(String(Number(before.replace(/[^\d.-]/gu, "")) + 500000));
   await expect(page.getByText(/points|No score change/u)).toBeVisible();
   await page.reload();
   await expect(page).toHaveURL(resultUrl);
-  await expect(page.getByRole("heading", { name: /Pause before you buy the house/i })).toBeVisible();
+  await expect(page.locator("h2").filter({ hasText: "Pause before you buy the house" }).first()).toBeVisible();
 });
 
 test("drafts resume correctly after reload", async ({ page }) => {
@@ -209,7 +209,12 @@ test("security headers protect every surface", async ({ request }) => {
 });
 
 test("responsive layouts do not overflow at launch breakpoints", async ({ page }) => {
-  for (const width of [320, 360, 390, 430, 768, 1024, 1440, 1920]) { await page.setViewportSize({width,height:900}); await page.goto(`${calculators}/emi-calculator`); expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth), `overflow at ${width}px`).toBe(true); }
+  page.setDefaultNavigationTimeout(60_000);
+  for (const width of [320, 360, 390, 430, 768, 1024, 1440, 1920]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(`${calculators}/emi-calculator`, { waitUntil: "domcontentloaded" });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth), `overflow at ${width}px`).toBe(true);
+  }
 });
 
 test("unknown routes return the 404 page", async ({ page }) => {

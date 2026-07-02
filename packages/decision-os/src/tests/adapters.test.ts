@@ -22,10 +22,14 @@ describe("decision adapters", () => {
 
     await adapters.memory.saveResult({ id: "decision-2", workflowId: workflow.id, pluginId: workflow.pluginId, answers, report, createdAt: "2026-01-02T00:00:00.000Z", updatedAt: "2026-01-02T00:00:00.000Z" });
     expect(await adapters.memory.listRecent()).toHaveLength(1);
+    expect(await adapters.memory.getProfile()).toMatchObject({ updatedAt: expect.any(String) });
 
     const explanation = await adapters.ai.explainDecision(report);
     expect(explanation.length).toBeGreaterThan(0);
     expect(await adapters.knowledge.getAssumptions(workflow)).toEqual(workflow.assumptions ?? []);
+    expect(await adapters.knowledge.getMarketData({ category: workflow.category })).toMatchObject({ source: "static" });
+    expect(await adapters.sync.syncLocalToCloud({ decisions: [] })).toEqual({ syncedCount: 0, conflictedIds: [] });
+    expect(await adapters.sync.resolveConflicts({ local: 1 }, { remote: 2 })).toEqual({ local: 1 });
 
     expect(decisionPluginRegistry.getWorkflow(workflow.id)).toBeDefined();
   });
