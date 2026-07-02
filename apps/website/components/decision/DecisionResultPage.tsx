@@ -20,6 +20,7 @@ import { DecisionReportView } from "./DecisionReportView";
 import { DecisionRiskCard } from "./DecisionRiskCard";
 import { DecisionScenarioSimulator } from "./DecisionScenarioSimulator";
 import { DecisionScoreCard } from "./DecisionScoreCard";
+import { PersonalizedRecommendations } from "../personalization/PersonalizedRecommendations";
 import { ImproveAnalysisCTA } from "../profile/ImproveAnalysisCTA";
 import { ProfileCompletenessCard } from "../profile/ProfileCompletenessCard";
 
@@ -85,6 +86,7 @@ export function DecisionResultPage({ id }: { id: string }) {
     </section>
     <section className="mt-8 print:hidden"><h2 className="text-2xl font-bold">Why this score</h2><p className="mt-2 text-sm text-muted">Each factor combines your answers with the workflow’s published rules and weights.</p><div className="mt-4 grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-4">{report.score.factors.map((factor) => <DecisionFactorCard key={factor.factorId} factor={factor} />)}</div></section>
     <section className="mt-8 grid min-w-0 gap-6 lg:grid-cols-2 print:hidden"><div className="min-w-0"><h2 className="mb-4 text-2xl font-bold">Risk checks</h2><div className="space-y-3">{report.risks.length ? report.risks.map((risk) => <DecisionRiskCard key={`${risk.id}:${risk.sourceRuleId}`} risk={risk} />) : <DecisionRiskCard />}</div></div><DecisionActionPlan items={report.actionPlan} /></section>
+    <section className="mt-8 print:hidden"><PersonalizedRecommendations compact showProfile={false} /></section>
     <section className="mt-8 print:hidden"><DecisionScenarioSimulator workflow={workflow} answers={item.answers} baseReport={report} /></section>
     <section className="mt-8 print:hidden"><DecisionRelatedTools workflow={workflow} /></section>
     <Card className="mt-8 border-warning/20 bg-warning/[.06] p-5 text-sm leading-6 text-muted print:hidden"><strong className="text-ink">Important:</strong> This is a structured educational aid, not financial, investment, legal, career, or other professional advice. Verify current rates, terms, laws, and material assumptions independently.</Card>
