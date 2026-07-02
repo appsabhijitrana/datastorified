@@ -2,8 +2,10 @@
 import * as React from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Calculator, Check, ChevronRight, Clock3, Compass, Copy, Heart, Home, Layers3, Menu, Search, Sparkles, UserRound, Wrench, X } from "lucide-react";
+import { ArrowRight, ArrowLeftRight, Calculator, Check, ChevronRight, Clock3, Compass, Copy, Heart, Home, Layers3, LogOut, Menu, Search, ShieldCheck, Sparkles, UserRound, Wrench, X } from "lucide-react";
 import { cn, formatINR, formatNumber } from "@datastorified/utils";
+import { authClient, signInWithGoogle, signOut } from "@datastorified/auth";
+import { getLocalDecisionSyncSnapshot, syncLocalToCloud, type SyncSummary } from "@datastorified/sync";
 
 export function Button({className,variant="primary",children,...props}:React.ButtonHTMLAttributes<HTMLButtonElement>&{variant?:"primary"|"secondary"|"ghost"|"danger"}){return <button className={cn("inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50",variant==="primary"&&"bg-gradient-to-br from-primary to-accent text-white shadow-glow hover:-translate-y-0.5",variant==="secondary"&&"border border-border bg-white text-ink shadow-soft hover:border-primary/30",variant==="ghost"&&"text-muted hover:bg-soft hover:text-ink",variant==="danger"&&"bg-danger text-white",className)} {...props}>{children}</button>}
 export function Card({className,children,...props}:React.HTMLAttributes<HTMLDivElement>){return <div className={cn("rounded-3xl border border-border/80 bg-white shadow-soft",className)} {...props}>{children}</div>}
@@ -17,9 +19,122 @@ export function Header({active="home",surface="website"}:{active?:string;surface
  void active;
  const [open,setOpen]=React.useState(false);const home=surface==="website"?"/":surface==="calculators"?"/":"/";
  const links=surface==="website"?[{label:"Decision Engine",href:"/decision"},{label:"Calculators",href:"https://calculators.datastorified.com"},{label:"Tools",href:"https://tools.datastorified.com"},{label:"About",href:"/about"},{label:"Trust",href:"/trust"}]:[{label:"Explore",href:"/"},{label:"Categories",href:"/#categories"},{label:"Recent",href:"/#recent"}];
- return <header className="sticky top-0 z-50 border-b border-border/70 bg-white/80 backdrop-blur-xl"><div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6"><Link href={home} className="flex items-center gap-2 font-bold tracking-tight text-ink"><BrandMark className="size-10"/><span>DataStorified</span>{surface!=="website"&&<Badge className="hidden sm:inline-flex">{surface}</Badge>}</Link><nav className="hidden items-center gap-1 lg:flex">{links.map(x=><Link key={x.label} className="rounded-lg px-3 py-2 text-sm font-medium text-muted transition hover:bg-soft hover:text-ink" href={x.href}>{x.label}</Link>)}<Button variant="secondary" className="ml-2"><UserRound size={16}/> Sign in to sync</Button></nav><button aria-label="Open menu" className="grid size-11 place-items-center lg:hidden" onClick={()=>setOpen(!open)}>{open?<X/>:<Menu/>}</button></div><AnimatePresence>{open&&<motion.nav initial={{height:0,opacity:0}} animate={{height:"auto",opacity:1}} exit={{height:0,opacity:0}} className="overflow-hidden border-t border-border bg-white px-4 py-3 lg:hidden">{links.map(x=><Link onClick={()=>setOpen(false)} className="block rounded-xl px-3 py-3 font-medium text-muted" key={x.label} href={x.href}>{x.label}</Link>)}<p className="px-3 py-2 text-sm text-muted">Sign in to sync across devices</p></motion.nav>}</AnimatePresence></header>
+ return <header className="sticky top-0 z-50 border-b border-border/70 bg-white/80 backdrop-blur-xl"><div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6"><Link href={home} className="flex items-center gap-2 font-bold tracking-tight text-ink"><BrandMark className="size-10"/><span>DataStorified</span>{surface!=="website"&&<Badge className="hidden sm:inline-flex">{surface}</Badge>}</Link><nav className="hidden items-center gap-1 lg:flex">{links.map(x=><Link key={x.label} className="rounded-lg px-3 py-2 text-sm font-medium text-muted transition hover:bg-soft hover:text-ink" href={x.href}>{x.label}</Link>)}{surface==="website"?<AuthMenu />:<Button variant="secondary" className="ml-2"><UserRound size={16}/> Sign in to sync</Button>}</nav><button aria-label="Open menu" className="grid size-11 place-items-center lg:hidden" onClick={()=>setOpen(!open)}>{open?<X/>:<Menu/>}</button></div><AnimatePresence>{open&&<motion.nav initial={{height:0,opacity:0}} animate={{height:"auto",opacity:1}} exit={{height:0,opacity:0}} className="overflow-hidden border-t border-border bg-white px-4 py-3 lg:hidden">{links.map(x=><Link onClick={()=>setOpen(false)} className="block rounded-xl px-3 py-3 font-medium text-muted" key={x.label} href={x.href}>{x.label}</Link>)}{surface==="website"?<div className="mt-3"><AuthMenu mobile /></div>:<p className="px-3 py-2 text-sm text-muted">Sign in to sync across devices</p>}</motion.nav>}</AnimatePresence></header>
 }
-export function Footer(){const legal=[['Privacy','privacy'],['Terms','terms'],['Cookies','cookies'],['Disclaimer','disclaimer'],['AI Disclosure','ai-disclosure'],['Security','security']];return <footer className="border-t border-border bg-white pb-24 pt-12 md:pb-12"><div className="mx-auto grid max-w-7xl gap-9 px-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-[1.4fr_1fr_1fr_1.35fr]"><div><div className="flex items-center gap-2 font-bold"><BrandMark className="size-9"/>DataStorified</div><p className="mt-3 max-w-sm text-sm leading-6 text-muted">Decision intelligence and useful everyday tools, designed to make the next move feel clearer.</p><p className="mt-4 text-xs leading-5 text-muted">Private by default. Drafts, favorites, and history stay in this browser.</p></div><div><p className="font-semibold">Product</p><div className="mt-3 flex flex-col gap-2.5 text-sm text-muted"><a className="hover:text-primary" href="https://datastorified.com/decision">Decision engine</a><a className="hover:text-primary" href="https://calculators.datastorified.com">Smart calculators</a><a className="hover:text-primary" href="https://tools.datastorified.com">Online tools</a></div></div><div><p className="font-semibold">Company</p><div className="mt-3 flex flex-col gap-2.5 text-sm text-muted"><a className="hover:text-primary" href="https://datastorified.com/about">About</a><a className="hover:text-primary" href="https://datastorified.com/trust">Trust Center</a><a className="hover:text-primary" href="https://datastorified.com/contact">Contact</a><a className="hover:text-primary" href="https://datastorified.com/legal">Legal hub</a></div></div><div><p className="font-semibold">Legal</p><div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2.5 text-sm text-muted">{legal.map(([label,slug])=><a className="hover:text-primary" key={slug} href={`https://datastorified.com/legal/${slug}`}>{label}</a>)}<a className="hover:text-primary" href="https://datastorified.com/contact">Contact</a></div></div></div><div className="mx-auto mt-10 flex max-w-7xl flex-col gap-2 border-t border-border px-4 pt-6 text-xs text-muted sm:flex-row sm:items-center sm:justify-between sm:px-6"><span>© {new Date().getFullYear()} DataStorified</span><span>Built for clearer decisions.</span></div></footer>}
+
+function AuthMenu({mobile = false}: { mobile?: boolean }) {
+  const { data: session, isPending } = authClient.useSession();
+  const isSignedIn = Boolean(session?.user);
+  const [syncSnapshot, setSyncSnapshot] = React.useState<ReturnType<typeof getLocalDecisionSyncSnapshot> | null>(null);
+  const [syncSummary, setSyncSummary] = React.useState<SyncSummary | null>(null);
+  const [syncing, setSyncing] = React.useState(false);
+  const [syncError, setSyncError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (!isSignedIn) {
+      setSyncSnapshot(null);
+      setSyncSummary(null);
+      setSyncError(null);
+      return;
+    }
+    setSyncSnapshot(getLocalDecisionSyncSnapshot());
+  }, [isSignedIn]);
+
+  if (isPending) {
+    return <Badge className={mobile ? "mt-3 inline-flex w-full justify-center" : ""}>Checking account…</Badge>;
+  }
+
+  if (!isSignedIn) {
+    return mobile ? (
+      <div className="space-y-3 rounded-2xl border border-border bg-soft/40 p-4">
+        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[.14em] text-muted">
+          <ShieldCheck size={14} />
+          Anonymous mode
+        </div>
+        <p className="text-sm leading-6 text-muted">Your decisions stay local unless you choose to sign in and sync.</p>
+        <Button variant="secondary" className="w-full" onClick={() => void signInWithGoogle()}>
+          <UserRound size={16} />
+          Sign in with Google
+        </Button>
+      </div>
+    ) : (
+      <div className="flex items-center gap-2">
+        <Badge className="inline-flex gap-1.5"><ShieldCheck size={14} /> Anonymous mode</Badge>
+        <Button variant="secondary" className="ml-2" onClick={() => void signInWithGoogle()}>
+          <UserRound size={16} /> Sign in with Google
+        </Button>
+      </div>
+    );
+  }
+
+  const user = session?.user;
+  const name = user?.name ?? user?.email ?? "Account";
+  const initials = (name.trim().split(/\s+/u).slice(0, 2).map((part) => part[0]).join("").slice(0, 2) || "A").toUpperCase();
+  const hasPendingSync = (syncSnapshot?.hasPendingSync ?? false) || !syncSummary;
+  const syncLabel = syncSummary
+    ? `${syncSummary.decisionsSynced} decisions synced`
+    : `${syncSnapshot?.decisions ?? 0} local decisions ready`;
+
+  return (
+    <details className={cn("relative", mobile ? "w-full" : "")}>
+      <summary className={cn("list-none cursor-pointer rounded-xl border border-border bg-white px-3 py-2.5 text-sm font-semibold text-ink shadow-soft outline-none transition hover:border-primary/30 hover:shadow-lift", mobile ? "block w-full" : "inline-flex items-center gap-2", !mobile && "ml-2")}>
+        <span className="grid size-7 place-items-center rounded-full bg-primary/10 text-xs font-bold text-primary">{initials}</span>
+        <span className="max-w-36 truncate text-left">{name}</span>
+        <ArrowLeftRight size={16} className="text-muted" />
+      </summary>
+      <div className={cn("z-10 mt-3 rounded-2xl border border-border bg-white p-3 shadow-lift", mobile ? "static" : "absolute right-0 w-72")}>
+        <div className="rounded-xl bg-soft px-3 py-2">
+          <p className="text-xs font-bold uppercase tracking-[.14em] text-muted">Signed in</p>
+          <p className="mt-1 truncate text-sm font-semibold text-ink">{user?.email ?? "Google account"}</p>
+        </div>
+        <div className="mt-3 rounded-2xl border border-primary/10 bg-gradient-to-br from-primary/[.05] to-accent/[.06] p-4">
+          <p className="text-xs font-bold uppercase tracking-[.14em] text-primary">Sync your local decisions to your account</p>
+          <p className="mt-2 text-sm leading-6 text-muted">
+            {hasPendingSync
+              ? `We found ${syncSnapshot?.decisions ?? 0} decisions, ${syncSnapshot?.favorites ?? 0} favorites, and ${syncSnapshot?.history ?? 0} history items stored on this device.`
+              : "Your local decision memory is already in good shape."}
+          </p>
+          <Button
+            variant="secondary"
+            className="mt-3 w-full"
+            onClick={async () => {
+              setSyncing(true);
+              setSyncError(null);
+              try {
+                const result = await syncLocalToCloud();
+                setSyncSummary(result);
+                setSyncSnapshot(getLocalDecisionSyncSnapshot());
+              } catch (error) {
+                setSyncError(error instanceof Error ? error.message : "Sync failed.");
+              } finally {
+                setSyncing(false);
+              }
+            }}
+            disabled={syncing}
+          >
+            {syncing ? "Syncing…" : "Sync now"}
+          </Button>
+          {syncSummary && (
+            <div className="mt-3 grid gap-1 text-xs text-muted">
+              <p>{syncSummary.decisionsSynced} decisions synced</p>
+              <p>{syncSummary.favoritesSynced} favorites synced</p>
+              <p>{syncSummary.profileUpdated ? "Profile updated" : "Profile unchanged"}</p>
+            </div>
+          )}
+          {syncError && <p className="mt-2 text-xs font-medium text-danger">{syncError}</p>}
+          {!syncSummary && !syncError && <p className="mt-2 text-xs text-muted">{syncLabel}</p>}
+        </div>
+        <div className="mt-3 flex flex-col gap-2">
+          <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-left text-sm font-semibold text-muted hover:bg-soft hover:text-ink" onClick={() => void signOut()}>
+            <LogOut size={16} />
+            Sign out
+          </button>
+        </div>
+      </div>
+    </details>
+  );
+}
+export function Footer(){const legal=[['Privacy','privacy'],['Terms','terms'],['Cookies','cookies'],['Disclaimer','disclaimer'],['AI Disclosure','ai-disclosure'],['Security','security']];return <footer className="border-t border-border bg-white pb-24 pt-12 md:pb-12"><div className="mx-auto grid max-w-7xl gap-9 px-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-[1.4fr_1fr_1fr_1.35fr]"><div><Link href="/" className="flex items-center gap-2 font-bold text-ink"><BrandMark className="size-9"/>DataStorified</Link><p className="mt-3 max-w-sm text-sm leading-6 text-muted">Decision intelligence and useful everyday tools, designed to make the next move feel clearer.</p><p className="mt-4 text-xs leading-5 text-muted">Private by default. Drafts, favorites, and history stay in this browser.</p></div><div><p className="font-semibold">Product</p><div className="mt-3 flex flex-col gap-2.5 text-sm text-muted"><a className="hover:text-primary" href="https://datastorified.com/decision">Decision engine</a><a className="hover:text-primary" href="https://calculators.datastorified.com">Smart calculators</a><a className="hover:text-primary" href="https://tools.datastorified.com">Online tools</a></div></div><div><p className="font-semibold">Company</p><div className="mt-3 flex flex-col gap-2.5 text-sm text-muted"><a className="hover:text-primary" href="https://datastorified.com/about">About</a><a className="hover:text-primary" href="https://datastorified.com/trust">Trust Center</a><a className="hover:text-primary" href="https://datastorified.com/contact">Contact</a><a className="hover:text-primary" href="https://datastorified.com/legal">Legal hub</a></div></div><div><p className="font-semibold">Legal</p><div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2.5 text-sm text-muted">{legal.map(([label,slug])=><a className="hover:text-primary" key={slug} href={`https://datastorified.com/legal/${slug}`}>{label}</a>)}<a className="hover:text-primary" href="https://datastorified.com/contact">Contact</a></div></div></div><div className="mx-auto mt-10 flex max-w-7xl flex-col gap-2 border-t border-border px-4 pt-6 text-xs text-muted sm:flex-row sm:items-center sm:justify-between sm:px-6"><span>© {new Date().getFullYear()} DataStorified</span><span>Built for clearer decisions.</span></div></footer>}
 export function BottomNav({active="home"}:{active?:string}){const items=[{x:"home",l:"Home",i:Home,h:"/"},{x:"search",l:"Search",i:Search,h:"/#search"},{x:"categories",l:"Categories",i:Layers3,h:"/#categories"},{x:"recent",l:"Recent",i:Clock3,h:"/#recent"},{x:"profile",l:"Profile",i:UserRound,h:"/#profile"}];return <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-white/95 px-2 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl md:hidden"><div className="mx-auto flex max-w-md justify-around">{items.map(({x,l,i:I,h})=><Link href={h} key={x} className={cn("flex min-w-14 flex-col items-center gap-1 rounded-xl py-1.5 text-[11px] font-medium",active===x?"text-primary":"text-muted")}><I size={20}/>{l}</Link>)}</div></nav>}
 
 export function SearchBox({value,onChange,placeholder,onSubmit,large=false}:{value:string;onChange:(x:string)=>void;placeholder:string;onSubmit?:()=>void;large?:boolean}){return <div className={cn("group flex items-center gap-3 rounded-2xl border border-border bg-white p-2 shadow-soft transition focus-within:border-primary/40 focus-within:shadow-glow",large&&"rounded-3xl p-2.5")}><Search className="ml-2 shrink-0 text-muted" size={large?22:19}/><input id="search" value={value} onChange={e=>onChange(e.target.value)} onKeyDown={e=>e.key==="Enter"&&onSubmit?.()} placeholder={placeholder} className={cn("min-w-0 flex-1 bg-transparent px-1 text-base outline-none placeholder:text-muted/70",large&&"min-h-12 sm:text-lg")}/>{value&&<button className="grid size-9 place-items-center text-muted" onClick={()=>onChange("")}><X size={17}/></button>}{onSubmit&&<Button onClick={onSubmit} className="hidden sm:inline-flex">Explore <ArrowRight size={16}/></Button>}</div>}
