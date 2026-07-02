@@ -1,26 +1,34 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Clock3, History, Trash2 } from "lucide-react";
 import { Badge, Button, Card } from "@datastorified/ui";
-import { decisionPluginRegistry, localDecisionStorage, type DecisionMemoryDraft, type StoredDecision } from "@datastorified/decision-os";
+import { decisionPluginRegistry, type DecisionMemoryDraft, type DecisionMemoryProfile, type StoredDecision } from "@datastorified/decision-os";
+import { getDecisionAdapters } from "@datastorified/decision-os/adapters";
 
 export function DecisionSavedPage() {
   const router = useRouter();
+  const adapters = getDecisionAdapters();
   const [saved, setSaved] = useState<StoredDecision[]>([]);
   const [drafts, setDrafts] = useState<DecisionMemoryDraft[]>([]);
-  const [profile, setProfile] = useState(localDecisionStorage.getProfile());
+  const [profile, setProfile] = useState<DecisionMemoryProfile>({});
 
-  const refresh = () => {
-    setSaved(localDecisionStorage.listSaved());
-    setDrafts(localDecisionStorage.listDrafts());
-    setProfile(localDecisionStorage.getProfile());
-  };
+  const refresh = useCallback(() => {
+    void Promise.all([
+      adapters.memory.listSaved(),
+      adapters.memory.listDrafts(),
+      adapters.memory.getProfile(),
+    ]).then(([savedItems, draftItems, profileItem]) => {
+      setSaved(savedItems);
+      setDrafts(draftItems);
+      setProfile(profileItem);
+    });
+  }, [adapters.memory]);
 
   useEffect(() => {
     refresh();
-  }, []);
+  }, [refresh]);
 
   const lastWorkflow = useMemo(() => {
     if (!profile.lastOpenedWorkflow) return undefined;
@@ -70,7 +78,7 @@ export function DecisionSavedPage() {
                   <p className="mt-2 text-sm text-muted">Updated {new Date(draft.updatedAt).toLocaleString("en-IN")}</p>
                   <div className="mt-4 flex flex-wrap gap-2">
                     <Button onClick={() => router.push(`/decision/${draft.pluginId}/${workflow?.slug ?? draft.workflowId}`)}>Resume</Button>
-                    <Button variant="secondary" onClick={() => { localDecisionStorage.clearDraft(draft.workflowId); refresh(); }}>Delete draft</Button>
+                    <Button variant="secondary" onClick={() => { void adapters.memory.clearDraft(draft.workflowId).then(refresh); }}>Delete draft</Button>
                   </div>
                 </Card>
               );
@@ -101,7 +109,7 @@ export function DecisionSavedPage() {
                       <h3 className="mt-2 text-lg font-semibold">{workflow?.title ?? item.workflowId}</h3>
                       <p className="mt-2 text-sm text-muted">Updated {new Date(item.updatedAt).toLocaleString("en-IN")}</p>
                     </div>
-                    <Button variant="ghost" onClick={() => { localDecisionStorage.deleteSaved(item.id); refresh(); }}><Trash2 size={16} /></Button>
+                    <Button variant="ghost" onClick={() => { void adapters.memory.deleteSaved(item.id).then(refresh); }}><Trash2 size={16} /></Button>
                   </div>
                   <div className="mt-4 flex flex-wrap gap-2">
                     <Button onClick={() => router.push(`/decision/result/${item.id}`)}>Open result</Button>

@@ -4,8 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BookmarkPlus, Copy, Printer, Share2, Trash2 } from "lucide-react";
 import { Badge, Button, Card } from "@datastorified/ui";
-import { buildDecisionReport, decisionPluginRegistry, localDecisionStorage, type StoredDecision } from "@datastorified/decision-os";
-import { buildProfileAwareRecommendation, getProfileAnalysis, localProfileStorage } from "@datastorified/profile";
+import { buildDecisionReport, decisionPluginRegistry, type StoredDecision } from "@datastorified/decision-os";
+import { buildProfileAwareRecommendation, getProfileAnalysis, type DecisionProfileEnvelope } from "@datastorified/profile";
+import { getDecisionAdapters } from "@datastorified/decision-os/adapters";
 import { DecisionAccuracyBadge } from "./DecisionAccuracyBadge";
 import { DecisionActionPlan } from "./DecisionActionPlan";
 import { DecisionEmptyState } from "./DecisionEmptyState";
@@ -21,17 +22,18 @@ import { ProfileCompletenessCard } from "../profile/ProfileCompletenessCard";
 
 export function DecisionResultPage({ id }: { id: string }) {
   const router = useRouter();
+  const adapters = getDecisionAdapters();
   const [item, setItem] = useState<StoredDecision | null>();
   const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [profile, setProfile] = useState<ReturnType<typeof localProfileStorage.getProfile> | null>(null);
+  const [profile, setProfile] = useState<DecisionProfileEnvelope | null>(null);
   useEffect(() => {
-    setItem(localDecisionStorage.loadDecision(id) ?? null);
-    setSaved(localDecisionStorage.isSaved(id));
-  }, [id]);
+    void adapters.memory.loadDecision(id).then(setItem);
+    void adapters.memory.listSaved().then((items) => setSaved(items.some((entry) => entry.id === id)));
+  }, [adapters.memory, id]);
   useEffect(() => {
-    setProfile(localProfileStorage.getProfile());
-  }, []);
+    void adapters.profile.getProfile().then(setProfile);
+  }, [adapters.profile]);
   const workflow = item ? decisionPluginRegistry.getWorkflow(item.workflowId) : undefined;
   const report = useMemo(() => item && workflow ? item.report ?? buildDecisionReport(workflow, item.answers, { generatedAt: item.updatedAt }) : undefined, [item, workflow]);
   const profileAnalysis = useMemo(() => getProfileAnalysis(profile?.profile), [profile]);
@@ -42,8 +44,8 @@ export function DecisionResultPage({ id }: { id: string }) {
   const summary = `${workflow.title}\nScore: ${Math.round(report.score.value)}/100 — ${report.score.label ?? "Decision profile"}\nRecommendation: ${report.recommendation?.title ?? "Review the result"}\n${report.recommendation?.summary ?? ""}\nNext: ${report.actionPlan[0] ?? "Review assumptions"}`;
   const copy = async () => { await navigator.clipboard.writeText(summary); setCopied(true); window.setTimeout(() => setCopied(false), 1200); };
   const share = async () => { if (navigator.share) await navigator.share({ title: workflow.title, text: summary, url: window.location.href }); else await copy(); };
-  const saveLocally = () => { localDecisionStorage.saveDecision(item); setSaved(true); };
-  const deleteSaved = () => { localDecisionStorage.deleteSaved(item.id); setSaved(false); };
+  const saveLocally = () => { void adapters.persistence.saveDecision(item).then(() => setSaved(true)); };
+  const deleteSaved = () => { void adapters.persistence.deleteDecision(item.id).then(() => setSaved(false)); };
 
   return <main className="mx-auto max-w-7xl overflow-x-hidden px-4 py-8 sm:px-6 sm:py-12"><div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><Badge>{workflow.category ?? workflow.pluginId} result</Badge><DecisionAccuracyBadge analysis={profileAnalysis} /></div><h1 className="mt-4 text-balance text-3xl font-bold tracking-[-.035em] sm:text-5xl">{workflow.title}</h1><p className="mt-2 text-sm text-muted">Created {new Date(item.createdAt).toLocaleString("en-IN")}</p></div><div className="flex flex-wrap gap-2 print:hidden"><Button variant="secondary" onClick={copy}><Copy size={16} />{copied ? "Copied" : "Copy summary"}</Button><Button variant="secondary" onClick={share}><Share2 size={16} />Share</Button><Button variant="secondary" onClick={() => window.print()}><Printer size={16} />Print</Button></div></div>
     <div className="mt-6 flex flex-wrap gap-2 print:hidden">

@@ -11,13 +11,13 @@ import {
   createDefaultAnswers,
   decisionPluginRegistry,
   getVisibleQuestions,
-  localDecisionStorage,
   validateAnswers,
   type DecisionAnswers,
   type DecisionValue,
   type StoredDecision,
 } from "@datastorified/decision-os";
-import { getProfileAnalysis, localProfileStorage } from "@datastorified/profile";
+import { getProfileAnalysis, type DecisionProfileEnvelope } from "@datastorified/profile";
+import { getDecisionAdapters } from "@datastorified/decision-os/adapters";
 import { DecisionAccuracyBadge } from "./DecisionAccuracyBadge";
 import { DecisionProgress } from "./DecisionProgress";
 import { DecisionQuestion } from "./DecisionQuestion";
@@ -27,7 +27,8 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
   const workflow = decisionPluginRegistry.getWorkflowBySlug(slug);
   if (!workflow || workflow.pluginId !== pluginId) throw new Error(`Unknown Decision OS workflow: ${pluginId}/${slug}`);
   const router = useRouter();
-  const [profile, setProfile] = useState<ReturnType<typeof localProfileStorage.getProfile> | null>(null);
+  const adapters = getDecisionAdapters();
+  const [profile, setProfile] = useState<DecisionProfileEnvelope | null>(null);
   const [answers, setAnswers] = useState<DecisionAnswers>(() => createDefaultAnswers(workflow.questions));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [step, setStep] = useState(0);
@@ -39,35 +40,24 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
   const progress = questions.length ? ((Math.min(step, questions.length - 1) + 1) / questions.length) * 100 : 100;
 
   useEffect(() => {
-    setProfile(localProfileStorage.getProfile());
-  }, []);
+    void adapters.profile.getProfile().then(setProfile);
+  }, [adapters.profile]);
   useEffect(() => {
-    const savedDraft = localDecisionStorage.getDraft(workflow.id);
-    if (savedDraft) {
+    void adapters.memory.getDraft(workflow.id).then((savedDraft) => {
+      if (!savedDraft) return;
       setAnswers((current) => ({ ...current, ...savedDraft.answers }));
       setStep(typeof savedDraft.currentStep === "number" ? savedDraft.currentStep : typeof savedDraft.step === "number" ? savedDraft.step : 0);
-      return;
-    }
-    const legacyKey = `datastorified:decision-os:draft:${workflow.id}`;
-    try {
-      if (typeof window === "undefined") return;
-      const raw = window.localStorage.getItem(legacyKey);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as DecisionAnswers;
-      setAnswers((current) => ({ ...current, ...parsed }));
-      localDecisionStorage.saveDraft({ workflowId: workflow.id, pluginId: workflow.pluginId, answers: parsed, updatedAt: new Date().toISOString() });
-      window.localStorage.removeItem(legacyKey);
-    } catch { /* Ignore malformed local drafts. */ }
-  }, [workflow.id, workflow.pluginId]);
+    });
+  }, [adapters.memory, workflow.id]);
   useEffect(() => {
     const timeout = window.setTimeout(() => {
-      localDecisionStorage.saveDraft({ workflowId: workflow.id, pluginId: workflow.pluginId, slug, answers, currentStep: step, updatedAt: new Date().toISOString() });
+      void adapters.memory.saveDraft({ workflowId: workflow.id, pluginId: workflow.pluginId, slug, answers, currentStep: step, updatedAt: new Date().toISOString() });
     }, 250);
     return () => window.clearTimeout(timeout);
-  }, [answers, step, slug, workflow.id, workflow.pluginId]);
+  }, [adapters.memory, answers, step, slug, workflow.id, workflow.pluginId]);
   useEffect(() => {
-    localDecisionStorage.saveProfile({ lastOpenedWorkflow: { workflowId: workflow.id, pluginId: workflow.pluginId, slug, openedAt: new Date().toISOString() } });
-  }, [workflow.id, workflow.pluginId, slug]);
+    void adapters.memory.saveProfile({ lastOpenedWorkflow: { workflowId: workflow.id, pluginId: workflow.pluginId, slug, openedAt: new Date().toISOString() } });
+  }, [adapters.memory, workflow.id, workflow.pluginId, slug]);
 
   const update = (id: string, value: DecisionValue) => {
     setAnswers((current) => ({ ...current, [id]: value }));
@@ -79,7 +69,7 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
     if (Object.keys(nextErrors).length) { setErrors((current) => ({ ...current, ...nextErrors })); return; }
     setStep((current) => Math.min(current + 1, questions.length - 1));
   };
-  const reset = () => { setAnswers(createDefaultAnswers(workflow.questions)); setErrors({}); setStep(0); localDecisionStorage.clearDraft(workflow.id); };
+  const reset = () => { setAnswers(createDefaultAnswers(workflow.questions)); setErrors({}); setStep(0); void adapters.memory.clearDraft(workflow.id); };
   const complete = () => {
     const nextErrors = validateAnswers(questions, answers, facts);
     setErrors(nextErrors);
@@ -92,8 +82,7 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
     const now = new Date().toISOString();
     const finalReport = buildDecisionReport(workflow, answers, { id: `report_${id}`, generatedAt: now });
     const stored: StoredDecision = { id, workflowId: workflow.id, pluginId: workflow.pluginId, answers, report: finalReport, createdAt: now, updatedAt: now };
-    localDecisionStorage.saveResult(stored);
-    localDecisionStorage.clearDraft(workflow.id);
+    void adapters.memory.saveResult(stored).then(() => adapters.memory.clearDraft(workflow.id));
     router.push(`/decision/result/${id}`);
   };
 
