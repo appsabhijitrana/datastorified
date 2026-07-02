@@ -1,4 +1,11 @@
-import type { Prisma, PrismaClient } from "@prisma/client";
+import type { PrismaClient } from "@prisma/client";
+
+type DecisionCreateData = Parameters<PrismaClient["decision"]["create"]>[0]["data"];
+type ProfileCreateData = Omit<Parameters<PrismaClient["profile"]["create"]>[0]["data"], "user" | "userId">;
+type ProfileUpdateData = Omit<Parameters<PrismaClient["profile"]["update"]>[0]["data"], "user" | "userId">;
+type ProfileUpsertData = Partial<ProfileCreateData> & Partial<ProfileUpdateData>;
+type HistoryItemCreateData = Parameters<PrismaClient["historyItem"]["create"]>[0]["data"];
+type SyncLogCreateData = Parameters<PrismaClient["syncLog"]["create"]>[0]["data"];
 
 export type RepositoryContext = {
   prisma: PrismaClient;
@@ -7,7 +14,7 @@ export type RepositoryContext = {
 export class DecisionRepository {
   constructor(private readonly context: RepositoryContext) {}
 
-  create(data: Prisma.DecisionUncheckedCreateInput) {
+  create(data: DecisionCreateData) {
     return this.context.prisma.decision.create({ data });
   }
 
@@ -23,7 +30,7 @@ export class DecisionRepository {
 export class ProfileRepository {
   constructor(private readonly context: RepositoryContext) {}
 
-  upsertForUser(userId: string, data: Prisma.ProfileUncheckedCreateInput) {
+  upsertForUser(userId: string, data: ProfileUpsertData) {
     return this.context.prisma.profile.upsert({
       where: { userId },
       create: { ...data, userId },
@@ -43,7 +50,7 @@ export class HistoryRepository {
     return this.context.prisma.historyItem.findMany({ where: { userId }, orderBy: { openedAt: "desc" } });
   }
 
-  create(data: Prisma.HistoryItemUncheckedCreateInput) {
+  create(data: HistoryItemCreateData) {
     return this.context.prisma.historyItem.create({ data });
   }
 }
@@ -51,7 +58,7 @@ export class HistoryRepository {
 export class SyncLogRepository {
   constructor(private readonly context: RepositoryContext) {}
 
-  create(data: Prisma.SyncLogUncheckedCreateInput) {
+  create(data: SyncLogCreateData) {
     return this.context.prisma.syncLog.create({ data });
   }
 

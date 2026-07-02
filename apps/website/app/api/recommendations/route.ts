@@ -5,6 +5,15 @@ import type { DecisionAnswers } from "@datastorified/decision-os";
 import { buildPersonalizedRecommendations, type PersonalizationContext } from "@datastorified/personalization";
 import { getProfileAnalysis, type DecisionProfile } from "@datastorified/profile";
 
+type DecisionRow = Awaited<ReturnType<typeof prisma.decision.findMany>>[number];
+type HistoryItemRow = Awaited<ReturnType<typeof prisma.historyItem.findMany>>[number] & {
+  decision: {
+    workflowId: string;
+    pluginId: string;
+    answers: unknown;
+  };
+};
+
 function parseContext(request: NextRequest): PersonalizationContext {
   const raw = request.nextUrl.searchParams.get("context");
   if (!raw) return {};
@@ -55,7 +64,7 @@ function toProfile(record: Awaited<ReturnType<typeof prisma.profile.findFirst>>)
   };
 }
 
-function toStoredDecision(row: { id: string; workflowId: string; pluginId: string; answers: unknown; createdAt: Date; updatedAt: Date }) {
+function toStoredDecision(row: Pick<DecisionRow, "id" | "workflowId" | "pluginId" | "answers" | "createdAt" | "updatedAt">) {
   return {
     id: row.id,
     workflowId: row.workflowId,
@@ -83,8 +92,8 @@ export async function GET(request: NextRequest) {
       profile: queryContext.profile ?? toProfile(profileRecord),
       recentDecisions: queryContext.recentDecisions ?? recentDecisions.map(toStoredDecision),
       savedDecisions: queryContext.savedDecisions ?? savedDecisions.map(toStoredDecision),
-      favoriteWorkflowIds: queryContext.favoriteWorkflowIds ?? savedDecisions.map((row) => row.workflowId),
-      history: queryContext.history ?? historyItems.map((row) => ({ id: row.id, workflowId: row.decision.workflowId, pluginId: row.decision.pluginId, answers: row.decision.answers as DecisionAnswers, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString() })),
+      favoriteWorkflowIds: queryContext.favoriteWorkflowIds ?? savedDecisions.map((row: DecisionRow) => row.workflowId),
+      history: queryContext.history ?? historyItems.map((row: HistoryItemRow) => ({ id: row.id, workflowId: row.decision.workflowId, pluginId: row.decision.pluginId, answers: row.decision.answers as DecisionAnswers, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString() })),
       profileAnalysis: profileRecord ? getProfileAnalysis(toProfile(profileRecord)) : undefined,
     });
     return NextResponse.json({ source: "cloud", ...recommendations });
@@ -111,8 +120,8 @@ export async function POST(request: NextRequest) {
       profile: bodyContext.profile ?? toProfile(profileRecord),
       recentDecisions: bodyContext.recentDecisions ?? recentDecisions.map(toStoredDecision),
       savedDecisions: bodyContext.savedDecisions ?? savedDecisions.map(toStoredDecision),
-      favoriteWorkflowIds: bodyContext.favoriteWorkflowIds ?? savedDecisions.map((row) => row.workflowId),
-      history: bodyContext.history ?? historyItems.map((row) => ({ id: row.id, workflowId: row.decision.workflowId, pluginId: row.decision.pluginId, answers: row.decision.answers as DecisionAnswers, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString() })),
+      favoriteWorkflowIds: bodyContext.favoriteWorkflowIds ?? savedDecisions.map((row: DecisionRow) => row.workflowId),
+      history: bodyContext.history ?? historyItems.map((row: HistoryItemRow) => ({ id: row.id, workflowId: row.decision.workflowId, pluginId: row.decision.pluginId, answers: row.decision.answers as DecisionAnswers, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString() })),
       profileAnalysis: profileRecord ? getProfileAnalysis(toProfile(profileRecord)) : undefined,
     });
     return NextResponse.json({ source: "cloud", ...recommendations });
