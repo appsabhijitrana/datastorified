@@ -22,7 +22,6 @@ export function DecisionSavedPage() {
     refresh();
   }, []);
 
-  const hasAny = saved.length > 0 || drafts.length > 0;
   const lastWorkflow = useMemo(() => {
     if (!profile.lastOpenedWorkflow) return undefined;
     return decisionPluginRegistry.getWorkflow(profile.lastOpenedWorkflow.workflowId);
@@ -85,10 +84,10 @@ export function DecisionSavedPage() {
           <ArrowRight className="text-primary" size={18} />
           <h2 className="text-2xl font-bold">Saved results</h2>
         </div>
-        {!hasAny ? (
+        {!saved.length ? (
           <Card className="mt-5 p-8 text-center">
             <p className="text-lg font-semibold">No saved decisions yet</p>
-            <p className="mt-2 text-sm text-muted">Finish a workflow and it will appear here automatically.</p>
+            <p className="mt-2 text-sm text-muted">Open any result and choose Save locally to pin it here.</p>
           </Card>
         ) : (
           <div className="mt-5 grid gap-4 lg:grid-cols-2">
@@ -102,7 +101,7 @@ export function DecisionSavedPage() {
                       <h3 className="mt-2 text-lg font-semibold">{workflow?.title ?? item.workflowId}</h3>
                       <p className="mt-2 text-sm text-muted">Updated {new Date(item.updatedAt).toLocaleString("en-IN")}</p>
                     </div>
-                    <Button variant="ghost" onClick={() => { localDecisionStorage.remove(item.id); refresh(); }}><Trash2 size={16} /></Button>
+                    <Button variant="ghost" onClick={() => { localDecisionStorage.deleteSaved(item.id); refresh(); }}><Trash2 size={16} /></Button>
                   </div>
                   <div className="mt-4 flex flex-wrap gap-2">
                     <Button onClick={() => router.push(`/decision/result/${item.id}`)}>Open result</Button>

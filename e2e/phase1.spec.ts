@@ -22,9 +22,11 @@ test("decision input accepts text and shows preview", async ({ page }) => {
 test("decision engine completes, changes scenario, saves, and reloads", async ({ page }) => {
   await page.goto(`${website}/decision/property/buy-house`);
   await page.getByRole("button", { name: /View recommendation/i }).click();
-  await expect.poll(() => page.evaluate(() => Object.keys(localStorage).some((key) => key.startsWith("datastorified:decision-os:decision_")))).toBe(true);
-  await expect(page).toHaveURL(/\/decision\/result\//u);
-  await expect(page.getByText("Recommendation", { exact: true })).toBeVisible();
+  await page.waitForURL(/\/decision\/result\//u);
+  await expect(page.getByRole("button", { name: /Save locally/i })).toBeVisible();
+  await page.getByRole("button", { name: /Save locally/i }).click();
+  await page.reload();
+  await expect(page.getByRole("button", { name: /Remove saved copy/i })).toBeVisible();
   const resultUrl = page.url();
   const slider = page.locator('[aria-label^="Property purchase price slider"]');
   const before = await slider.inputValue();
@@ -32,7 +34,15 @@ test("decision engine completes, changes scenario, saves, and reloads", async ({
   await expect(page.getByText(/points|No score change/u)).toBeVisible();
   await page.reload();
   await expect(page).toHaveURL(resultUrl);
-  await expect(page.getByText("Recommendation", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Pause before you buy the house/i })).toBeVisible();
+});
+
+test("drafts resume correctly after reload", async ({ page }) => {
+  await page.goto(`${website}/decision/property/buy-house`);
+  const income = page.locator('main input[aria-label="Monthly household take-home income"]:visible').first();
+  await income.fill("180000");
+  await page.reload();
+  await expect(income).toHaveValue(/180000|1,80,000|₹1,80,000/u);
 });
 
 for (const [plugin, slug] of [["finance", "sip-vs-fd"], ["automobile", "ev-vs-petrol"]]) test(`${slug} decision flow renders`, async ({ page }) => {
@@ -45,7 +55,7 @@ test("loaded decision flow stores a private local result", async ({ page }) => {
   await page.goto(`${website}/decision/finance/emergency-fund`);
   await page.getByRole("button", { name: /View recommendation/i }).click();
   await expect(page).toHaveURL(/\/decision\/result\//u);
-  await expect(page.getByText("Recommendation", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Save locally/i })).toBeVisible();
 });
 
 test("mobile decision flow shows one question at a time without overflow", async ({ page }) => {

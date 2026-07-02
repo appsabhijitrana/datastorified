@@ -238,3 +238,31 @@ export type StoredDecision = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type DecisionMemoryDraft = {
+  workflowId: string;
+  pluginId: string;
+  slug?: string;
+  answers: DecisionAnswers;
+  currentStep?: number;
+  step?: number;
+  updatedAt: string;
+};
+
+export type DecisionMemoryProfile = {
+  lastOpenedWorkflow?: {
+    workflowId: string;
+    pluginId: string;
+    slug: string;
+    openedAt: string;
+  };
+  updatedAt?: string;
+};
+
+export type DecisionMemoryKeys = {
+  recent: "ds.decision.recent";
+  saved: "ds.decision.saved";
+  drafts: "ds.decision.drafts";
+  history: "ds.decision.history";
+  profile: "ds.decision.profile.local";
+};

@@ -39,7 +39,7 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
     const savedDraft = localDecisionStorage.getDraft(workflow.id);
     if (savedDraft) {
       setAnswers((current) => ({ ...current, ...savedDraft.answers }));
-      setStep(typeof savedDraft.step === "number" ? savedDraft.step : 0);
+      setStep(typeof savedDraft.currentStep === "number" ? savedDraft.currentStep : typeof savedDraft.step === "number" ? savedDraft.step : 0);
       return;
     }
     const legacyKey = `datastorified:decision-os:draft:${workflow.id}`;
@@ -54,9 +54,11 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
     } catch { /* Ignore malformed local drafts. */ }
   }, [workflow.id, workflow.pluginId]);
   useEffect(() => {
-    const draft = { workflowId: workflow.id, pluginId: workflow.pluginId, answers, step, updatedAt: new Date().toISOString() };
-    localDecisionStorage.saveDraft(draft);
-  }, [answers, step, workflow.id, workflow.pluginId]);
+    const timeout = window.setTimeout(() => {
+      localDecisionStorage.saveDraft({ workflowId: workflow.id, pluginId: workflow.pluginId, slug, answers, currentStep: step, updatedAt: new Date().toISOString() });
+    }, 250);
+    return () => window.clearTimeout(timeout);
+  }, [answers, step, slug, workflow.id, workflow.pluginId]);
   useEffect(() => {
     localDecisionStorage.saveProfile({ lastOpenedWorkflow: { workflowId: workflow.id, pluginId: workflow.pluginId, slug, openedAt: new Date().toISOString() } });
   }, [workflow.id, workflow.pluginId, slug]);
@@ -84,7 +86,7 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
     const now = new Date().toISOString();
     const finalReport = buildDecisionReport(workflow, answers, { id: `report_${id}`, generatedAt: now });
     const stored: StoredDecision = { id, workflowId: workflow.id, pluginId: workflow.pluginId, answers, report: finalReport, createdAt: now, updatedAt: now };
-    localDecisionStorage.save(stored);
+    localDecisionStorage.saveResult(stored);
     localDecisionStorage.clearDraft(workflow.id);
     router.push(`/decision/result/${id}`);
   };

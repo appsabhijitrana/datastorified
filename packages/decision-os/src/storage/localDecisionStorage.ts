@@ -1,133 +1,207 @@
-import type { DecisionAnswers, StoredDecision } from "../types";
+import type {
+  DecisionMemoryDraft,
+  DecisionMemoryKeys,
+  DecisionMemoryProfile,
+  DecisionAnswers,
+  StoredDecision,
+} from "../types";
 
 export type StorageLike = Pick<Storage, "getItem" | "setItem" | "removeItem" | "key" | "length">;
 
-export type DecisionMemoryDraft = {
-  workflowId: string;
-  pluginId: string;
-  answers: DecisionAnswers;
-  step?: number;
-  updatedAt: string;
+export const DECISION_MEMORY_KEYS: DecisionMemoryKeys = {
+  recent: "ds.decision.recent",
+  saved: "ds.decision.saved",
+  drafts: "ds.decision.drafts",
+  history: "ds.decision.history",
+  profile: "ds.decision.profile.local",
 };
 
-export type DecisionMemoryProfile = {
-  lastOpenedWorkflow?: {
-    workflowId: string;
-    pluginId: string;
-    slug: string;
-    openedAt: string;
-  };
-};
+export const DECISION_MEMORY_LIMITS = {
+  recent: 20,
+  saved: 50,
+  drafts: 10,
+} as const;
 
 class MemoryStorage implements StorageLike {
   private readonly values = new Map<string, string>();
-  get length(): number { return this.values.size; }
-  getItem(key: string): string | null { return this.values.get(key) ?? null; }
-  setItem(key: string, value: string): void { this.values.set(key, value); }
-  removeItem(key: string): void { this.values.delete(key); }
-  key(index: number): string | null { return [...this.values.keys()][index] ?? null; }
+
+  get length(): number {
+    return this.values.size;
+  }
+
+  getItem(key: string): string | null {
+    return this.values.get(key) ?? null;
+  }
+
+  setItem(key: string, value: string): void {
+    this.values.set(key, value);
+  }
+
+  removeItem(key: string): void {
+    this.values.delete(key);
+  }
+
+  key(index: number): string | null {
+    return [...this.values.keys()][index] ?? null;
+  }
 }
 
 function browserStorage(): StorageLike {
   try {
     if (typeof window !== "undefined" && window.localStorage) return window.localStorage;
   } catch {
-    // Privacy modes can expose localStorage while denying access to it.
+    // Some privacy modes expose localStorage but deny access when touched.
   }
   return new MemoryStorage();
 }
 
-function isStoredDecision(value: unknown): value is StoredDecision {
-  if (!value || typeof value !== "object") return false;
-  const candidate = value as Partial<StoredDecision>;
-  return typeof candidate.id === "string" && typeof candidate.workflowId === "string" && typeof candidate.pluginId === "string" && typeof candidate.createdAt === "string" && typeof candidate.updatedAt === "string" && Boolean(candidate.answers && typeof candidate.answers === "object");
-}
-
-function isDraft(value: unknown): value is DecisionMemoryDraft {
-  if (!value || typeof value !== "object") return false;
-  const candidate = value as Partial<DecisionMemoryDraft>;
-  return typeof candidate.workflowId === "string" && typeof candidate.pluginId === "string" && Boolean(candidate.answers && typeof candidate.answers === "object") && typeof candidate.updatedAt === "string";
-}
-
-function isProfile(value: unknown): value is DecisionMemoryProfile {
+function isObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object");
 }
 
-function isStoredDecisionArray(value: unknown): value is StoredDecision[] {
-  return Array.isArray(value) && value.every((item) => isStoredDecision(item));
+function isDecisionAnswers(value: unknown): value is DecisionAnswers {
+  return isObject(value);
 }
 
-function isDraftArray(value: unknown): value is DecisionMemoryDraft[] {
-  return Array.isArray(value) && value.every((item) => isDraft(item));
+function isStoredDecision(value: unknown): value is StoredDecision {
+  if (!isObject(value)) return false;
+  return typeof value.id === "string"
+    && typeof value.workflowId === "string"
+    && typeof value.pluginId === "string"
+    && isDecisionAnswers(value.answers)
+    && typeof value.createdAt === "string"
+    && typeof value.updatedAt === "string";
 }
 
-function upsertDecision(items: StoredDecision[], item: StoredDecision, limit: number): StoredDecision[] {
+function isDraft(value: unknown): value is DecisionMemoryDraft {
+  if (!isObject(value)) return false;
+  return typeof value.workflowId === "string"
+    && typeof value.pluginId === "string"
+    && isDecisionAnswers(value.answers)
+    && typeof value.updatedAt === "string";
+}
+
+function isProfile(value: unknown): value is DecisionMemoryProfile {
+  return isObject(value);
+}
+
+function readJson<T>(raw: string | null, fallback: T): T {
+  if (raw == null || raw === "") return fallback;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+function dedupeById<T extends { id: string }>(items: T[], item: T, limit: number): T[] {
   return [item, ...items.filter((entry) => entry.id !== item.id)].slice(0, limit);
 }
 
-function sortDecisions(items: StoredDecision[]): StoredDecision[] {
+function sortByUpdatedAt(items: StoredDecision[]): StoredDecision[] {
   return [...items].sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
 }
 
-export class LocalDecisionStorage {
-  private readonly keys = {
-    recent: "ds.decision.recent",
-    saved: "ds.decision.saved",
-    drafts: "ds.decision.drafts",
-    history: "ds.decision.history",
-    profile: "ds.decision.profile.local",
-  } as const;
+function normalizeDecision(decision: StoredDecision): StoredDecision {
+  const timestamp = decision.updatedAt || decision.createdAt || new Date().toISOString();
+  return {
+    ...decision,
+    createdAt: decision.createdAt || timestamp,
+    updatedAt: timestamp,
+  };
+}
 
-  constructor(private readonly storage: StorageLike = browserStorage()) {}
+function normalizeDraft(draft: DecisionMemoryDraft): DecisionMemoryDraft {
+  return {
+    ...draft,
+    currentStep: typeof draft.currentStep === "number" ? draft.currentStep : draft.step,
+    updatedAt: draft.updatedAt || new Date().toISOString(),
+  };
+}
+
+export class LocalDecisionStorage {
+  readonly keys = DECISION_MEMORY_KEYS;
+  private readonly fallback = new MemoryStorage();
+  private storage: StorageLike;
+
+  constructor(storage: StorageLike = browserStorage()) {
+    this.storage = storage;
+  }
+
+  saveResult(decision: StoredDecision): void {
+    const normalized = normalizeDecision(decision);
+    this.writeDecisionCollection("recent", dedupeById(this.readDecisionCollection("recent"), normalized, DECISION_MEMORY_LIMITS.recent));
+    this.writeDecisionCollection("history", dedupeById(this.readDecisionCollection("history"), normalized, 100));
+  }
 
   save(decision: StoredDecision): void {
-    const normalized = { ...decision, updatedAt: decision.updatedAt || new Date().toISOString(), createdAt: decision.createdAt || decision.updatedAt || new Date().toISOString() };
-    this.writeCollection("recent", upsertDecision(this.readDecisions("recent"), normalized, 20));
-    this.writeCollection("history", upsertDecision(this.readDecisions("history"), normalized, 100));
-    this.writeCollection("saved", upsertDecision(this.readDecisions("saved"), normalized, 50));
+    this.saveResult(decision);
+  }
+
+  saveDecision(decision: StoredDecision): void {
+    const normalized = normalizeDecision(decision);
+    this.writeDecisionCollection("saved", dedupeById(this.readDecisionCollection("saved"), normalized, DECISION_MEMORY_LIMITS.saved));
+  }
+
+  isSaved(id: string): boolean {
+    return this.readDecisionCollection("saved").some((decision) => decision.id === id);
   }
 
   load(id: string): StoredDecision | undefined {
-    return this.mergeDecisions().find((decision) => decision.id === id);
+    return this.loadDecision(id);
+  }
+
+  loadDecision(id: string): StoredDecision | undefined {
+    const collections = [this.readDecisionCollection("saved"), this.readDecisionCollection("recent"), this.readDecisionCollection("history")];
+    for (const collection of collections) {
+      const match = collection.find((decision) => decision.id === id);
+      if (match) return match;
+    }
+    return undefined;
   }
 
   list(): StoredDecision[] {
-    return this.mergeDecisions();
+    return this.listAllDecisions();
+  }
+
+  listAllDecisions(): StoredDecision[] {
+    return sortByUpdatedAt([...new Map([...this.readDecisionCollection("recent"), ...this.readDecisionCollection("saved"), ...this.readDecisionCollection("history")].map((decision) => [decision.id, decision])).values()]);
   }
 
   listRecent(): StoredDecision[] {
-    return this.readDecisions("recent");
+    return this.readDecisionCollection("recent");
   }
 
   listSaved(): StoredDecision[] {
-    return this.readDecisions("saved");
+    return this.readDecisionCollection("saved");
   }
 
   listHistory(): StoredDecision[] {
-    return this.readDecisions("history");
+    return this.readDecisionCollection("history");
   }
 
   remove(id: string): void {
-    const recent = this.readDecisions("recent").filter((decision) => decision.id !== id);
-    const saved = this.readDecisions("saved").filter((decision) => decision.id !== id);
-    const history = this.readDecisions("history").filter((decision) => decision.id !== id);
-    this.writeCollection("recent", recent);
-    this.writeCollection("saved", saved);
-    this.writeCollection("history", history);
+    this.deleteSaved(id);
+    this.writeDecisionCollection("recent", this.readDecisionCollection("recent").filter((decision) => decision.id !== id));
+    this.writeDecisionCollection("history", this.readDecisionCollection("history").filter((decision) => decision.id !== id));
+  }
+
+  deleteSaved(id: string): void {
+    this.writeDecisionCollection("saved", this.readDecisionCollection("saved").filter((decision) => decision.id !== id));
   }
 
   clear(): void {
-    this.writeCollection("recent", []);
-    this.writeCollection("saved", []);
-    this.writeCollection("history", []);
-    this.writeCollection("drafts", []);
-    this.writeValue("profile", {});
+    this.writeDecisionCollection("recent", []);
+    this.writeDecisionCollection("saved", []);
+    this.writeDecisionCollection("history", []);
+    this.writeDrafts([]);
+    this.writeProfile({});
   }
 
   saveDraft(draft: DecisionMemoryDraft): boolean {
-    const drafts = this.readDrafts();
-    const next = [draft, ...drafts.filter((entry) => entry.workflowId !== draft.workflowId)].slice(0, 10);
-    return this.writeValue("drafts", next);
+    const normalized = normalizeDraft(draft);
+    const next = dedupeDrafts([normalized, ...this.readDrafts()], DECISION_MEMORY_LIMITS.drafts);
+    return this.writeDrafts(next);
   }
 
   getDraft(workflowId: string): DecisionMemoryDraft | undefined {
@@ -139,60 +213,83 @@ export class LocalDecisionStorage {
   }
 
   clearDraft(workflowId: string): boolean {
-    return this.writeValue("drafts", this.readDrafts().filter((entry) => entry.workflowId !== workflowId));
+    return this.writeDrafts(this.readDrafts().filter((entry) => entry.workflowId !== workflowId));
   }
 
   saveProfile(profile: DecisionMemoryProfile): boolean {
-    return this.writeValue("profile", { ...(this.getProfile() ?? {}), ...profile });
+    const merged = { ...this.getProfile(), ...profile, updatedAt: new Date().toISOString() };
+    return this.writeProfile(merged);
   }
 
   getProfile(): DecisionMemoryProfile {
-    return this.readValue<DecisionMemoryProfile>("profile", {});
+    return this.readProfile();
   }
 
-  private mergeDecisions(): StoredDecision[] {
-    const recent = this.readDecisions("recent");
-    const saved = this.readDecisions("saved");
-    const history = this.readDecisions("history");
-    return sortDecisions([...new Map([...recent, ...saved, ...history].map((decision) => [decision.id, decision])).values()]);
+  private readDecisionCollection(key: "recent" | "saved" | "history"): StoredDecision[] {
+    const value = this.readValue<unknown>(this.keys[key], []);
+    if (!Array.isArray(value) || !value.every((item) => isStoredDecision(item))) return [];
+    return sortByUpdatedAt(value);
   }
 
-  private readDecisions(key: "recent" | "saved" | "history"): StoredDecision[] {
-    const value = this.readValue<unknown>(key, []);
-    return isStoredDecisionArray(value) ? sortDecisions(value) : [];
-  }
-
-  private writeCollection(key: "recent" | "saved" | "history", decisions: StoredDecision[]): boolean {
-    return this.writeValue(key, decisions);
+  private writeDecisionCollection(key: "recent" | "saved" | "history", decisions: StoredDecision[]): boolean {
+    return this.writeValue(this.keys[key], decisions);
   }
 
   private readDrafts(): DecisionMemoryDraft[] {
-    const value = this.readValue<unknown>("drafts", []);
-    return isDraftArray(value) ? value : [];
+    const value = this.readValue<unknown>(this.keys.drafts, []);
+    if (!Array.isArray(value) || !value.every((item) => isDraft(item))) return [];
+    return value.map(normalizeDraft);
   }
 
-  private readValue<T>(key: keyof typeof this.keys, fallback: T): T {
+  private writeDrafts(drafts: DecisionMemoryDraft[]): boolean {
+    return this.writeValue(this.keys.drafts, drafts.slice(0, DECISION_MEMORY_LIMITS.drafts));
+  }
+
+  private readProfile(): DecisionMemoryProfile {
+    const value = this.readValue<unknown>(this.keys.profile, {});
+    return isProfile(value) ? value : {};
+  }
+
+  private writeProfile(profile: DecisionMemoryProfile): boolean {
+    return this.writeValue(this.keys.profile, profile);
+  }
+
+  private readValue<T>(key: string, fallback: T): T {
     try {
-      const raw = this.storage.getItem(this.key(key));
-      if (raw == null || raw === "") return fallback;
-      return JSON.parse(raw) as T;
+      const raw = this.storage.getItem(key);
+      return readJson(raw, fallback);
     } catch {
-      return fallback;
+      this.storage = this.fallback;
+      return readJson(this.storage.getItem(key), fallback);
     }
   }
 
-  private writeValue<T>(key: keyof typeof this.keys, value: T): boolean {
+  private writeValue<T>(key: string, value: T): boolean {
     try {
-      this.storage.setItem(this.key(key), JSON.stringify(value));
+      this.storage.setItem(key, JSON.stringify(value));
       return true;
     } catch {
-      return false;
+      this.storage = this.fallback;
+      try {
+        this.storage.setItem(key, JSON.stringify(value));
+        return true;
+      } catch {
+        return false;
+      }
     }
   }
+}
 
-  private key(key: keyof typeof this.keys): string {
-    return this.keys[key];
+function dedupeDrafts(items: DecisionMemoryDraft[], limit: number): DecisionMemoryDraft[] {
+  const seen = new Set<string>();
+  const result: DecisionMemoryDraft[] = [];
+  for (const item of items) {
+    if (seen.has(item.workflowId)) continue;
+    seen.add(item.workflowId);
+    result.push(item);
+    if (result.length >= limit) break;
   }
+  return result;
 }
 
 export const localDecisionStorage = new LocalDecisionStorage();
