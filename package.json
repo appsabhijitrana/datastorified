@@ -4,7 +4,7 @@
   "packageManager": "pnpm@9.15.4",
   "scripts": {
     "dev": "corepack pnpm --parallel --filter './apps/*' dev",
-    "build": "corepack pnpm --parallel --filter './apps/*' build",
+    "build": "corepack pnpm db:generate && corepack pnpm --parallel --filter './apps/*' build",
     "lint": "eslint apps packages --ext .ts,.tsx --max-warnings 0",
     "typecheck": "corepack pnpm --parallel --filter './apps/*' typecheck",
     "test": "vitest run",
