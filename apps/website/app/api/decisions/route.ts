@@ -5,7 +5,9 @@ import { decisionPluginRegistry } from "@datastorified/decision-os";
 import { createFingerprint } from "@datastorified/sync";
 import type { DecisionRepositoryDecision, DecisionRepositoryInput } from "@datastorified/decision-repository";
 
-function buildDecision(row: Awaited<ReturnType<typeof prisma.decision.findFirst>>): DecisionRepositoryDecision | undefined {
+type DecisionRow = Awaited<ReturnType<typeof prisma.decision.findMany>>[number];
+
+function buildDecision(row: DecisionRow): DecisionRepositoryDecision | undefined {
   if (!row) return undefined;
   const workflow = decisionPluginRegistry.getWorkflow(row.workflowId) ?? decisionPluginRegistry.getWorkflowBySlug(row.workflowSlug);
   const plugin = workflow ? decisionPluginRegistry.getPlugin(workflow.pluginId) : undefined;
@@ -69,12 +71,14 @@ export async function GET(request: NextRequest) {
   const session = await requireSession(request);
   if (!session) return NextResponse.json({ error: "Anonymous users store decisions locally." }, { status: 401 });
 
-  const rows = await prisma.decision.findMany({
+  const rows: DecisionRow[] = await prisma.decision.findMany({
     where: { userId: session.user.id },
     orderBy: { updatedAt: "desc" },
   });
 
-  return NextResponse.json({ decisions: rows.map((row) => buildDecision(row)).filter(Boolean) });
+  return NextResponse.json({
+    decisions: rows.map((row: DecisionRow) => buildDecision(row)).filter((decision): decision is DecisionRepositoryDecision => Boolean(decision)),
+  });
 }
 
 export async function POST(request: NextRequest) {

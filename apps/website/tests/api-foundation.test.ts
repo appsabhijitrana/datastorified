@@ -17,8 +17,11 @@ const historyItemFindFirst = vi.fn();
 const historyItemCreate = vi.fn();
 const historyItemUpdate = vi.fn();
 
-vi.mock("@datastorified/auth", () => ({
+vi.mock("@datastorified/auth/server", () => ({
   getAuthSession,
+}));
+
+vi.mock("@datastorified/auth", () => ({
   authClient: { useSession: () => ({ data: null, isPending: false, isRefetching: false, error: null, refetch: vi.fn() }) },
   signInWithGoogle: vi.fn(),
   signOut: vi.fn(),
