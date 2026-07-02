@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthSession } from "@datastorified/auth";
+import { getAuthSession } from "@datastorified/auth/server";
 import { prisma } from "@datastorified/database";
 import type { DecisionAnswers } from "@datastorified/decision-os";
 import { buildPersonalizedRecommendations, type PersonalizationContext } from "@datastorified/personalization";
@@ -10,6 +10,17 @@ function parseContext(request: NextRequest): PersonalizationContext {
   if (!raw) return {};
   try {
     const parsed = JSON.parse(raw) as PersonalizationContext;
+    return parsed ?? {};
+  } catch {
+    return {};
+  }
+}
+
+async function parseBodyContext(request: NextRequest): Promise<PersonalizationContext> {
+  try {
+    const text = await request.text();
+    if (!text.trim()) return {};
+    const parsed = JSON.parse(text) as PersonalizationContext;
     return parsed ?? {};
   } catch {
     return {};
@@ -80,5 +91,33 @@ export async function GET(request: NextRequest) {
   }
 
   const recommendations = buildPersonalizedRecommendations(queryContext);
+  return NextResponse.json({ source: "context", ...recommendations });
+}
+
+export async function POST(request: NextRequest) {
+  const session = await getAuthSession(request.headers).catch(() => null);
+  const bodyContext = await parseBodyContext(request);
+
+  if (session?.user?.id) {
+    const [profileRecord, recentDecisions, savedDecisions, historyItems] = await Promise.all([
+      prisma.profile.findUnique({ where: { userId: session.user.id } }),
+      prisma.decision.findMany({ where: { userId: session.user.id }, orderBy: { updatedAt: "desc" }, take: 10 }),
+      prisma.decision.findMany({ where: { userId: session.user.id, status: "saved" }, orderBy: { updatedAt: "desc" }, take: 10 }),
+      prisma.historyItem.findMany({ where: { userId: session.user.id }, include: { decision: true }, orderBy: { openedAt: "desc" }, take: 10 }),
+    ]);
+
+    const recommendations = buildPersonalizedRecommendations({
+      ...bodyContext,
+      profile: bodyContext.profile ?? toProfile(profileRecord),
+      recentDecisions: bodyContext.recentDecisions ?? recentDecisions.map(toStoredDecision),
+      savedDecisions: bodyContext.savedDecisions ?? savedDecisions.map(toStoredDecision),
+      favoriteWorkflowIds: bodyContext.favoriteWorkflowIds ?? savedDecisions.map((row) => row.workflowId),
+      history: bodyContext.history ?? historyItems.map((row) => ({ id: row.id, workflowId: row.decision.workflowId, pluginId: row.decision.pluginId, answers: row.decision.answers as DecisionAnswers, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString() })),
+      profileAnalysis: profileRecord ? getProfileAnalysis(toProfile(profileRecord)) : undefined,
+    });
+    return NextResponse.json({ source: "cloud", ...recommendations });
+  }
+
+  const recommendations = buildPersonalizedRecommendations(bodyContext);
   return NextResponse.json({ source: "context", ...recommendations });
 }

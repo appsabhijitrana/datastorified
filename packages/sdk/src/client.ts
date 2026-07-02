@@ -320,9 +320,18 @@ export function createDataStorifiedClient(options: DataStorifiedClientOptions = 
 
   const recommendations = {
     async list(context: PersonalizationContext = {}): Promise<DataStorifiedApiResult<RecommendationResponse>> {
-      const query = new URLSearchParams();
-      if (Object.keys(context).length > 0) query.set("context", JSON.stringify(context));
-      return safeRequest<RecommendationResponse>(fetcher, baseUrl, `/api/recommendations${query.toString() ? `?${query.toString()}` : ""}`);
+      const hasContext = Object.keys(context).length > 0;
+      return safeRequest<RecommendationResponse>(
+        fetcher,
+        baseUrl,
+        "/api/recommendations",
+        hasContext
+          ? {
+              method: "POST",
+              body: JSON.stringify(context),
+            }
+          : undefined,
+      );
     },
   };
 

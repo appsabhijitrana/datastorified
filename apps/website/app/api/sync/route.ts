@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthSession } from "@datastorified/auth";
+import { getAuthSession } from "@datastorified/auth/server";
 import { prisma } from "@datastorified/database";
 import { decisionPluginRegistry } from "@datastorified/decision-os";
 import { getProfileCompleteness } from "@datastorified/profile";
