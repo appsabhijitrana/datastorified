@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@datastorified/calculators-engine": "workspace:*",
-    "@datastorified/profile": "workspace:*"
+    "@datastorified/profile": "workspace:*",
+    "@datastorified/sdk": "workspace:*"
   }
 }

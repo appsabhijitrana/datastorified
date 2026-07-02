@@ -208,6 +208,9 @@ importers:
       '@datastorified/profile':
         specifier: workspace:*
         version: link:../../packages/profile
+      '@datastorified/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
       '@datastorified/seo':
         specifier: workspace:*
         version: link:../../packages/seo
@@ -308,12 +311,18 @@ importers:
       '@datastorified/profile':
         specifier: workspace:*
         version: link:../profile
+      '@datastorified/sdk':
+        specifier: workspace:*
+        version: link:../sdk
 
   packages/decision-repository:
     dependencies:
       '@datastorified/decision-os':
         specifier: workspace:*
         version: link:../decision-os
+      '@datastorified/sdk':
+        specifier: workspace:*
+        version: link:../sdk
     devDependencies:
       '@types/node':
         specifier: ^22.10.2
@@ -337,6 +346,12 @@ importers:
         specifier: ^3.25.0
         version: 3.25.76
 
+  packages/sdk:
+    dependencies:
+      '@datastorified/profile':
+        specifier: workspace:*
+        version: link:../profile
+
   packages/seo: {}
 
   packages/storage:
@@ -353,6 +368,9 @@ importers:
       '@datastorified/profile':
         specifier: workspace:*
         version: link:../profile
+      '@datastorified/sdk':
+        specifier: workspace:*
+        version: link:../sdk
 
   packages/test-utils: {}
 

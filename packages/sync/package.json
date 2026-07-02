@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@datastorified/decision-os": "workspace:*",
-    "@datastorified/profile": "workspace:*"
+    "@datastorified/profile": "workspace:*",
+    "@datastorified/sdk": "workspace:*"
   }
 }

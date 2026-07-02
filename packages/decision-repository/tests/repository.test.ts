@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { buildDecisionReport, decisionPluginRegistry } from "@datastorified/decision-os";
-import { buildDecisionRecord, HybridDecisionRepository, LocalDecisionRepository, type DecisionRepositoryInput } from "../src";
+import { buildDecisionRecord, HybridDecisionRepository, LocalDecisionRepository, type DecisionRepository, type DecisionRepositoryInput } from "../src";
 
 describe("decision repository", () => {
   beforeEach(() => {
@@ -20,10 +20,10 @@ describe("decision repository", () => {
 
   it("uses the local repository when anonymous and delegates when authenticated", async () => {
     const local = new LocalDecisionRepository();
-    const cloud = {
+    const cloud: DecisionRepository = {
       listDecisions: async () => [{ id: "cloud", pluginId: "p", workflowId: "w" } as never],
       getDecision: async () => undefined,
-      saveDecision: async (decision: DecisionRepositoryInput) => decision,
+      saveDecision: async (decision: DecisionRepositoryInput) => decision as never,
       deleteDecision: async () => {},
     };
     const anonymous = new HybridDecisionRepository({ authenticated: false, localRepository: local, cloudRepository: cloud });

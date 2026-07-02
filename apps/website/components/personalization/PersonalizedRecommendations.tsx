@@ -5,8 +5,9 @@ import Link from "next/link";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { Badge, Button, Card } from "@datastorified/ui";
 import { getDecisionAdapters } from "@datastorified/decision-os/adapters";
-import { buildPersonalizedRecommendations, type PersonalizedRecommendationSet } from "@datastorified/personalization";
+import { buildPersonalizedRecommendations, type PersonalizationContext as RecommendationContext } from "@datastorified/personalization";
 import type { DecisionProfileEnvelope } from "@datastorified/profile";
+import { createDataStorifiedClient, type PersonalizationContext, type PersonalizedRecommendationSet } from "@datastorified/sdk";
 import { storage } from "@datastorified/storage";
 import { DecisionSuggestionCard } from "../decision/DecisionSuggestionCard";
 import { ProfileCompletenessCard } from "../profile/ProfileCompletenessCard";
@@ -15,6 +16,7 @@ import { DecisionAccuracyBadge } from "../decision/DecisionAccuracyBadge";
 
 export function PersonalizedRecommendations({ compact = false, showProfile = true }: { compact?: boolean; showProfile?: boolean }) {
   const adapters = getDecisionAdapters();
+  const client = useMemo(() => createDataStorifiedClient(), []);
   const [snapshot, setSnapshot] = useState<PersonalizedRecommendationSet | null>(null);
 
   useEffect(() => {
@@ -27,7 +29,7 @@ export function PersonalizedRecommendations({ compact = false, showProfile = tru
     ]).then(([profileEnvelope, recent, saved, history]) => {
       if (!mounted) return;
       const profile = (profileEnvelope as DecisionProfileEnvelope | null)?.profile;
-      const recommendationSet = buildPersonalizedRecommendations({
+      const context: PersonalizationContext = {
         profile,
         recentDecisions: recent,
         savedDecisions: saved,
@@ -35,13 +37,20 @@ export function PersonalizedRecommendations({ compact = false, showProfile = tru
         favoriteWorkflowIds: saved.map((decision) => decision.workflowId),
         recentCalculators: storage.getRecent("calculators"),
         favoriteCalculators: storage.getFavorites("calculators"),
+      };
+      void client.recommendations.list(context).then((result) => {
+        if (!mounted) return;
+        if (result.ok) {
+          setSnapshot(result.data);
+          return;
+        }
+        setSnapshot(buildPersonalizedRecommendations(context as RecommendationContext) as PersonalizedRecommendationSet);
       });
-      setSnapshot(recommendationSet);
     });
     return () => {
       mounted = false;
     };
-  }, [adapters.memory, adapters.profile]);
+  }, [adapters.memory, adapters.profile, client]);
 
   const topWorkflows = useMemo(() => snapshot?.workflowRecommendations.slice(0, compact ? 2 : 4) ?? [], [compact, snapshot]);
   if (!snapshot) return <Card className="p-6"><div className="h-32 animate-pulse rounded-3xl bg-soft" /></Card>;

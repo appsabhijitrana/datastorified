@@ -17,7 +17,8 @@
     "test": "vitest run --root ../.. packages/decision-repository/tests"
   },
   "dependencies": {
-    "@datastorified/decision-os": "workspace:*"
+    "@datastorified/decision-os": "workspace:*",
+    "@datastorified/sdk": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.10.2"

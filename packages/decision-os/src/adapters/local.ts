@@ -1,6 +1,7 @@
 import { getProfileCompleteness } from "@datastorified/profile";
 import { localProfileStorage } from "@datastorified/profile";
 import type { DecisionProfile, DecisionProfileEnvelope } from "@datastorified/profile";
+import { createDataStorifiedClient } from "@datastorified/sdk";
 import type { DecisionMemoryDraft, DecisionMemoryProfile, StoredDecision } from "../types";
 import { localDecisionStorage } from "../storage/localDecisionStorage";
 import type { DecisionAIAdapter } from "./DecisionAIAdapter";
@@ -31,33 +32,18 @@ export class LocalDecisionPersistenceAdapter implements DecisionPersistenceAdapt
 }
 
 export class LocalProfileAdapter implements DecisionProfileAdapter {
+  private readonly client = createDataStorifiedClient();
+
   private async readRemoteProfile(): Promise<DecisionProfileEnvelope | null> {
-    if (typeof fetch !== "function") return null;
-    try {
-      const response = await fetch("/api/profile", { credentials: "include" });
-      if (!response.ok) return null;
-      const payload = (await response.json()) as DecisionProfileEnvelope & { source?: string };
-      return payload.source === "authenticated" ? payload : null;
-    } catch {
-      return null;
-    }
+    const result = await this.client.profile.get();
+    if (!result.ok) return null;
+    return result.data;
   }
 
   private async writeRemoteProfile(profile: Partial<DecisionProfile>): Promise<DecisionProfileEnvelope | null> {
-    if (typeof fetch !== "function") return null;
-    try {
-      const response = await fetch("/api/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(profile),
-      });
-      if (!response.ok) return null;
-      const payload = (await response.json()) as DecisionProfileEnvelope & { source?: string };
-      return payload.source === "authenticated" ? payload : null;
-    } catch {
-      return null;
-    }
+    const result = await this.client.profile.update(profile);
+    if (!result.ok) return null;
+    return result.data;
   }
 
   async getProfile() {

@@ -1,44 +1,59 @@
+import { createDataStorifiedClient, type DecisionRecord } from "@datastorified/sdk";
 import type { DecisionRepository } from "./DecisionRepository";
-import type { DecisionRepositoryDeleteResponse, DecisionRepositoryInput, DecisionRepositoryListResponse, DecisionRepositoryRecordResponse } from "./types";
+import { normalizeDecision } from "./DecisionRepository";
+import type { DecisionRepositoryInput } from "./types";
+import { LocalDecisionRepositoryImpl } from "./LocalDecisionRepository";
 
-async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, {
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {}),
-    },
-    ...init,
-  });
-  if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`);
-  }
-  return response.json() as Promise<T>;
+const localRepository = new LocalDecisionRepositoryImpl();
+
+function toDecisionInput(record: DecisionRecord): DecisionRepositoryInput {
+  return record as DecisionRepositoryInput;
 }
 
 export class CloudDecisionRepositoryImpl implements DecisionRepository {
-  constructor(private readonly basePath = "/api/decisions") {}
+  private readonly client;
+
+  constructor() {
+    this.client = createDataStorifiedClient();
+  }
+
+  private async fallbackList() {
+    return localRepository.listDecisions();
+  }
+
+  private async fallbackGet(id: string) {
+    return localRepository.getDecision(id);
+  }
+
+  private async fallbackSave(decision: DecisionRepositoryInput) {
+    return localRepository.saveDecision(decision);
+  }
 
   async listDecisions() {
-    const payload = await requestJson<DecisionRepositoryListResponse>(this.basePath);
-    return payload.decisions;
+    const result = await this.client.decisions.list();
+    if (!result.ok) return this.fallbackList();
+    return result.data.decisions.map((item) => normalizeDecision(toDecisionInput(item)));
   }
 
   async getDecision(id: string) {
-    const payload = await requestJson<DecisionRepositoryRecordResponse>(`${this.basePath}/${encodeURIComponent(id)}`);
-    return payload.decision;
+    const result = await this.client.decisions.get(id);
+    if (!result.ok) return this.fallbackGet(id);
+    return normalizeDecision(toDecisionInput(result.data.decision));
   }
 
   async saveDecision(decision: DecisionRepositoryInput) {
-    const payload = await requestJson<DecisionRepositoryRecordResponse>(this.basePath, {
-      method: "POST",
-      body: JSON.stringify(decision),
-    });
-    return payload.decision;
+    const result = await this.client.decisions.save(decision as DecisionRecord);
+    if (!result.ok) return this.fallbackSave(decision);
+    return normalizeDecision(toDecisionInput(result.data.decision));
   }
 
   async deleteDecision(id: string) {
-    await requestJson<DecisionRepositoryDeleteResponse>(`${this.basePath}/${encodeURIComponent(id)}`, { method: "DELETE" });
+    const result = await this.client.decisions.delete(id);
+    if (!result.ok) {
+      await localRepository.deleteDecision(id);
+      return;
+    }
+    await localRepository.deleteDecision(id);
   }
 }
 
