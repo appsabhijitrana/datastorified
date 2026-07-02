@@ -1,0 +1,216 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String      @id @default(cuid())
+  name          String?
+  email         String?     @unique
+  image         String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  accounts      Account[]
+  sessions      Session[]
+  profiles      Profile[]
+  decisions     Decision[]
+  favorites     Favorite[]
+  historyItems  HistoryItem[]
+  syncLogs      SyncLog[]
+
+  @@map("users")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  decision     Decision?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model Account {
+  id                 String   @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refreshToken       String?
+  accessToken        String?
+  expiresAt          Int?
+  tokenType          String?
+  scope              String?
+  idToken            String?
+  sessionState       String?
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Verification {
+  id        String   @id @default(cuid())
+  identifier String
+  token     String   @unique
+  expires   DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verifications")
+}
+
+model Profile {
+  id                    String   @id @default(cuid())
+  userId                String?
+  ageRange              String?
+  city                  String?
+  state                 String?
+  country               String?
+  dependents            Int?
+  occupation            String?
+  employmentType        String?
+  monthlyIncome         Decimal? @db.Decimal(14, 2)
+  monthlyExpenses       Decimal? @db.Decimal(14, 2)
+  emergencyFund         Decimal? @db.Decimal(14, 2)
+  assets                Decimal? @db.Decimal(14, 2)
+  liabilities           Decimal? @db.Decimal(14, 2)
+  activeLoans           Int?
+  monthlyEmis           Decimal? @db.Decimal(14, 2)
+  goals                 String?
+  riskProfile           String?
+  investmentExperience  String?
+  preferredCurrency     String?
+  preferredLanguage     String?
+  completenessScore     Int      @default(0)
+  metadata              Json?
+  user                  User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@unique([userId])
+  @@index([userId])
+  @@map("profiles")
+}
+
+model Decision {
+  id                String          @id @default(cuid())
+  userId            String?
+  sessionId         String?         @unique
+  pluginId          String
+  workflowId        String
+  workflowSlug      String
+  workflowVersion   String
+  title             String
+  category          String?
+  question          String?
+  answers           Json
+  facts             Json?
+  score             Json?
+  risks             Json?
+  recommendation    Json?
+  actionPlan        Json?
+  scenario          Json?
+  reportVersion     String?
+  source            String          @default("local")
+  status            String          @default("draft")
+  isFavorite        Boolean         @default(false)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  user              User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  session           Session?        @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  answersRows       DecisionAnswer[]
+  historyItems      HistoryItem[]
+  favorites         Favorite[]
+  syncLogs          SyncLog[]
+
+  @@index([userId])
+  @@index([sessionId])
+  @@index([pluginId, workflowSlug])
+  @@index([updatedAt])
+  @@map("decisions")
+}
+
+model DecisionAnswer {
+  id          String   @id @default(cuid())
+  decisionId  String
+  questionId  String
+  value       Json
+  valueType   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  decision    Decision @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+
+  @@unique([decisionId, questionId])
+  @@index([decisionId])
+  @@map("decision_answers")
+}
+
+model Favorite {
+  id         String   @id @default(cuid())
+  userId     String?
+  decisionId String
+  label      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  decision   Decision @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, decisionId])
+  @@index([decisionId])
+  @@index([userId])
+  @@map("favorites")
+}
+
+model HistoryItem {
+  id          String   @id @default(cuid())
+  userId      String?
+  decisionId  String
+  title       String
+  summary     String?
+  score       Int?
+  category    String?
+  openedAt    DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  decision    Decision @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+
+  @@index([userId, openedAt])
+  @@index([decisionId])
+  @@map("history_items")
+}
+
+model SyncLog {
+  id              String   @id @default(cuid())
+  decisionId      String?
+  userId          String?
+  deviceId        String?
+  clientRecordId  String?
+  syncDirection   String
+  status          String
+  conflictReason  String?
+  payload         Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  decision        Decision? @relation(fields: [decisionId], references: [id], onDelete: SetNull)
+  user            User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([decisionId])
+  @@index([userId])
+  @@index([clientRecordId])
+  @@map("sync_logs")
+}
