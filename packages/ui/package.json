@@ -17,6 +17,7 @@
     "react-dom": "^19.0.0"
   },
   "dependencies": {
+    "@datastorified/auth": "workspace:*",
     "@datastorified/utils": "workspace:*",
     "framer-motion": "^11.15.0",
     "lucide-react": "^1.22.0",

@@ -7,12 +7,12 @@ const calculators = "http://127.0.0.1:3001";
 const tools = "http://127.0.0.1:3002";
 
 test("website homepage loads", async ({ page }) => {
-  await page.goto(website);
+  await page.goto(website, { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { name: /What decision are you trying to make today/i })).toBeVisible();
 });
 
 test("decision input accepts text and shows preview", async ({ page }) => {
-  await page.goto(website);
+  await page.goto(website, { waitUntil: "domcontentloaded" });
   await page.getByLabel("What decision are you trying to make today?").fill("Should I buy a house?");
   await page.getByRole("button", { name: /Find my decision/i }).first().click();
   await expect(page).toHaveURL(/\/decision\/property\/buy-house/u);
@@ -20,7 +20,7 @@ test("decision input accepts text and shows preview", async ({ page }) => {
 });
 
 test("decision engine completes, changes scenario, saves, and reloads", async ({ page }) => {
-  await page.goto(`${website}/decision/property/buy-house`);
+  await page.goto(`${website}/decision/property/buy-house`, { waitUntil: "domcontentloaded" });
   await page.getByRole("button", { name: /View recommendation/i }).click();
   await page.waitForURL(/\/decision\/result\//u);
   await expect(page.getByRole("button", { name: /Save locally/i })).toBeVisible();
@@ -38,7 +38,7 @@ test("decision engine completes, changes scenario, saves, and reloads", async ({
 });
 
 test("drafts resume correctly after reload", async ({ page }) => {
-  await page.goto(`${website}/decision/property/buy-house`);
+  await page.goto(`${website}/decision/property/buy-house`, { waitUntil: "domcontentloaded" });
   const income = page.locator('main input[aria-label="Monthly household take-home income"]:visible').first();
   await income.fill("180000");
   await page.reload();
@@ -46,20 +46,20 @@ test("drafts resume correctly after reload", async ({ page }) => {
 });
 
 for (const [plugin, slug] of [["finance", "sip-vs-fd"], ["automobile", "ev-vs-petrol"]]) test(`${slug} decision flow renders`, async ({ page }) => {
-    await page.goto(`${website}/decision/${plugin}/${slug}`);
+    await page.goto(`${website}/decision/${plugin}/${slug}`, { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("button", { name: /View recommendation/i })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
   });
 
 test("loaded decision flow stores a private local result", async ({ page }) => {
-  await page.goto(`${website}/decision/finance/emergency-fund`);
+  await page.goto(`${website}/decision/finance/emergency-fund`, { waitUntil: "domcontentloaded" });
   await page.getByRole("button", { name: /View recommendation/i }).click();
   await expect(page).toHaveURL(/\/decision\/result\//u);
   await expect(page.getByRole("button", { name: /Save locally/i })).toBeVisible();
 });
 
 test("scenario simulator updates the score live and resets back to baseline", async ({ page }) => {
-  await page.goto(`${website}/decision/property/buy-house`);
+  await page.goto(`${website}/decision/property/buy-house`, { waitUntil: "domcontentloaded" });
   await page.getByRole("button", { name: /View recommendation/i }).click();
   await page.waitForURL(/\/decision\/result\//u);
   const beforeText = page.getByText("No score change", { exact: true });
@@ -72,7 +72,7 @@ test("scenario simulator updates the score live and resets back to baseline", as
 
 test("mobile decision flow shows one question at a time without overflow", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto(`${website}/decision/finance/sip-vs-fd`);
+  await page.goto(`${website}/decision/finance/sip-vs-fd`, { waitUntil: "domcontentloaded" });
   await expect(page.locator('main input[type="text"]:visible')).toHaveCount(1);
   await page.getByRole("button", { name: /^Next/u }).click();
   await expect(page.locator('main input[type="text"]:visible')).toHaveCount(1);
@@ -80,19 +80,19 @@ test("mobile decision flow shows one question at a time without overflow", async
 });
 
 test("calculators homepage loads and search finds EMI", async ({ page }) => {
-  await page.goto(calculators);
+  await page.goto(calculators, { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { name: /Smart calculators/i })).toBeVisible();
   await page.getByPlaceholder(/Search EMI/i).fill("EMI");
   await expect(page.getByRole("heading", { name: "EMI Calculator" })).toBeVisible();
 });
 
 test("calculator and tool search tolerate typos", async ({ page }) => {
-  await page.goto(calculators); await page.getByPlaceholder(/Search EMI/i).fill("calclator"); await expect(page.getByRole("heading", { name: "Percentage Calculator" })).toBeVisible();
-  await page.goto(tools); await page.getByPlaceholder(/Search JSON/i).fill("formater"); await expect(page.getByRole("heading", { name: "JSON Formatter", exact: true })).toBeVisible();
+  await page.goto(calculators, { waitUntil: "domcontentloaded" }); await page.getByPlaceholder(/Search EMI/i).fill("calclator"); await expect(page.getByRole("heading", { name: "Percentage Calculator" })).toBeVisible();
+  await page.goto(tools, { waitUntil: "domcontentloaded" }); await page.getByPlaceholder(/Search JSON/i).fill("formater"); await expect(page.getByRole("heading", { name: "JSON Formatter", exact: true })).toBeVisible();
 });
 
 test("EMI calculator calculates a known result", async ({ page }) => {
-  await page.goto(`${calculators}/emi-calculator`);
+  await page.goto(`${calculators}/emi-calculator`, { waitUntil: "domcontentloaded" });
   await page.getByRole("textbox", { name: "Loan amount", exact: true }).fill("120000");
   await page.getByRole("textbox", { name: "Annual interest rate", exact: true }).fill("0");
   await page.getByRole("textbox", { name: "Loan tenure", exact: true }).fill("1");
@@ -100,42 +100,42 @@ test("EMI calculator calculates a known result", async ({ page }) => {
 });
 
 test("favorite calculator persists after reload", async ({ page }) => {
-  await page.goto(`${calculators}/emi-calculator`);
+  await page.goto(`${calculators}/emi-calculator`, { waitUntil: "domcontentloaded" });
   await page.getByRole("button", { name: "Favorite" }).click();
   await page.reload();
   await expect(page.getByRole("button", { name: "Saved" })).toBeVisible();
 });
 
 test("recent calculator persists after reload", async ({ page }) => {
-  await page.goto(`${calculators}/sip-calculator`);
+  await page.goto(`${calculators}/sip-calculator`, { waitUntil: "domcontentloaded" });
   await expect.poll(() => page.evaluate(() => localStorage.getItem("ds.recent.calculators"))).toContain("sip-calculator");
-  await page.goto(calculators);
+  await page.goto(calculators, { waitUntil: "domcontentloaded" });
   await page.reload();
   await expect(page.getByRole("heading", { name: "Recently used" })).toBeVisible();
   await expect(page.locator("#recent").getByRole("heading", { name: "SIP Calculator" })).toBeVisible();
 });
 
 test("tools homepage loads and search finds JSON Formatter", async ({ page }) => {
-  await page.goto(tools);
+  await page.goto(tools, { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { name: /Everyday tools/i })).toBeVisible();
   await page.getByPlaceholder(/Search JSON/i).fill("JSON Formatter");
   await expect(page.getByRole("heading", { name: "JSON Formatter", exact: true })).toBeVisible();
 });
 
 test("JSON Formatter formats valid JSON", async ({ page }) => {
-  await page.goto(`${tools}/json-formatter`);
+  await page.goto(`${tools}/json-formatter`, { waitUntil: "domcontentloaded" });
   await page.getByLabel("JSON Formatter input").fill('{"ready":true}');
   await expect(page.locator("pre")).toContainText('"ready": true');
 });
 
 test("JSON Formatter shows a friendly error for invalid JSON", async ({ page }) => {
-  await page.goto(`${tools}/json-formatter`);
+  await page.goto(`${tools}/json-formatter`, { waitUntil: "domcontentloaded" });
   await page.getByLabel("JSON Formatter input").fill("{");
   await expect(page.locator("div[role='alert']").filter({ hasText: /JSON|property|position/i })).toBeVisible();
 });
 
 test("Password Generator creates a new password", async ({ page }) => {
-  await page.goto(`${tools}/password-generator`);
+  await page.goto(`${tools}/password-generator`, { waitUntil: "domcontentloaded" });
   const output = page.locator("pre"); const before = await output.textContent();
   await page.getByRole("button", { name: "Generate new" }).click();
   await expect(output).not.toHaveText(before ?? "");
@@ -143,22 +143,22 @@ test("Password Generator creates a new password", async ({ page }) => {
 
 test("mobile website renders bottom navigation", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto(website);
+  await page.goto(website, { waitUntil: "domcontentloaded" });
   await expect(page.locator("nav.fixed")).toBeVisible();
 });
 
 test("mobile calculator has no horizontal overflow", async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 }); await page.goto(`${calculators}/emi-calculator`);
+  await page.setViewportSize({ width: 390, height: 844 }); await page.goto(`${calculators}/emi-calculator`, { waitUntil: "domcontentloaded" });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 });
 
 test("mobile tool has no horizontal overflow", async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 }); await page.goto(`${tools}/json-formatter`);
+  await page.setViewportSize({ width: 390, height: 844 }); await page.goto(`${tools}/json-formatter`, { waitUntil: "domcontentloaded" });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 });
 
 test("legal pages load", async ({ page }) => {
-  await page.goto(`${website}/legal/privacy`);
+  await page.goto(`${website}/legal/privacy`, { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { name: /Privacy Policy/i })).toBeVisible();
 });
 
@@ -184,7 +184,7 @@ test("decision URLs have canonical structured data and private results stay unin
   const landingSchemas = JSON.parse(await page.locator('script[type="application/ld+json"]').textContent() ?? "[]") as Array<{ "@type": string }>;
   expect(landingSchemas.map((schema) => schema["@type"])).toEqual(expect.arrayContaining(["CollectionPage", "BreadcrumbList"]));
 
-  await page.goto(`${website}/decision/property/buy-house`);
+  await page.goto(`${website}/decision/property/buy-house`, { waitUntil: "domcontentloaded" });
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", "https://datastorified.com/decision/property/buy-house");
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /index, follow/u);
   const flowSchemas = JSON.parse(await page.locator('script[type="application/ld+json"]').textContent() ?? "[]") as Array<{ "@type": string }>;
@@ -198,7 +198,7 @@ test("decision URLs have canonical structured data and private results stay unin
 
   const privateResult = await request.get(`${website}/decision/result/seo-check`);
   expect(privateResult.headers()["x-robots-tag"]).toContain("noindex");
-  await page.goto(`${website}/decision/result/seo-check`);
+  await page.goto(`${website}/decision/result/seo-check`, { waitUntil: "domcontentloaded" });
   const privateRobots = await page.locator('meta[name="robots"]').getAttribute("content");
   for (const directive of ["noindex", "nofollow", "noimageindex", "nosnippet"]) expect(privateRobots).toContain(directive);
   await expect(page.locator('link[rel="canonical"]')).toHaveCount(0);
@@ -234,7 +234,7 @@ test("representative pages produce no browser console errors", async ({ page }) 
   page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });
   page.on("pageerror", (error) => errors.push(error.message));
   for (const url of [website, `${calculators}/emi-calculator`, `${tools}/json-formatter`, `${tools}/pdf-merge`, `${website}/legal/privacy`]) {
-    await page.goto(url); await page.waitForLoadState("networkidle");
+    await page.goto(url, { waitUntil: "domcontentloaded" }); await page.waitForLoadState("networkidle");
   }
   expect(errors).toEqual([]);
 });

@@ -7,13 +7,13 @@ async function assertNoHorizontalOverflow(page: Page) {
 }
 
 test("homepage loads", async ({ page }) => {
-  await page.goto(website);
+  await page.goto(website, { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { name: /What decision are you trying to make today/i })).toBeVisible();
   await expect(page.getByLabel("What decision are you trying to make today?")).toBeVisible();
 });
 
 test('searching "buy house" opens the buy-house workflow', async ({ page }) => {
-  await page.goto(website);
+  await page.goto(website, { waitUntil: "domcontentloaded" });
   await page.getByLabel("What decision are you trying to make today?").fill("buy house");
   await page.getByRole("button", { name: /Find my decision/i }).click();
   await expect(page).toHaveURL(/\/decision\/property\/buy-house/u);
@@ -21,7 +21,7 @@ test('searching "buy house" opens the buy-house workflow', async ({ page }) => {
 });
 
 test("buy-house workflow accepts answers, scores, and recommends", async ({ page }) => {
-  await page.goto(`${website}/decision/property/buy-house`);
+  await page.goto(`${website}/decision/property/buy-house`, { waitUntil: "domcontentloaded" });
   await page.getByRole("textbox", { name: "Monthly household take-home income" }).fill("180000");
   await page.getByRole("textbox", { name: "Property purchase price" }).fill("7500000");
   await page.getByRole("textbox", { name: "Available down payment" }).fill("2000000");
@@ -34,7 +34,7 @@ test("buy-house workflow accepts answers, scores, and recommends", async ({ page
 });
 
 test("scenario simulator changes the score and can be reset", async ({ page }) => {
-  await page.goto(`${website}/decision/property/buy-house`);
+  await page.goto(`${website}/decision/property/buy-house`, { waitUntil: "domcontentloaded" });
   await page.getByRole("button", { name: /View recommendation/i }).click();
   await page.waitForURL(/\/decision\/result\//u);
 
@@ -47,7 +47,7 @@ test("scenario simulator changes the score and can be reset", async ({ page }) =
 });
 
 test("saved decision persists after reload and saved page loads", async ({ page }) => {
-  await page.goto(`${website}/decision/property/buy-house`);
+  await page.goto(`${website}/decision/property/buy-house`, { waitUntil: "domcontentloaded" });
   await page.getByRole("button", { name: /View recommendation/i }).click();
   await page.waitForURL(/\/decision\/result\//u);
 
@@ -59,7 +59,7 @@ test("saved decision persists after reload and saved page loads", async ({ page 
   await expect(page).toHaveURL(resultUrl);
   await expect(page.getByRole("button", { name: /Remove saved copy/i })).toBeVisible();
 
-  await page.goto(`${website}/decision/saved`);
+  await page.goto(`${website}/decision/saved`, { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { name: /Saved decisions and drafts/i })).toBeVisible();
   await expect(page.getByText(/Saved locally/i)).toBeVisible();
 });
@@ -71,7 +71,7 @@ for (const [plugin, slug, title] of [
 ] as const) {
   test(`${slug} workflow opens and fits mobile viewport`, async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto(`${website}/decision/${plugin}/${slug}`);
+    await page.goto(`${website}/decision/${plugin}/${slug}`, { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("heading", { name: title })).toBeVisible();
     await expect(page.locator('main input[type="text"]:visible')).toHaveCount(1);
     await assertNoHorizontalOverflow(page);
@@ -79,12 +79,12 @@ for (const [plugin, slug, title] of [
 }
 
 test("saved page empty state renders", async ({ page }) => {
-  await page.goto(`${website}/decision/saved`);
+  await page.goto(`${website}/decision/saved`, { waitUntil: "domcontentloaded" });
   await expect(page.getByText(/No saved decisions yet/i)).toBeVisible();
 });
 
 test("invalid inputs surface validation errors", async ({ page }) => {
-  await page.goto(`${website}/decision/property/buy-house`);
+  await page.goto(`${website}/decision/property/buy-house`, { waitUntil: "domcontentloaded" });
   const income = page.getByRole("textbox", { name: "Monthly household take-home income" });
   await income.fill("-1");
   await income.blur();
@@ -93,8 +93,8 @@ test("invalid inputs surface validation errors", async ({ page }) => {
 
 test("mobile homepage and decision pages do not overflow horizontally", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto(website);
+  await page.goto(website, { waitUntil: "domcontentloaded" });
   await assertNoHorizontalOverflow(page);
-  await page.goto(`${website}/decision/property/buy-house`);
+  await page.goto(`${website}/decision/property/buy-house`, { waitUntil: "domcontentloaded" });
   await assertNoHorizontalOverflow(page);
 });
