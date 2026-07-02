@@ -58,6 +58,18 @@ test("loaded decision flow stores a private local result", async ({ page }) => {
   await expect(page.getByRole("button", { name: /Save locally/i })).toBeVisible();
 });
 
+test("scenario simulator updates the score live and resets back to baseline", async ({ page }) => {
+  await page.goto(`${website}/decision/property/buy-house`);
+  await page.getByRole("button", { name: /View recommendation/i }).click();
+  await page.waitForURL(/\/decision\/result\//u);
+  const beforeText = page.getByText("No score change", { exact: true });
+  await expect(beforeText).toBeVisible();
+  await page.getByRole("textbox", { name: "Monthly income" }).fill("300000");
+  await expect(beforeText).toBeHidden();
+  await page.getByRole("button", { name: /Reset scenario/i }).click();
+  await expect(beforeText).toBeVisible();
+});
+
 test("mobile decision flow shows one question at a time without overflow", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(`${website}/decision/finance/sip-vs-fd`);

@@ -21,6 +21,13 @@ const affordabilityRisk = risk("housing-affordability", "Housing payment is too 
 const housingLiquidityRisk = risk("housing-liquidity", "Emergency reserve is too thin", "Buying would leave inadequate accessible savings.", "high", "Preserve closing costs and a suitable post-purchase emergency fund.");
 const shortOwnershipRisk = risk("short-ownership", "Short expected ownership period", "Transaction costs and flexibility needs weaken the case for buying.", "medium", "Model the full cost of selling or continue renting.");
 const titleRisk = risk("title-diligence", "Property diligence incomplete", "Legal title and physical-condition checks are not yet complete.", "critical", "Complete independent legal and technical due diligence before paying a non-refundable amount.");
+const houseScenarioVariables = [
+  { id: "house-price", questionId: "propertyPrice", label: "Property price", chips: [7_500_000, 8_000_000, 9_500_000] },
+  { id: "house-down-payment", questionId: "downPayment", label: "Down payment", chips: [1_000_000, 1_600_000, 2_500_000] },
+  { id: "house-rate", questionId: "interestRate", label: "Interest rate", chips: [8, 9, 10.5] },
+  { id: "house-tenure", questionId: "tenure", label: "Tenure", chips: [15, 20, 25] },
+  { id: "house-income", questionId: "monthlyIncome", label: "Monthly income", chips: [120_000, 150_000, 250_000] },
+] as const;
 
 const housingQuestions = [
   currencyQuestion("monthlyIncome", "Monthly household take-home income", 150_000, "Use stable recurring income."),
@@ -82,6 +89,12 @@ export const buyHouseWorkflow: DecisionWorkflow = {
   relatedCalculators: ["home-affordability-calculator", "emi-calculator", "stamp-duty-calculator"], relatedTools: ["pdf-merge", "percentage-calculator"],
   assumptions: ["EMI and affordability metrics come from the existing calculator engine.", "Registration, furnishing, maintenance, taxes, and repairs require separate estimates.", "Property value growth is not guaranteed."],
   faqs: [{ question: "Does a high score guarantee I should buy?", answer: "No. It indicates the entered affordability and resilience assumptions are supportive, subject to diligence." }, { question: "Are registration and maintenance included?", answer: "No. Model local fees, maintenance, furnishing, and repairs separately." }],
+  scenarios: [
+    { id: "house-price-up", label: "Higher price", description: "See how a pricier home changes the decision.", overrides: { propertyPrice: 9_500_000, downPayment: 1_600_000 } },
+    { id: "house-rate-up", label: "Higher rate", description: "Stress-test the decision with a more expensive loan.", overrides: { interestRate: 10.5, tenure: 20 } },
+    { id: "house-cash-strong", label: "Stronger cash position", description: "Explore a larger down payment and emergency buffer.", overrides: { propertyPrice: 7_000_000, downPayment: 4_000_000, emergencySavings: 1_500_000 } },
+  ],
+  scenarioVariables: houseScenarioVariables,
   scoreBands: standardScoreBands,
 };
 
@@ -122,6 +135,18 @@ export const rentVsBuyWorkflow: DecisionWorkflow = {
   relatedCalculators: ["rent-vs-buy-calculator", "home-affordability-calculator", "rental-yield-calculator"],
   assumptions: ["The rent-versus-buy result uses the existing calculator engine.", "Rent growth and property appreciation are planning assumptions, not forecasts.", "Lifestyle and mobility needs may outweigh a small modelled cost difference."],
   faqs: [{ question: "Does the model predict property prices?", answer: "No. It uses planning assumptions and exposes horizon and affordability risk." }, { question: "Can renting be right even if buying looks cheaper?", answer: "Yes. Flexibility, liquidity, and execution risk can outweigh a modest projected advantage." }],
+  scenarios: [
+    { id: "rent-long", label: "Longer stay", description: "Test the rent-versus-buy result with a longer horizon.", overrides: { stayYears: 10, flexibilityNeed: 2 } },
+    { id: "rent-flexible", label: "Need flexibility", description: "See how mobility changes the answer.", overrides: { flexibilityNeed: 5, stayYears: 3 } },
+    { id: "rent-rent-up", label: "Higher rent", description: "Compare buying against a more expensive rental.", overrides: { monthlyRent: 40_000 } },
+  ],
+  scenarioVariables: [
+    { id: "rent-price", questionId: "propertyPrice", label: "Property price", chips: [7_500_000, 8_000_000, 9_500_000] },
+    { id: "rent-rent", questionId: "monthlyRent", label: "Monthly rent", chips: [20_000, 25_000, 40_000] },
+    { id: "rent-rate", questionId: "interestRate", label: "Interest rate", chips: [8, 9, 10.5] },
+    { id: "rent-stay", questionId: "stayYears", label: "Ownership horizon", chips: [3, 7, 12] },
+    { id: "rent-flex", questionId: "flexibilityNeed", label: "Need for flexibility", chips: [2, 3, 5] },
+  ],
 };
 
 export const propertyDecisionWorkflows = [buyHouseWorkflow, rentVsBuyWorkflow];

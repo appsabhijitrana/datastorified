@@ -147,6 +147,15 @@ export type DecisionScenario = {
   overrides: DecisionAnswers;
 };
 
+export type DecisionScenarioVariable = {
+  id: string;
+  questionId: string;
+  label: string;
+  description?: string;
+  chips?: readonly number[];
+  relativeTo?: string;
+};
+
 export type DecisionScenarioResult = {
   scenario: DecisionScenario;
   answers: DecisionAnswers;
@@ -192,7 +201,8 @@ export type DecisionWorkflow = {
   relatedTools?: string[];
   assumptions?: string[];
   faqs?: DecisionFaq[];
-  scenarios?: DecisionScenario[];
+  scenarios?: readonly DecisionScenario[];
+  scenarioVariables?: readonly DecisionScenarioVariable[];
   scoreBands?: Array<{ min: number; max: number; label: string }>;
   deriveFacts?: (answers: Readonly<DecisionAnswers>) => DecisionFacts;
 };
