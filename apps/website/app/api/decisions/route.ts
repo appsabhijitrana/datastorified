@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@datastorified/auth/server";
 import { prisma } from "@datastorified/database";
 import { decisionPluginRegistry } from "@datastorified/decision-os";
+import { requiresLegalAcceptance } from "@datastorified/legal";
 import { createFingerprint } from "@datastorified/sync";
 import type { DecisionRepositoryDecision, DecisionRepositoryInput } from "@datastorified/decision-repository";
 
@@ -67,9 +68,17 @@ async function requireSession(request: NextRequest) {
   return session;
 }
 
+async function ensureAcceptance(userId: string) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  return !requiresLegalAcceptance(user);
+}
+
 export async function GET(request: NextRequest) {
   const session = await requireSession(request);
   if (!session) return NextResponse.json({ error: "Anonymous users store decisions locally." }, { status: 401 });
+  if (!(await ensureAcceptance(session.user.id))) {
+    return NextResponse.json({ error: "Legal acceptance required." }, { status: 403 });
+  }
 
   const rows: DecisionRow[] = await prisma.decision.findMany({
     where: { userId: session.user.id },
@@ -84,6 +93,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const session = await requireSession(request);
   if (!session) return NextResponse.json({ error: "Anonymous users store decisions locally." }, { status: 401 });
+  if (!(await ensureAcceptance(session.user.id))) {
+    return NextResponse.json({ error: "Legal acceptance required." }, { status: 403 });
+  }
 
   const body = (await request.json().catch(() => ({}))) as Partial<DecisionRepositoryInput>;
   if (!body.workflow || !body.plugin || !body.answers || !body.score) {

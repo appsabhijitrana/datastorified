@@ -4,7 +4,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ArrowLeftRight, Calculator, Check, ChevronRight, Clock3, Compass, Copy, Heart, Home, Layers3, LogOut, Menu, Search, ShieldCheck, Sparkles, UserRound, Wrench, X } from "lucide-react";
 import { cn, formatINR, formatNumber } from "@datastorified/utils";
-import { authClient, signInWithGoogle, signOut } from "@datastorified/auth";
+import { authClient, GoogleSignInButton, signOut } from "@datastorified/auth";
 import { getLocalDecisionSyncSnapshot, syncLocalToCloud, type SyncSummary } from "@datastorified/sync";
 
 export function Button({className,variant="primary",children,...props}:React.ButtonHTMLAttributes<HTMLButtonElement>&{variant?:"primary"|"secondary"|"ghost"|"danger"}){return <button className={cn("inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50",variant==="primary"&&"bg-gradient-to-br from-primary to-accent text-white shadow-glow hover:-translate-y-0.5",variant==="secondary"&&"border border-border bg-white text-ink shadow-soft hover:border-primary/30",variant==="ghost"&&"text-muted hover:bg-soft hover:text-ink",variant==="danger"&&"bg-danger text-white",className)} {...props}>{children}</button>}
@@ -52,17 +52,17 @@ function AuthMenu({mobile = false}: { mobile?: boolean }) {
           Anonymous mode
         </div>
         <p className="text-sm leading-6 text-muted">Your decisions stay local unless you choose to sign in and sync.</p>
-        <Button variant="secondary" className="w-full" onClick={() => void signInWithGoogle()}>
+        <GoogleSignInButton className="w-full">
           <UserRound size={16} />
           Sign in with Google
-        </Button>
+        </GoogleSignInButton>
       </div>
     ) : (
       <div className="flex items-center gap-2">
         <Badge className="inline-flex gap-1.5"><ShieldCheck size={14} /> Anonymous mode</Badge>
-        <Button variant="secondary" className="ml-2" onClick={() => void signInWithGoogle()}>
+        <GoogleSignInButton className="ml-2">
           <UserRound size={16} /> Sign in with Google
-        </Button>
+        </GoogleSignInButton>
       </div>
     );
   }

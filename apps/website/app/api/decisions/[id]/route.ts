@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@datastorified/auth/server";
 import { prisma } from "@datastorified/database";
 import { decisionPluginRegistry } from "@datastorified/decision-os";
+import { requiresLegalAcceptance } from "@datastorified/legal";
 import type { DecisionRepositoryDecision } from "@datastorified/decision-repository";
 
 function buildDecision(row: Awaited<ReturnType<typeof prisma.decision.findFirst>>): DecisionRepositoryDecision | undefined {
@@ -57,9 +58,15 @@ async function requireSession(request: NextRequest) {
   return session;
 }
 
+async function ensureAcceptance(userId: string) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  return !requiresLegalAcceptance(user);
+}
+
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await requireSession(request);
   if (!session) return NextResponse.json({ error: "Anonymous users store decisions locally." }, { status: 401 });
+  if (!(await ensureAcceptance(session.user.id))) return NextResponse.json({ error: "Legal acceptance required." }, { status: 403 });
   const { id } = await params;
   const row = await prisma.decision.findFirst({ where: { id, userId: session.user.id } });
   if (!row) return NextResponse.json({ error: "Decision not found." }, { status: 404 });
@@ -70,6 +77,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await requireSession(request);
   if (!session) return NextResponse.json({ error: "Anonymous users store decisions locally." }, { status: 401 });
+  if (!(await ensureAcceptance(session.user.id))) return NextResponse.json({ error: "Legal acceptance required." }, { status: 403 });
   const { id } = await params;
   await prisma.decision.deleteMany({ where: { id, userId: session.user.id } });
   return NextResponse.json({ deleted: true });

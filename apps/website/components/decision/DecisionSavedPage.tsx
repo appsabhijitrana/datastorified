@@ -6,7 +6,7 @@ import { ArrowRight, Clock3, History, Trash2 } from "lucide-react";
 import { Badge, Button, Card } from "@datastorified/ui";
 import { decisionPluginRegistry, type DecisionMemoryDraft, type DecisionMemoryProfile } from "@datastorified/decision-os";
 import { getDecisionAdapters } from "@datastorified/decision-os/adapters";
-import { authClient, signInWithGoogle } from "@datastorified/auth";
+import { authClient, GoogleSignInButton, LegalAcceptanceGate } from "@datastorified/auth";
 import { HybridDecisionRepository } from "@datastorified/decision-repository";
 import type { DecisionRepositoryDecision } from "@datastorified/decision-repository";
 
@@ -62,87 +62,89 @@ export function DecisionSavedPage() {
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
             Anonymous users can keep working locally now. A Google sign-in later will unlock sync across devices without losing the current browser copy.
           </p>
-          <Button className="mt-4" variant="secondary" onClick={() => void signInWithGoogle()}>
+          <GoogleSignInButton className="mt-4">
             Sign in with Google
-          </Button>
+          </GoogleSignInButton>
         </Card>
       )}
 
-      {profile.lastOpenedWorkflow && (
-        <Card className="mt-8 border-primary/20 bg-primary/[.04] p-5">
-          <div className="flex flex-wrap items-center gap-2">
-            <Clock3 className="text-primary" size={16} />
-            <p className="text-sm font-semibold">Last opened workflow</p>
-          </div>
-          <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="font-semibold">{lastWorkflow?.title ?? profile.lastOpenedWorkflow.workflowId}</p>
-              <p className="mt-1 text-sm text-muted">Opened {new Date(profile.lastOpenedWorkflow.openedAt).toLocaleString("en-IN")}</p>
+      <LegalAcceptanceGate mode="account">
+        {profile.lastOpenedWorkflow && (
+          <Card className="mt-8 border-primary/20 bg-primary/[.04] p-5">
+            <div className="flex flex-wrap items-center gap-2">
+              <Clock3 className="text-primary" size={16} />
+              <p className="text-sm font-semibold">Last opened workflow</p>
             </div>
-            <Button variant="ghost" onClick={() => router.push(`/decision/${profile.lastOpenedWorkflow?.pluginId}/${profile.lastOpenedWorkflow?.slug}`)}>Continue</Button>
-          </div>
-        </Card>
-      )}
+            <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="font-semibold">{lastWorkflow?.title ?? profile.lastOpenedWorkflow.workflowId}</p>
+                <p className="mt-1 text-sm text-muted">Opened {new Date(profile.lastOpenedWorkflow.openedAt).toLocaleString("en-IN")}</p>
+              </div>
+              <Button variant="ghost" onClick={() => router.push(`/decision/${profile.lastOpenedWorkflow?.pluginId}/${profile.lastOpenedWorkflow?.slug}`)}>Continue</Button>
+            </div>
+          </Card>
+        )}
 
-      {drafts.length > 0 && (
+        {drafts.length > 0 && (
+          <section className="mt-10">
+            <div className="flex items-center gap-2">
+              <History className="text-primary" size={18} />
+              <h2 className="text-2xl font-bold">Resume drafts</h2>
+            </div>
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              {drafts.map((draft) => {
+                const workflow = decisionPluginRegistry.getWorkflow(draft.workflowId);
+                return (
+                  <Card key={`${draft.workflowId}:${draft.updatedAt}`} className="p-5">
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Draft</p>
+                    <h3 className="mt-2 font-semibold">{workflow?.title ?? draft.workflowId}</h3>
+                    <p className="mt-2 text-sm text-muted">Updated {new Date(draft.updatedAt).toLocaleString("en-IN")}</p>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <Button onClick={() => router.push(`/decision/${draft.pluginId}/${workflow?.slug ?? draft.workflowId}`)}>Resume</Button>
+                      <Button variant="secondary" onClick={() => { void adapters.memory.clearDraft(draft.workflowId).then(refresh); }}>Delete draft</Button>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
         <section className="mt-10">
           <div className="flex items-center gap-2">
-            <History className="text-primary" size={18} />
-            <h2 className="text-2xl font-bold">Resume drafts</h2>
+            <ArrowRight className="text-primary" size={18} />
+            <h2 className="text-2xl font-bold">Saved results</h2>
           </div>
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
-            {drafts.map((draft) => {
-              const workflow = decisionPluginRegistry.getWorkflow(draft.workflowId);
-              return (
-                <Card key={`${draft.workflowId}:${draft.updatedAt}`} className="p-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Draft</p>
-                  <h3 className="mt-2 font-semibold">{workflow?.title ?? draft.workflowId}</h3>
-                  <p className="mt-2 text-sm text-muted">Updated {new Date(draft.updatedAt).toLocaleString("en-IN")}</p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <Button onClick={() => router.push(`/decision/${draft.pluginId}/${workflow?.slug ?? draft.workflowId}`)}>Resume</Button>
-                    <Button variant="secondary" onClick={() => { void adapters.memory.clearDraft(draft.workflowId).then(refresh); }}>Delete draft</Button>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      <section className="mt-10">
-        <div className="flex items-center gap-2">
-          <ArrowRight className="text-primary" size={18} />
-          <h2 className="text-2xl font-bold">Saved results</h2>
-        </div>
-        {!saved.length ? (
-          <Card className="mt-5 p-8 text-center">
-            <p className="text-lg font-semibold">No saved decisions yet</p>
-            <p className="mt-2 text-sm text-muted">Open any result and choose Save locally to pin it here.</p>
-          </Card>
-        ) : (
-          <div className="mt-5 grid gap-4 lg:grid-cols-2">
-            {saved.map((item) => {
-              const workflow = decisionPluginRegistry.getWorkflow(item.workflowId);
-              return (
-                <Card key={item.id} className="p-5">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Saved locally</p>
-                      <h3 className="mt-2 text-lg font-semibold">{workflow?.title ?? item.workflowId}</h3>
-                      <p className="mt-2 text-sm text-muted">Updated {new Date(item.updatedAt).toLocaleString("en-IN")}</p>
+          {!saved.length ? (
+            <Card className="mt-5 p-8 text-center">
+              <p className="text-lg font-semibold">No saved decisions yet</p>
+              <p className="mt-2 text-sm text-muted">Open any result and choose Save locally to pin it here.</p>
+            </Card>
+          ) : (
+            <div className="mt-5 grid gap-4 lg:grid-cols-2">
+              {saved.map((item) => {
+                const workflow = decisionPluginRegistry.getWorkflow(item.workflowId);
+                return (
+                  <Card key={item.id} className="p-5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Saved locally</p>
+                        <h3 className="mt-2 text-lg font-semibold">{workflow?.title ?? item.workflowId}</h3>
+                        <p className="mt-2 text-sm text-muted">Updated {new Date(item.updatedAt).toLocaleString("en-IN")}</p>
+                      </div>
+                      <Button variant="ghost" onClick={() => { void repository.deleteDecision(item.id).then(refresh); }}><Trash2 size={16} /></Button>
                     </div>
-                    <Button variant="ghost" onClick={() => { void repository.deleteDecision(item.id).then(refresh); }}><Trash2 size={16} /></Button>
-                  </div>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <Button onClick={() => router.push(`/decision/result/${item.id}`)}>Open result</Button>
-                    <Button variant="secondary" onClick={() => router.push(`/decision/${item.pluginId}/${workflow?.slug ?? item.workflowId}`)}>Revisit</Button>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
-        )}
-      </section>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <Button onClick={() => router.push(`/decision/result/${item.id}`)}>Open result</Button>
+                      <Button variant="secondary" onClick={() => router.push(`/decision/${item.pluginId}/${workflow?.slug ?? item.workflowId}`)}>Revisit</Button>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      </LegalAcceptanceGate>
     </main>
   );
 }

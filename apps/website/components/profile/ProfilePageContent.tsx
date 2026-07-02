@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { Badge, Button, Card } from "@datastorified/ui";
-import { authClient, signInWithGoogle } from "@datastorified/auth";
+import { Badge, Card } from "@datastorified/ui";
+import { authClient, GoogleSignInButton, LegalAcceptanceGate } from "@datastorified/auth";
 import { ProfileCompletenessCard } from "./ProfileCompletenessCard";
 import { ImproveAnalysisCTA } from "./ImproveAnalysisCTA";
 import { getProfileAnalysis } from "@datastorified/profile";
@@ -30,16 +30,18 @@ export function ProfilePageContent() {
           <p className="mt-2 text-sm leading-6 text-muted">
             {analysis.description}
           </p>
-          <Button className="mt-4" variant="secondary" onClick={() => void signInWithGoogle()}>
+          <GoogleSignInButton className="mt-4">
             Sign in with Google
-          </Button>
+          </GoogleSignInButton>
         </Card>
       )}
 
-      <div className="mt-8 grid gap-4 lg:grid-cols-[1.2fr_.8fr]">
-        <ProfileCompletenessCard analysis={analysis} />
-        <ImproveAnalysisCTA />
-      </div>
+      <LegalAcceptanceGate mode="account">
+        <div className="mt-8 grid gap-4 lg:grid-cols-[1.2fr_.8fr]">
+          <ProfileCompletenessCard analysis={analysis} />
+          <ImproveAnalysisCTA />
+        </div>
+      </LegalAcceptanceGate>
     </main>
   );
 }
