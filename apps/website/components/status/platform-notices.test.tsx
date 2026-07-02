@@ -5,17 +5,21 @@ import { PlatformNoticeProvider } from "./PlatformNoticeProvider";
 import { MaintenancePage } from "./MaintenancePage";
 import { middleware } from "../../middleware";
 
+let mockPathname = "/";
+
 vi.mock("next/navigation", () => ({
-  usePathname: () => "/",
+  usePathname: () => mockPathname,
 }));
 
 beforeEach(() => {
   vi.unstubAllEnvs();
   window.localStorage.clear();
+  mockPathname = "/";
 });
 
 describe("platform notices", () => {
   it("shows a maintenance banner when enabled", () => {
+    mockPathname = "/";
     vi.stubEnv("NEXT_PUBLIC_MAINTENANCE_ENABLED", "true");
     vi.stubEnv("NEXT_PUBLIC_MAINTENANCE_MODE", "banner");
     vi.stubEnv("NEXT_PUBLIC_MAINTENANCE_MESSAGE", "We’re making a small update.");
@@ -31,6 +35,7 @@ describe("platform notices", () => {
   });
 
   it("shows an outage banner when enabled", () => {
+    mockPathname = "/admin";
     vi.stubEnv("NEXT_PUBLIC_OUTAGE_ENABLED", "true");
     vi.stubEnv("NEXT_PUBLIC_OUTAGE_MESSAGE", "Thanks for your patience while we fix this.");
 
@@ -55,11 +60,13 @@ describe("platform notices", () => {
     expect(screen.queryByText(/vercel/i)).toBeNull();
     expect(screen.queryByText(/neon/i)).toBeNull();
     expect(screen.queryByText(/Decision OS/i)).toBeNull();
+    expect(screen.queryByText("View status")).toBeNull();
   });
 
   it("blocks public pages in maintenance page mode but keeps admin accessible", async () => {
     vi.stubEnv("NEXT_PUBLIC_MAINTENANCE_ENABLED", "true");
     vi.stubEnv("NEXT_PUBLIC_MAINTENANCE_MODE", "page");
+    vi.stubEnv("NEXT_PUBLIC_OUTAGE_ENABLED", "false");
 
     const makeRequest = (href: string) =>
       ({
@@ -76,5 +83,20 @@ describe("platform notices", () => {
 
     const adminResponse = middleware(makeRequest("http://localhost/admin"));
     expect(adminResponse.status).toBe(200);
+  });
+
+  it("blocks public pages when outage is enabled", () => {
+    vi.stubEnv("NEXT_PUBLIC_OUTAGE_ENABLED", "true");
+
+    const publicResponse = middleware({
+      nextUrl: Object.assign(new URL("http://localhost/decision"), {
+        clone() {
+          return new URL("http://localhost/decision");
+        },
+      }),
+    } as never);
+
+    expect(publicResponse.status).toBe(307);
+    expect(publicResponse.headers.get("location")).toContain("/maintenance");
   });
 });

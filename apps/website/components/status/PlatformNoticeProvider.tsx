@@ -14,14 +14,15 @@ export function PlatformNoticeProvider({ children }: { children: React.ReactNode
   const maintenanceBanner = StatusService.getMaintenanceBanner();
   const outageBanner = StatusService.getOutageBanner();
   const scheduledBanner = StatusService.getScheduledMaintenanceBanner();
+  const isAdminPath = pathname ? pathname === "/admin" || pathname.startsWith("/admin/") : false;
 
   const showBanners = pathname !== "/maintenance" && !(maintenance.enabled && maintenance.mode === "page");
 
   return (
     <>
-      {showBanners && scheduledBanner.enabled && <ScheduledMaintenanceBanner message={scheduledBanner.message} />}
-      {showBanners && outageBanner.enabled && <OutageBanner message={outageBanner.message} />}
-      {showBanners && maintenanceBanner.enabled && <MaintenanceBanner message={maintenanceBanner.message} />}
+      {showBanners && !outageBanner.enabled && scheduledBanner.enabled && <ScheduledMaintenanceBanner message={scheduledBanner.message} />}
+      {showBanners && !outageBanner.enabled && maintenanceBanner.enabled && <MaintenanceBanner message={maintenanceBanner.message} />}
+      {showBanners && outageBanner.enabled && isAdminPath && <OutageBanner message={outageBanner.message} />}
       {children}
     </>
   );

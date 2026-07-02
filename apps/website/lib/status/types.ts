@@ -20,3 +20,9 @@ export type HealthResponse = {
   version: string;
   timestamp: string;
 };
+
+export type PublicState = {
+  outageActive: boolean;
+  maintenanceActive: boolean;
+  maintenanceMode: "banner" | "page";
+};

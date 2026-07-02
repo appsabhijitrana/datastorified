@@ -1,4 +1,4 @@
-import type { BannerConfig, HealthResponse, MaintenanceConfig } from "./types";
+import type { BannerConfig, HealthResponse, MaintenanceConfig, PublicState } from "./types";
 
 declare const process: {
   env: Record<string, string | undefined> & {
@@ -35,7 +35,7 @@ export const StatusService = {
     return {
       enabled: readBool(process.env.NEXT_PUBLIC_OUTAGE_ENABLED),
       variant: "outage",
-      message: process.env.NEXT_PUBLIC_OUTAGE_MESSAGE?.trim() || "We’re seeing a temporary issue and are working on it.",
+      message: process.env.NEXT_PUBLIC_OUTAGE_MESSAGE?.trim() || "We’re experiencing a temporary issue right now. We know this can be inconvenient, and we appreciate your patience while we get everything back to normal.",
     };
   },
 
@@ -43,7 +43,7 @@ export const StatusService = {
     return {
       enabled: readBool(process.env.NEXT_PUBLIC_SCHEDULED_MAINTENANCE_ENABLED),
       variant: "scheduled",
-      message: process.env.NEXT_PUBLIC_SCHEDULED_MAINTENANCE_MESSAGE?.trim() || "A short maintenance window is planned soon.",
+      message: process.env.NEXT_PUBLIC_SCHEDULED_MAINTENANCE_MESSAGE?.trim() || "A short maintenance window is planned soon. We’ll keep it brief and restore access as quickly as we can.",
     };
   },
 
@@ -61,19 +61,30 @@ export const StatusService = {
     const banner = this.getMaintenanceBanner();
     const outage = this.getOutageBanner();
     const scheduled = this.getScheduledMaintenanceBanner();
-    const status: HealthResponse["status"] = maintenance.enabled && maintenance.mode === "page" ? "maintenance" : banner.enabled || outage.enabled || scheduled.enabled ? "notice" : "operational";
+    const status: HealthResponse["status"] = outage.enabled || (maintenance.enabled && maintenance.mode === "page") ? "maintenance" : banner.enabled || scheduled.enabled ? "notice" : "operational";
 
     return {
       status,
-      message: maintenance.enabled ? maintenance.message : outage.enabled ? outage.message : scheduled.enabled ? scheduled.message : undefined,
+      message: outage.enabled ? outage.message : maintenance.enabled ? maintenance.message : scheduled.enabled ? scheduled.message : undefined,
       version: getVersion(),
       timestamp: new Date().toISOString(),
     };
   },
 
+  getPublicState(): PublicState {
+    const maintenance = this.getMaintenance();
+    const outage = this.getOutageBanner();
+    return {
+      outageActive: outage.enabled,
+      maintenanceActive: maintenance.enabled,
+      maintenanceMode: maintenance.mode,
+    };
+  },
+
   shouldBlockPublicPath(pathname: string): boolean {
     const maintenance = this.getMaintenance();
-    if (!maintenance.enabled || maintenance.mode !== "page") return false;
+    const outage = this.getOutageBanner();
+    if (!outage.enabled && (!maintenance.enabled || maintenance.mode !== "page")) return false;
     if (pathname === "/admin" || pathname.startsWith("/admin/")) return false;
     if (pathname.startsWith("/_next") || pathname.startsWith("/api") || pathname.startsWith("/favicon") || pathname.startsWith("/brand") || pathname.startsWith("/manifest") || pathname.startsWith("/robots") || pathname.startsWith("/sitemap")) return false;
     return pathname !== "/maintenance";
