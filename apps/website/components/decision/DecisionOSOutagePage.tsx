@@ -15,7 +15,7 @@ export function DecisionOSOutagePage({ message }: { message?: string }) {
           {message || "We are currently experiencing an issue with our cloud-based decision services. We are working to resolve this as soon as possible."}
         </p>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">
-          Your existing local decisions are safe and accessible. You can continue to work on them or start new ones that will be saved locally. Full functionality will be restored once the outage is resolved.
+          Your existing local decisions remain safe on this device. You can review saved results and drafts, but new decision flows are paused until service is restored.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Link href="/decision/saved">

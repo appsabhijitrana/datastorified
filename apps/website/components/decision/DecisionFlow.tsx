@@ -42,6 +42,8 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [autosaveState, setAutosaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [completing, setCompleting] = useState(false);
+  const [completeError, setCompleteError] = useState<string | null>(null);
   const [profile, setProfile] = useState<DecisionProfileEnvelope | null>(null);
 
   useEffect(() => {
@@ -169,8 +171,10 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
   };
 
   const reset = async () => {
+    if (!window.confirm("Reset this decision? Your current answers and draft will be cleared.")) return;
     setState(orchestrator.startDecision(workflow.slug));
     setValidationErrors({});
+    setCompleteError(null);
     await orchestrator.clearDraft(workflow.id);
   };
 
@@ -178,13 +182,22 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
     const errors = validateAnswers(visibleQuestions, state.session.answers, buildDecisionFacts(workflow, state.session.answers));
     setValidationErrors(errors);
     if (Object.keys(errors).length) return;
-    const result = orchestrator.completeDecision(state.session.id);
-    const saved = await orchestrator.saveResult(result);
-    await orchestrator.clearDraft(workflow.id);
-    router.push(`/decision/result/${saved.id}`);
+    setCompleting(true);
+    setCompleteError(null);
+    try {
+      const result = orchestrator.completeDecision(state.session.id);
+      const saved = await orchestrator.saveResult(result);
+      await orchestrator.clearDraft(workflow.id);
+      router.push(`/decision/result/${saved.id}`);
+    } catch (err) {
+      setCompleteError(err instanceof Error ? err.message : "Could not save your result. Please try again.");
+      setCompleting(false);
+    }
   };
 
   const mobileQuestion = currentQuestion ?? visibleQuestions[0];
+  const mobileQuestionIndex = visibleQuestions.findIndex((question) => question.id === mobileQuestion?.id);
+  const canGoBack = mobileQuestionIndex > 0;
 
   return (
     <>
@@ -199,7 +212,7 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
         <h1 className="mt-4 max-w-4xl text-balance text-3xl font-bold tracking-[-.035em] sm:text-5xl">{workflow.title}</h1>
         <p className="mt-3 max-w-3xl text-base leading-7 text-muted sm:text-lg">{workflow.description}</p>
         <div className="mt-6 max-w-3xl">
-          <DecisionProgress value={state.progress} current={visibleQuestions.findIndex((question) => question.id === mobileQuestion?.id) + 1} total={visibleQuestions.length} />
+          <DecisionProgress value={state.progress} current={mobileQuestionIndex + 1} total={visibleQuestions.length} />
         </div>
 
         <div className="mt-8 grid min-w-0 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
@@ -238,20 +251,27 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
                 </div>
               </div>
               <div className="flex w-full flex-wrap gap-2 sm:w-auto">
-                <Button variant="ghost" onClick={saveDraftNow}><Save size={16} /> Save draft</Button>
-                <Button variant="secondary" onClick={reset}>Reset</Button>
+                <Button variant="ghost" onClick={saveDraftNow} disabled={autosaveState === "saving"}><Save size={16} /> Save draft</Button>
+                <Button variant="secondary" onClick={reset} disabled={completing}>Reset</Button>
                 {session?.user ? null : <GoogleSignInButton className="rounded-xl border border-border bg-white px-4 py-2.5 text-sm font-semibold text-ink shadow-soft">Sign in with Google</GoogleSignInButton>}
-                {mobileQuestion && visibleQuestions.findIndex((question) => question.id === mobileQuestion.id) > 0 && (
-                  <Button variant="secondary" className="md:hidden" onClick={back}><ArrowLeft size={16} /> Back</Button>
+                {canGoBack && (
+                  <Button variant="secondary" className="md:hidden" onClick={back} disabled={completing}><ArrowLeft size={16} /> Back</Button>
                 )}
-                {mobileQuestion && visibleQuestions.findIndex((question) => question.id === mobileQuestion.id) < visibleQuestions.length - 1 ? (
-                  <Button className="ml-auto md:hidden" onClick={next}>Next <ArrowRight size={16} /></Button>
+                {mobileQuestion && mobileQuestionIndex < visibleQuestions.length - 1 ? (
+                  <Button className="ml-auto md:hidden" onClick={next} disabled={completing}>Next <ArrowRight size={16} /></Button>
                 ) : (
-                  <Button className="ml-auto md:hidden" onClick={complete}>View result <ArrowRight size={16} /></Button>
+                  <Button className="ml-auto md:hidden" onClick={complete} disabled={completing}>{completing ? "Saving result…" : "View result"} <ArrowRight size={16} /></Button>
                 )}
-                <Button className="ml-auto hidden md:inline-flex" onClick={complete}>View recommendation <ArrowRight size={16} /></Button>
+                <Button className="ml-auto hidden md:inline-flex" onClick={complete} disabled={completing}>{completing ? "Saving result…" : "View recommendation"} <ArrowRight size={16} /></Button>
               </div>
             </Card>
+
+            {completeError && (
+              <Card className="mt-5 border-danger/20 bg-danger/[.04] p-5" role="alert">
+                <p className="text-sm font-semibold text-danger">{completeError}</p>
+                <Button className="mt-3" variant="secondary" onClick={complete} disabled={completing}>Try again</Button>
+              </Card>
+            )}
 
             {!session?.user && (
               <Card className="mt-5 border-primary/15 bg-primary/[.04] p-5">

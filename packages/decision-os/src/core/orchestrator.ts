@@ -5,7 +5,7 @@ import { RiskEngine, riskEngine } from "./riskEngine";
 import { ActionPlanEngine, actionPlanEngine } from "./actionPlanEngine";
 import { RecommendationEngine, recommendationEngine } from "./recommendationEngine";
 import { ScenarioSimulator, scenarioSimulator } from "./scenarioSimulator";
-import { createDefaultAnswers } from "./questionEngine";
+import { createDefaultAnswers, getVisibleQuestions } from "./questionEngine";
 import { decisionPluginRegistry } from "../plugins";
 import type { DecisionSession } from "./foundation";
 import type {
@@ -364,8 +364,19 @@ export class DecisionOrchestrator {
     const workflow = findWorkflow(draft.slug ?? draft.workflowId);
     const session = this.flowEngine.startWorkflow(workflow);
     session.answers = { ...createDefaultAnswers(workflow.questions), ...cloneAnswers(draft.answers) };
+    const facts = workflow.deriveFacts?.(session.answers) ?? {};
+    const visibleQuestions = getVisibleQuestions(workflow.questions, session.answers, facts);
+    const savedStep = typeof draft.currentStep === "number" ? draft.currentStep : draft.step;
+    const restoredQuestionId =
+      typeof savedStep === "number" && savedStep >= 0 && savedStep < workflow.questions.length
+        ? workflow.questions[savedStep]?.id
+        : undefined;
     session.currentQuestionId = firstDefined(
-      workflow.questions.find((question) => !isAnswered(session.answers[question.id]))?.id,
+      restoredQuestionId && visibleQuestions.some((question) => question.id === restoredQuestionId)
+        ? restoredQuestionId
+        : undefined,
+      visibleQuestions.find((question) => !isAnswered(session.answers[question.id]))?.id,
+      visibleQuestions[0]?.id,
       workflow.questions[0]?.id,
     );
     session.status = "in_progress";

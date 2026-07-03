@@ -21,16 +21,20 @@ export function DecisionSavedPage() {
   const [drafts, setDrafts] = useState<DecisionMemoryDraft[]>([]);
   const [lastOpenedWorkflow, setLastOpenedWorkflow] = useState<DecisionMemoryDraft["workflowId"] | null>(null);
   const [profileLastOpenedWorkflow, setProfileLastOpenedWorkflow] = useState<DecisionMemoryDraft["workflowId"] | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(() => {
-    void Promise.all([
-      orchestrator.listSavedDecisions(),
-      orchestrator.listDrafts(),
-    ]).then(([savedItems, draftItems]) => {
-      setSaved(savedItems);
-      setDrafts(draftItems);
-      setLastOpenedWorkflow(draftItems[0]?.workflowId ?? null);
-    });
+    setLoading(true);
+    setError(null);
+    void Promise.all([orchestrator.listSavedDecisions(), orchestrator.listDrafts()])
+      .then(([savedItems, draftItems]) => {
+        setSaved(savedItems);
+        setDrafts(draftItems);
+        setLastOpenedWorkflow(draftItems[0]?.workflowId ?? null);
+      })
+      .catch(() => setError("Could not load your saved decisions. Please try again."))
+      .finally(() => setLoading(false));
   }, [orchestrator]);
 
   useEffect(() => {
@@ -48,10 +52,16 @@ export function DecisionSavedPage() {
     if (!workflowId) return undefined;
     return decisionPluginRegistry.getWorkflow(workflowId);
   }, [lastOpenedWorkflow, profileLastOpenedWorkflow]);
+
   const storageLabel = session?.user ? "Synced memory" : "Local memory";
   const storageDescription = session?.user
     ? "Saved decisions sync to your account, while drafts still stay on this device."
     : "Your decision is saved on this device. Resume drafts, revisit saved results, and continue where you left off.";
+  const savedBadge = session?.user ? "Saved to account" : "Saved locally";
+  const continueHref =
+    lastWorkflow?.pluginId && lastWorkflow.slug
+      ? `/decision/${lastWorkflow.pluginId}/${lastWorkflow.slug}`
+      : "/decision";
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
@@ -71,89 +81,110 @@ export function DecisionSavedPage() {
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
             Anonymous users can keep working locally now. Sign in to back it up when you are ready.
           </p>
-          <GoogleSignInButton className="mt-4">
-            Sign in with Google
-          </GoogleSignInButton>
+          <GoogleSignInButton className="mt-4">Sign in with Google</GoogleSignInButton>
         </Card>
       )}
 
-      <LegalAcceptanceGate mode="account">
-        {(profileLastOpenedWorkflow || lastOpenedWorkflow) && (
-          <Card className="mt-8 border-primary/20 bg-primary/[.04] p-5">
-            <div className="flex flex-wrap items-center gap-2">
-              <Clock3 className="text-primary" size={16} />
-              <p className="text-sm font-semibold">Last opened workflow</p>
-            </div>
-            <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="font-semibold">{lastWorkflow?.title ?? profileLastOpenedWorkflow ?? lastOpenedWorkflow}</p>
-                <p className="mt-1 text-sm text-muted">Continue from your most recent workspace</p>
-              </div>
-              <Button variant="ghost" onClick={() => router.push(`/decision/${lastWorkflow?.pluginId ?? "decision"}/${lastWorkflow?.slug ?? profileLastOpenedWorkflow ?? lastOpenedWorkflow}`)}>Continue</Button>
-            </div>
-          </Card>
-        )}
+      {loading && (
+        <div className="mt-10 space-y-4" aria-busy="true" aria-label="Loading saved decisions">
+          <Card className="h-28 animate-pulse rounded-2xl bg-soft" />
+          <Card className="h-40 animate-pulse rounded-2xl bg-soft" />
+        </div>
+      )}
 
-        {drafts.length > 0 && (
+      {!loading && error && (
+        <Card className="mt-10 p-6" role="alert">
+          <p className="text-sm font-semibold text-danger">{error}</p>
+          <Button className="mt-4" variant="secondary" onClick={refresh}>Try again</Button>
+        </Card>
+      )}
+
+      {!loading && !error && (
+        <LegalAcceptanceGate mode="account">
+          {(profileLastOpenedWorkflow || lastOpenedWorkflow) && lastWorkflow && (
+            <Card className="mt-8 border-primary/20 bg-primary/[.04] p-5">
+              <div className="flex flex-wrap items-center gap-2">
+                <Clock3 className="text-primary" size={16} aria-hidden="true" />
+                <p className="text-sm font-semibold">Last opened workflow</p>
+              </div>
+              <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="font-semibold">{lastWorkflow.title}</p>
+                  <p className="mt-1 text-sm text-muted">Continue from your most recent workspace</p>
+                </div>
+                <Button variant="ghost" onClick={() => router.push(continueHref)}>Continue</Button>
+              </div>
+            </Card>
+          )}
+
           <section className="mt-10">
             <div className="flex items-center gap-2">
-              <History className="text-primary" size={18} />
+              <History className="text-primary" size={18} aria-hidden="true" />
               <h2 className="text-2xl font-bold">Resume drafts</h2>
             </div>
-            <div className="mt-5 grid gap-4 md:grid-cols-2">
-              {drafts.map((draft) => {
-                const workflow = decisionPluginRegistry.getWorkflow(draft.workflowId);
-                return (
-                  <Card key={`${draft.workflowId}:${draft.updatedAt}`} className="p-5">
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Draft</p>
-                    <h3 className="mt-2 font-semibold">{workflow?.title ?? draft.workflowId}</h3>
-                    <p className="mt-2 text-sm text-muted">Updated {new Date(draft.updatedAt).toLocaleString("en-IN")}</p>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <Button onClick={() => router.push(`/decision/${draft.pluginId}/${workflow?.slug ?? draft.workflowId}`)}>Resume</Button>
-                      <Button variant="secondary" onClick={() => { void orchestrator.clearDraft(draft.workflowId).then(refresh); }}>Delete draft</Button>
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
-          </section>
-        )}
-
-        <section className="mt-10">
-          <div className="flex items-center gap-2">
-            <ArrowRight className="text-primary" size={18} />
-            <h2 className="text-2xl font-bold">Saved results</h2>
-          </div>
-          {!saved.length ? (
-            <Card className="mt-5 p-8 text-center">
-              <p className="text-lg font-semibold">No saved decisions yet</p>
-              <p className="mt-2 text-sm text-muted">Open any result and choose Save locally to pin it here.</p>
-            </Card>
-          ) : (
-            <div className="mt-5 grid gap-4 lg:grid-cols-2">
-              {saved.map((item) => {
-                const workflow = decisionPluginRegistry.getWorkflow(item.workflowId);
-                return (
-                  <Card key={item.id} className="p-5">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Saved locally</p>
-                        <h3 className="mt-2 text-lg font-semibold">{workflow?.title ?? item.workflowId}</h3>
-                        <p className="mt-2 text-sm text-muted">Updated {new Date(item.updatedAt).toLocaleString("en-IN")}</p>
+            {!drafts.length ? (
+              <Card className="mt-5 p-8 text-center">
+                <p className="text-lg font-semibold">No drafts in progress</p>
+                <p className="mt-2 text-sm text-muted">Start a decision flow and your progress will autosave here.</p>
+                <Button className="mt-4" onClick={() => router.push("/decision")}>Browse decisions</Button>
+              </Card>
+            ) : (
+              <div className="mt-5 grid gap-4 md:grid-cols-2">
+                {drafts.map((draft) => {
+                  const workflow = decisionPluginRegistry.getWorkflow(draft.workflowId);
+                  return (
+                    <Card key={`${draft.workflowId}:${draft.updatedAt}`} className="p-5">
+                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Draft</p>
+                      <h3 className="mt-2 font-semibold">{workflow?.title ?? draft.workflowId}</h3>
+                      <p className="mt-2 text-sm text-muted">Updated {new Date(draft.updatedAt).toLocaleString("en-IN")}</p>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <Button onClick={() => router.push(`/decision/${draft.pluginId}/${workflow?.slug ?? draft.workflowId}`)}>Resume</Button>
+                        <Button variant="secondary" onClick={() => { void orchestrator.clearDraft(draft.workflowId).then(refresh); }}>Delete draft</Button>
                       </div>
-                      <Button variant="ghost" onClick={() => { void orchestrator.deleteDecision(item.id).then(refresh); }}><Trash2 size={16} /></Button>
-                    </div>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <Button onClick={() => router.push(`/decision/result/${item.id}`)}>Open result</Button>
-                      <Button variant="secondary" onClick={() => router.push(`/decision/${item.pluginId}/${workflow?.slug ?? item.workflowId}`)}>Revisit</Button>
-                    </div>
-                  </Card>
-                );
-              })}
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+
+          <section className="mt-10">
+            <div className="flex items-center gap-2">
+              <ArrowRight className="text-primary" size={18} aria-hidden="true" />
+              <h2 className="text-2xl font-bold">Saved results</h2>
             </div>
-          )}
-        </section>
-      </LegalAcceptanceGate>
+            {!saved.length ? (
+              <Card className="mt-5 p-8 text-center">
+                <p className="text-lg font-semibold">No saved decisions yet</p>
+                <p className="mt-2 text-sm text-muted">Complete a decision flow to see your results here.</p>
+                <Button className="mt-4" onClick={() => router.push("/decision")}>Start a decision</Button>
+              </Card>
+            ) : (
+              <div className="mt-5 grid gap-4 lg:grid-cols-2">
+                {saved.map((item) => {
+                  const workflow = decisionPluginRegistry.getWorkflow(item.workflowId);
+                  return (
+                    <Card key={item.id} className="p-5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">{savedBadge}</p>
+                          <h3 className="mt-2 text-lg font-semibold">{workflow?.title ?? item.workflowId}</h3>
+                          <p className="mt-2 text-sm text-muted">Updated {new Date(item.updatedAt).toLocaleString("en-IN")}</p>
+                        </div>
+                        <Button variant="ghost" aria-label={`Delete saved decision ${workflow?.title ?? item.workflowId}`} onClick={() => { void orchestrator.deleteDecision(item.id).then(refresh); }}><Trash2 size={16} /></Button>
+                      </div>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <Button onClick={() => router.push(`/decision/result/${item.id}`)}>Open result</Button>
+                        <Button variant="secondary" onClick={() => router.push(`/decision/${item.pluginId}/${workflow?.slug ?? item.workflowId}`)}>Revisit</Button>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        </LegalAcceptanceGate>
+      )}
     </main>
   );
 }

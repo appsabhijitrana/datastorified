@@ -164,4 +164,29 @@ describe("DecisionOrchestrator", () => {
     expect(simulation.changedInputs).toHaveLength(1);
     expect(simulation.afterScore).toBeGreaterThanOrEqual(0);
   });
+
+  it("restores saved draft step instead of jumping to the first unanswered question", async () => {
+    const repository = createRepository();
+    const orchestrator = new DecisionOrchestrator({ repository });
+    const workflow = decisionPluginRegistry.getWorkflowBySlug("ev-vs-petrol");
+    if (!workflow) throw new Error("workflow missing");
+
+    const started = orchestrator.startDecision(workflow.slug);
+    const defaults = createDefaultAnswers(workflow.questions);
+    const reviewStep = Math.min(2, workflow.questions.length - 1);
+    const reviewQuestionId = workflow.questions[reviewStep]?.id;
+    if (!reviewQuestionId) throw new Error("review question missing");
+
+    await repository.saveDraft({
+      workflowId: workflow.id,
+      pluginId: workflow.pluginId,
+      slug: workflow.slug,
+      answers: { ...defaults, ...started.session.answers },
+      currentStep: reviewStep,
+      updatedAt: new Date().toISOString(),
+    });
+
+    const loaded = await orchestrator.loadDraft(workflow.id);
+    expect(loaded?.currentQuestionId).toBe(reviewQuestionId);
+  });
 });
