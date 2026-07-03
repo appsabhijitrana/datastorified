@@ -77,6 +77,28 @@ export type DecisionRisk = {
   mitigation?: string;
 };
 
+export type DecisionRiskLevel = "low" | "medium" | "high";
+
+export type DecisionRiskFactorAssessment = {
+  id: string;
+  label: string;
+  score: number;
+  severity: DecisionRiskLevel;
+  explanation: string;
+  mitigationTips: string[];
+  source: "workflow-rule" | "score-factor" | "missing-input" | "uncertainty";
+  optionId?: string;
+};
+
+export type DecisionRiskAssessment = {
+  optionId: string;
+  riskScore: number;
+  riskLevel: DecisionRiskLevel;
+  riskFactors: DecisionRiskFactorAssessment[];
+  explanation: string;
+  mitigationTips: string[];
+};
+
 export type DecisionRule = {
   id: string;
   description: string;
