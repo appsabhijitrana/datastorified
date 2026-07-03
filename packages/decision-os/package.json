@@ -11,6 +11,7 @@
     "./core/recommendationEngine": "./src/core/recommendationEngine.ts",
     "./core/actionPlanEngine": "./src/core/actionPlanEngine.ts",
     "./core/scenarioSimulator": "./src/core/scenarioSimulator.ts",
+    "./core/orchestrator": "./src/core/orchestrator.ts",
     "./plugins": "./src/plugins/index.ts",
     "./plugins/workflowRegistry": "./src/plugins/workflowRegistry.ts",
     "./adapters": "./src/adapters/index.ts",
