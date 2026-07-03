@@ -99,6 +99,32 @@ export type DecisionRiskAssessment = {
   mitigationTips: string[];
 };
 
+export type DecisionRecommendationAlternative = {
+  optionId: string;
+  label: string;
+  totalScore: number;
+  confidence: number;
+  riskScore: number;
+  riskLevel: DecisionRiskLevel;
+  adjustedScore: number;
+  strengths: string[];
+  weaknesses: string[];
+  whyNotWinner: string;
+  tradeOffs: string[];
+};
+
+export type DecisionRecommendationResult = {
+  winnerOptionId: string;
+  summary: string;
+  confidence: number;
+  whyThisWins: string[];
+  tradeOffs: string[];
+  bestFor: string[];
+  avoidIf: string[];
+  alternativeOptions: DecisionRecommendationAlternative[];
+  disclaimerNote: string;
+};
+
 export type DecisionRule = {
   id: string;
   description: string;
