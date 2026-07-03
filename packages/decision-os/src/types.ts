@@ -137,6 +137,41 @@ export type DecisionActionPlanResult = {
   followUpQuestions: string[];
 };
 
+export type DecisionSimulationChange = {
+  questionId: string;
+  beforeValue?: DecisionValue;
+  afterValue?: DecisionValue;
+};
+
+export type DecisionSimulationInputChange = {
+  questionId: string;
+  value: DecisionValue;
+};
+
+export type DecisionSimulationSnapshot = {
+  score: number;
+  winnerOptionId?: string;
+  recommendationId?: string;
+  recommendationChanged?: boolean;
+  confidence: number;
+};
+
+export type DecisionSimulationComparison = {
+  changedInputs: DecisionSimulationChange[];
+  beforeScore: number;
+  afterScore: number;
+  scoreDelta: number;
+  beforeWinner?: string;
+  afterWinner?: string;
+  recommendationChanged: boolean;
+  explanation: string;
+};
+
+export type DecisionSimulationResult = DecisionSimulationComparison & {
+  beforeResult: DecisionSimulationSnapshot;
+  afterResult: DecisionSimulationSnapshot;
+};
+
 export type DecisionRule = {
   id: string;
   description: string;
