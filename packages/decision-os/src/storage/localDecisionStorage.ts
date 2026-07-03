@@ -8,12 +8,20 @@ import type {
 
 export type StorageLike = Pick<Storage, "getItem" | "setItem" | "removeItem" | "key" | "length">;
 
+export const DECISION_MEMORY_SCHEMA_VERSION = 1;
+
 export const DECISION_MEMORY_KEYS: DecisionMemoryKeys = {
   recent: "ds.decision.recent",
   saved: "ds.decision.saved",
   drafts: "ds.decision.drafts",
   history: "ds.decision.history",
   profile: "ds.decision.profile.local",
+};
+
+type VersionedDecisionMemory<T> = {
+  version: number;
+  updatedAt: string;
+  data: T;
 };
 
 export const DECISION_MEMORY_LIMITS = {
@@ -94,6 +102,10 @@ function readJson<T>(raw: string | null, fallback: T): T {
   }
 }
 
+function isVersionedEnvelope<T>(value: unknown): value is VersionedDecisionMemory<T> {
+  return Boolean(value && typeof value === "object" && typeof (value as { version?: unknown }).version === "number" && "data" in (value as Record<string, unknown>));
+}
+
 function dedupeById<T extends { id: string }>(items: T[], item: T, limit: number): T[] {
   return [item, ...items.filter((entry) => entry.id !== item.id)].slice(0, limit);
 }
@@ -132,6 +144,14 @@ export class LocalDecisionStorage {
     const normalized = normalizeDecision(decision);
     this.writeDecisionCollection("recent", dedupeById(this.readDecisionCollection("recent"), normalized, DECISION_MEMORY_LIMITS.recent));
     this.writeDecisionCollection("history", dedupeById(this.readDecisionCollection("history"), normalized, 100));
+  }
+
+  saveDecisionResult(decision: StoredDecision): void {
+    this.saveResult(decision);
+  }
+
+  saveRecentDecision(decision: StoredDecision): void {
+    this.saveResult(decision);
   }
 
   save(decision: StoredDecision): void {
@@ -180,6 +200,18 @@ export class LocalDecisionStorage {
     return this.readDecisionCollection("history");
   }
 
+  listDecisionResults(): StoredDecision[] {
+    return this.listHistory();
+  }
+
+  listRecentDecisions(): StoredDecision[] {
+    return this.listRecent();
+  }
+
+  getDecisionResult(id: string): StoredDecision | undefined {
+    return this.loadDecision(id);
+  }
+
   remove(id: string): void {
     this.deleteSaved(id);
     this.writeDecisionCollection("recent", this.readDecisionCollection("recent").filter((decision) => decision.id !== id));
@@ -188,6 +220,16 @@ export class LocalDecisionStorage {
 
   deleteSaved(id: string): void {
     this.writeDecisionCollection("saved", this.readDecisionCollection("saved").filter((decision) => decision.id !== id));
+  }
+
+  deleteDecisionResult(id: string): void {
+    this.writeDecisionCollection("recent", this.readDecisionCollection("recent").filter((decision) => decision.id !== id));
+    this.writeDecisionCollection("history", this.readDecisionCollection("history").filter((decision) => decision.id !== id));
+  }
+
+  clearHistory(): void {
+    this.writeDecisionCollection("recent", []);
+    this.writeDecisionCollection("history", []);
   }
 
   clear(): void {
@@ -199,8 +241,12 @@ export class LocalDecisionStorage {
   }
 
   saveDraft(draft: DecisionMemoryDraft): boolean {
+    return this.updateDraft(draft);
+  }
+
+  updateDraft(draft: DecisionMemoryDraft): boolean {
     const normalized = normalizeDraft(draft);
-    const next = dedupeDrafts([normalized, ...this.readDrafts()], DECISION_MEMORY_LIMITS.drafts);
+    const next = dedupeDrafts([normalized, ...this.readDrafts().filter((entry) => entry.workflowId !== normalized.workflowId)], DECISION_MEMORY_LIMITS.drafts);
     return this.writeDrafts(next);
   }
 
@@ -214,6 +260,10 @@ export class LocalDecisionStorage {
 
   clearDraft(workflowId: string): boolean {
     return this.writeDrafts(this.readDrafts().filter((entry) => entry.workflowId !== workflowId));
+  }
+
+  deleteDraft(workflowId: string): boolean {
+    return this.clearDraft(workflowId);
   }
 
   saveProfile(profile: DecisionMemoryProfile): boolean {
@@ -257,21 +307,39 @@ export class LocalDecisionStorage {
   private readValue<T>(key: string, fallback: T): T {
     try {
       const raw = this.storage.getItem(key);
-      return readJson(raw, fallback);
+      const parsed = readJson<unknown>(raw, fallback);
+      if (isVersionedEnvelope<T>(parsed)) {
+        return parsed.data;
+      }
+      return parsed as T;
     } catch {
       this.storage = this.fallback;
-      return readJson(this.storage.getItem(key), fallback);
+      const parsed = readJson<unknown>(this.storage.getItem(key), fallback);
+      if (isVersionedEnvelope<T>(parsed)) {
+        return parsed.data;
+      }
+      return parsed as T;
     }
   }
 
   private writeValue<T>(key: string, value: T): boolean {
     try {
-      this.storage.setItem(key, JSON.stringify(value));
+      const envelope: VersionedDecisionMemory<T> = {
+        version: DECISION_MEMORY_SCHEMA_VERSION,
+        updatedAt: new Date().toISOString(),
+        data: value,
+      };
+      this.storage.setItem(key, JSON.stringify(envelope));
       return true;
     } catch {
       this.storage = this.fallback;
       try {
-        this.storage.setItem(key, JSON.stringify(value));
+        const envelope: VersionedDecisionMemory<T> = {
+          version: DECISION_MEMORY_SCHEMA_VERSION,
+          updatedAt: new Date().toISOString(),
+          data: value,
+        };
+        this.storage.setItem(key, JSON.stringify(envelope));
         return true;
       } catch {
         return false;
