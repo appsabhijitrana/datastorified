@@ -125,6 +125,18 @@ export type DecisionRecommendationResult = {
   disclaimerNote: string;
 };
 
+export type DecisionActionPlanPriority = "low" | "medium" | "high";
+
+export type DecisionActionPlanResult = {
+  title: string;
+  summary: string;
+  steps: string[];
+  priority: DecisionActionPlanPriority;
+  estimatedEffort: string;
+  recommendedTimeline: string;
+  followUpQuestions: string[];
+};
+
 export type DecisionRule = {
   id: string;
   description: string;
