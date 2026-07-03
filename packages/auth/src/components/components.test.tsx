@@ -4,6 +4,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { GoogleSignInButton } from "./GoogleSignInButton";
 import { LegalAcceptanceGate } from "./LegalAcceptanceGate";
+import { CURRENT_LEGAL_VERSIONS, LEGAL_ACCEPTANCE_STORAGE_KEY, storeLegalAcceptanceMarker } from "@datastorified/legal";
 
 const mocks = vi.hoisted(() => ({
   signInWithGoogle: vi.fn(),
@@ -26,6 +27,7 @@ vi.mock("../client", () => ({
 beforeEach(() => {
   vi.clearAllMocks();
   window.sessionStorage.clear();
+  window.localStorage.clear();
   vi.stubGlobal("fetch", mocks.fetch);
   mocks.useSession.mockReturnValue({ data: null, isPending: false, isRefetching: false, error: null, refetch: vi.fn() });
 });
@@ -75,6 +77,23 @@ describe("GoogleSignInButton and TermsAcceptanceModal", () => {
     await user.click(screen.getAllByRole("button", { name: /Continue with Google/i })[1]);
 
     expect(mocks.signInWithGoogle).toHaveBeenCalledWith({ callbackURL: "/decision" });
+  });
+
+  it("skips the modal when the current legal version is already accepted locally", async () => {
+    const user = userEvent.setup();
+    storeLegalAcceptanceMarker({
+      accepted: true,
+      acceptedAt: new Date("2026-07-03T10:00:00.000Z").toISOString(),
+      ...CURRENT_LEGAL_VERSIONS,
+    });
+
+    render(<GoogleSignInButton callbackURL="/decision">Continue with Google</GoogleSignInButton>);
+
+    await user.click(screen.getByRole("button", { name: /continue with google/i }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(mocks.signInWithGoogle).toHaveBeenCalledWith({ callbackURL: "/decision" });
+    expect(window.sessionStorage.getItem("ds.legal.acceptance.pending")).toBeTruthy();
+    expect(window.localStorage.getItem(LEGAL_ACCEPTANCE_STORAGE_KEY)).toBeTruthy();
   });
 
   it("blocks authenticated content until legal acceptance is resolved", async () => {

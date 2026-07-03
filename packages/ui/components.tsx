@@ -29,16 +29,35 @@ function AuthMenu({mobile = false}: { mobile?: boolean }) {
   const [syncSummary, setSyncSummary] = React.useState<SyncSummary | null>(null);
   const [syncing, setSyncing] = React.useState(false);
   const [syncError, setSyncError] = React.useState<string | null>(null);
+  const autoSyncSessionId = React.useRef<string | null>(null);
 
   React.useEffect(() => {
     if (!isSignedIn) {
       setSyncSnapshot(null);
       setSyncSummary(null);
       setSyncError(null);
+      autoSyncSessionId.current = null;
       return;
     }
-    setSyncSnapshot(getLocalDecisionSyncSnapshot());
-  }, [isSignedIn]);
+    const snapshot = getLocalDecisionSyncSnapshot();
+    setSyncSnapshot(snapshot);
+    setSyncError(null);
+    if (session?.user?.id && autoSyncSessionId.current !== session.user.id && snapshot.hasPendingSync) {
+      autoSyncSessionId.current = session.user.id;
+      setSyncing(true);
+      void syncLocalToCloud()
+        .then((result) => {
+          setSyncSummary(result);
+          setSyncSnapshot(getLocalDecisionSyncSnapshot());
+        })
+        .catch(() => {
+          setSyncError("We could not sync yet. Your local copy is safe.");
+        })
+        .finally(() => {
+          setSyncing(false);
+        });
+    }
+  }, [isSignedIn, session?.user?.id]);
 
   if (isPending) {
     return <Badge className={mobile ? "mt-3 inline-flex w-full justify-center" : ""}>Checking account…</Badge>;
@@ -51,7 +70,8 @@ function AuthMenu({mobile = false}: { mobile?: boolean }) {
           <ShieldCheck size={14} />
           Anonymous mode
         </div>
-        <p className="text-sm leading-6 text-muted">Your decisions stay local unless you choose to sign in and sync.</p>
+        <p className="text-sm leading-6 text-muted">Your decision is saved on this device.</p>
+        <p className="text-sm leading-6 text-muted">Sign in to back it up.</p>
         <GoogleSignInButton className="w-full">
           <UserRound size={16} />
           Sign in with Google
@@ -59,7 +79,7 @@ function AuthMenu({mobile = false}: { mobile?: boolean }) {
       </div>
     ) : (
       <div className="flex items-center gap-2">
-        <Badge className="inline-flex gap-1.5"><ShieldCheck size={14} /> Anonymous mode</Badge>
+        <Badge className="inline-flex gap-1.5"><ShieldCheck size={14} /> Your decision is saved on this device</Badge>
         <GoogleSignInButton className="ml-2">
           <UserRound size={16} /> Sign in with Google
         </GoogleSignInButton>
@@ -104,8 +124,8 @@ function AuthMenu({mobile = false}: { mobile?: boolean }) {
                 const result = await syncLocalToCloud();
                 setSyncSummary(result);
                 setSyncSnapshot(getLocalDecisionSyncSnapshot());
-              } catch (error) {
-                setSyncError(error instanceof Error ? error.message : "Sync failed.");
+              } catch {
+                setSyncError("We could not sync yet. Your local copy is safe.");
               } finally {
                 setSyncing(false);
               }
@@ -116,12 +136,13 @@ function AuthMenu({mobile = false}: { mobile?: boolean }) {
           </Button>
           {syncSummary && (
             <div className="mt-3 grid gap-1 text-xs text-muted">
+              <p>Sync complete</p>
               <p>{syncSummary.decisionsSynced} decisions synced</p>
               <p>{syncSummary.favoritesSynced} favorites synced</p>
               <p>{syncSummary.profileUpdated ? "Profile updated" : "Profile unchanged"}</p>
             </div>
           )}
-          {syncError && <p className="mt-2 text-xs font-medium text-danger">{syncError}</p>}
+          {syncError && <p className="mt-2 text-xs font-medium text-danger">{syncError || "We could not sync yet. Your local copy is safe."}</p>}
           {!syncSummary && !syncError && <p className="mt-2 text-xs text-muted">{syncLabel}</p>}
         </div>
         <div className="mt-3 flex flex-col gap-2">

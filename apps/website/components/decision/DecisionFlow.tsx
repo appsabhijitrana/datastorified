@@ -214,7 +214,7 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
               <div>
                 <p className="font-bold">Private by default</p>
                 <p className="mt-1 text-sm text-muted">
-                  {session?.user ? "Your draft can be saved and synced later." : "Your answers stay in this browser until you choose to save them."}
+                  {session?.user ? "Your decision is saved on this device, and you can sync it to your account when ready." : "Your decision is saved on this device. Sign in to back it up."}
                 </p>
               </div>
             </div>
@@ -239,7 +239,7 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
               <p className="text-xs font-bold uppercase tracking-[.14em] text-primary">Optional sign in</p>
               <h2 className="mt-2 text-xl font-bold">Sign in to save and sync your decisions across devices.</h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
-                You can keep going anonymously. A Google sign-in later will unlock saved decisions, draft sync, and future device continuity.
+                You can keep going anonymously. A Google sign-in later will unlock backup and sync without blocking the decision flow.
               </p>
             </Card>
           )}

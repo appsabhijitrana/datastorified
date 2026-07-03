@@ -1,7 +1,20 @@
-import { describe, expect, it } from "vitest";
-import { CURRENT_LEGAL_VERSIONS, buildLegalAcceptanceStatus, requiresLegalAcceptance } from "./legalAcceptance";
+import { beforeEach, describe, expect, it } from "vitest";
+import {
+  CURRENT_LEGAL_VERSIONS,
+  LEGAL_ACCEPTANCE_STORAGE_KEY,
+  buildLegalAcceptanceStatus,
+  buildPendingAcceptanceMarker,
+  getStoredLegalAcceptanceMarker,
+  hasStoredCurrentLegalAcceptance,
+  requiresLegalAcceptance,
+  storeLegalAcceptanceMarker,
+} from "./legalAcceptance";
 
 describe("legal acceptance helpers", () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
   it("requires acceptance when versions are missing", () => {
     expect(requiresLegalAcceptance(null)).toBe(true);
     expect(requiresLegalAcceptance({})).toBe(true);
@@ -32,5 +45,15 @@ describe("legal acceptance helpers", () => {
     expect(requiresLegalAcceptance(outdated)).toBe(true);
     expect(buildLegalAcceptanceStatus(outdated).acceptedCurrentTerms).toBe(false);
   });
-});
 
+  it("stores and reads the current legal acceptance locally", () => {
+    const marker = buildPendingAcceptanceMarker("2026-07-03T10:00:00.000Z");
+    expect(storeLegalAcceptanceMarker(marker)).toBe(true);
+    expect(window.localStorage.getItem(LEGAL_ACCEPTANCE_STORAGE_KEY)).toBeTruthy();
+    expect(hasStoredCurrentLegalAcceptance()).toBe(true);
+    expect(getStoredLegalAcceptanceMarker()).toMatchObject({
+      accepted: true,
+      ...CURRENT_LEGAL_VERSIONS,
+    });
+  });
+});

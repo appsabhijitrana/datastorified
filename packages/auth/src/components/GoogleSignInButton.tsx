@@ -1,7 +1,12 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { buildPendingAcceptanceMarker, serializeLegalAcceptanceMarker } from "@datastorified/legal";
+import {
+  buildPendingAcceptanceMarker,
+  hasStoredCurrentLegalAcceptance,
+  serializeLegalAcceptanceMarker,
+  storeLegalAcceptanceMarker,
+} from "@datastorified/legal";
 import { cn } from "@datastorified/utils";
 import { signInWithGoogle } from "../client";
 import { TermsAcceptanceModal } from "./TermsAcceptanceModal";
@@ -14,9 +19,9 @@ type GoogleSignInButtonProps = {
 
 const pendingKey = "ds.legal.acceptance.pending";
 
-function writePendingAcceptance() {
+function writePendingAcceptance(marker = buildPendingAcceptanceMarker(new Date().toISOString())) {
   try {
-    window.sessionStorage.setItem(pendingKey, serializeLegalAcceptanceMarker(buildPendingAcceptanceMarker(new Date().toISOString())));
+    window.sessionStorage.setItem(pendingKey, serializeLegalAcceptanceMarker(marker));
   } catch {
     // ignore storage issues
   }
@@ -34,7 +39,14 @@ export function GoogleSignInButton({ callbackURL, className, children }: GoogleS
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          if (hasStoredCurrentLegalAcceptance()) {
+            writePendingAcceptance();
+            void signInWithGoogle({ callbackURL: resolvedCallbackURL });
+            return;
+          }
+          setOpen(true);
+        }}
         className={cn(
           "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-white px-4 py-2.5 text-sm font-semibold text-ink shadow-soft transition hover:border-primary/30",
           className,
@@ -46,7 +58,9 @@ export function GoogleSignInButton({ callbackURL, className, children }: GoogleS
         open={open}
         onClose={() => setOpen(false)}
         onContinue={async () => {
-          writePendingAcceptance();
+          const marker = buildPendingAcceptanceMarker(new Date().toISOString());
+          storeLegalAcceptanceMarker(marker);
+          writePendingAcceptance(marker);
           setOpen(false);
           await signInWithGoogle({ callbackURL: resolvedCallbackURL });
         }}

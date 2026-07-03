@@ -156,7 +156,13 @@ function buildSummary(payload: SyncPayload): SyncSummary {
 export async function syncLocalToCloud(options: SyncOptions = {}): Promise<SyncSummary> {
   const payload = collectLocalSyncPayload();
   const client = createDataStorifiedClient({ baseUrl: options.baseUrl, fetcher: options.fetcher });
-  const result = await client.sync.push(payload);
-  if (!result.ok) return buildSummary(payload);
-  return result.data.summary ?? buildSummary(payload);
+  try {
+    const result = await client.sync.push(payload);
+    if (!result.ok) {
+      throw new Error("We could not sync yet. Your local copy is safe.");
+    }
+    return result.data.summary ?? buildSummary(payload);
+  } catch {
+    throw new Error("We could not sync yet. Your local copy is safe.");
+  }
 }

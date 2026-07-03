@@ -7,6 +7,17 @@ export const CURRENT_LEGAL_VERSIONS: LegalAcceptanceVersions = {
   legalAcceptanceVersion: CURRENT_LEGAL_ACCEPTANCE_VERSION,
 };
 
+export const LEGAL_ACCEPTANCE_STORAGE_KEY = "ds.legal.acceptance.accepted";
+
+function hasCurrentVersions(marker: Pick<LegalAcceptanceVersions, "termsVersion" | "privacyVersion" | "legalAcceptanceVersion"> | null | undefined): boolean {
+  return Boolean(
+    marker &&
+      marker.termsVersion === CURRENT_TERMS_VERSION &&
+      marker.privacyVersion === CURRENT_PRIVACY_VERSION &&
+      marker.legalAcceptanceVersion === CURRENT_LEGAL_ACCEPTANCE_VERSION,
+  );
+}
+
 export function requiresLegalAcceptance(user: LegalAcceptanceRecord | null | undefined): boolean {
   if (!user) return true;
   return !(
@@ -38,6 +49,39 @@ export function buildPendingAcceptanceMarker(acceptedAt: string): LegalAcceptanc
     acceptedAt,
     ...CURRENT_LEGAL_VERSIONS,
   };
+}
+
+export function getStoredLegalAcceptanceMarker(): LegalAcceptanceMarker | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(LEGAL_ACCEPTANCE_STORAGE_KEY);
+    return parseLegalAcceptanceMarker(raw);
+  } catch {
+    return null;
+  }
+}
+
+export function hasStoredCurrentLegalAcceptance(): boolean {
+  return hasCurrentVersions(getStoredLegalAcceptanceMarker());
+}
+
+export function storeLegalAcceptanceMarker(marker: LegalAcceptanceMarker): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    window.localStorage.setItem(LEGAL_ACCEPTANCE_STORAGE_KEY, serializeLegalAcceptanceMarker(marker));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function clearStoredLegalAcceptanceMarker(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(LEGAL_ACCEPTANCE_STORAGE_KEY);
+  } catch {
+    // ignore storage failures
+  }
 }
 
 export function parseLegalAcceptanceMarker(value: string | null): LegalAcceptanceMarker | null {
@@ -77,4 +121,3 @@ export function buildLegalAcceptanceInput(marker: LegalAcceptanceMarker): LegalA
     acceptedAt: marker.acceptedAt,
   };
 }
-

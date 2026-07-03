@@ -51,7 +51,7 @@ export function DecisionSavedPage() {
   const storageLabel = session?.user ? "Synced memory" : "Local memory";
   const storageDescription = session?.user
     ? "Saved decisions sync to your account, while drafts still stay on this device."
-    : "Everything here stays on this device. Resume drafts, revisit saved results, and continue where you left off.";
+    : "Your decision is saved on this device. Resume drafts, revisit saved results, and continue where you left off.";
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
@@ -69,7 +69,7 @@ export function DecisionSavedPage() {
           <p className="text-xs font-bold uppercase tracking-[.14em] text-primary">Need to sync later?</p>
           <h2 className="mt-2 text-xl font-bold">Sign in when you’re ready to keep these decisions with your account.</h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
-            Anonymous users can keep working locally now. A Google sign-in later will unlock sync across devices without losing the current browser copy.
+            Anonymous users can keep working locally now. Sign in to back it up when you are ready.
           </p>
           <GoogleSignInButton className="mt-4">
             Sign in with Google
