@@ -1,6 +1,7 @@
 import { decisionPluginRegistry } from "@datastorified/decision-os";
 import { localDecisionStorage } from "@datastorified/decision-os";
 import type { DecisionMemoryDraft, DecisionReport, DecisionRisk, DecisionScore } from "@datastorified/decision-os";
+import type { SyncPayload, SyncSummary } from "@datastorified/sdk";
 import type { DecisionRepository } from "./DecisionRepository";
 import { normalizeDecision } from "./DecisionRepository";
 import type { DecisionRepositoryDecision, DecisionRepositoryInput } from "./types";
@@ -114,6 +115,16 @@ export class LocalDecisionRepositoryImpl implements DecisionRepository {
 
   async clearHistory() {
     localDecisionStorage.clearHistory();
+  }
+
+  async syncLocalData(payload: SyncPayload): Promise<SyncSummary> {
+    return {
+      decisionsSynced: payload.decisions.length,
+      favoritesSynced: payload.favorites.length,
+      historySynced: payload.history.length,
+      profileUpdated: Boolean(payload.profile),
+      conflicts: 0,
+    };
   }
 }
 

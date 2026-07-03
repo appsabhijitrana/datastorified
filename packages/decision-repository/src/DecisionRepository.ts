@@ -1,4 +1,5 @@
-import { decisionPluginRegistry, type DecisionPlugin, type DecisionRecommendation, type DecisionReport, type DecisionRisk, type DecisionWorkflow } from "@datastorified/decision-os";
+import { decisionPluginRegistry, type DecisionMemoryDraft, type DecisionPlugin, type DecisionRecommendation, type DecisionReport, type DecisionRisk, type DecisionWorkflow } from "@datastorified/decision-os";
+import type { SyncPayload, SyncSummary } from "@datastorified/sdk";
 import type { DecisionRepositoryDecision, DecisionRepositoryInput } from "./types";
 
 const riskSeverityRank: Record<DecisionRisk["severity"], number> = {
@@ -127,4 +128,15 @@ export interface DecisionRepository {
   getDecision(id: string): Promise<DecisionRepositoryDecision | undefined>;
   saveDecision(decision: DecisionRepositoryInput): Promise<DecisionRepositoryDecision>;
   deleteDecision(id: string): Promise<void>;
+  saveDraft(draft: DecisionMemoryDraft): Promise<DecisionMemoryDraft>;
+  getDraft(workflowId: string): Promise<DecisionMemoryDraft | undefined>;
+  listDrafts(): Promise<DecisionMemoryDraft[]>;
+  updateDraft(draft: DecisionMemoryDraft): Promise<DecisionMemoryDraft>;
+  deleteDraft(workflowId: string): Promise<void>;
+  saveDecisionResult(result: DecisionRepositoryDecision): Promise<DecisionRepositoryDecision>;
+  listDecisionResults(): Promise<DecisionRepositoryDecision[]>;
+  saveRecentDecision(result: DecisionRepositoryDecision): Promise<DecisionRepositoryDecision>;
+  listRecentDecisions(): Promise<DecisionRepositoryDecision[]>;
+  clearHistory(): Promise<void>;
+  syncLocalData(payload: SyncPayload): Promise<SyncSummary>;
 }
