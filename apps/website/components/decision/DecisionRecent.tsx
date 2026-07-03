@@ -1,18 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Clock3 } from "lucide-react";
 import { Card } from "@datastorified/ui";
 import { decisionPluginRegistry, type StoredDecision } from "@datastorified/decision-os";
-import { getDecisionAdapters } from "@datastorified/decision-os/adapters";
+import { DecisionOrchestrator } from "@datastorified/decision-os/core/orchestrator";
+import { authClient } from "@datastorified/auth";
+import { HybridDecisionRepository } from "@datastorified/decision-repository";
 
 export function DecisionRecent() {
-  const adapters = getDecisionAdapters();
+  const { data: session } = authClient.useSession();
+  const repository = useMemo(() => new HybridDecisionRepository({ authenticated: Boolean(session?.user) }), [session?.user]);
+  const orchestrator = useMemo(() => new DecisionOrchestrator({ repository }), [repository]);
   const [items, setItems] = useState<StoredDecision[]>([]);
   useEffect(() => {
-    void adapters.memory.listRecent().then((recent) => setItems(recent.slice(0, 4)));
-  }, [adapters]);
+    void orchestrator.listRecentDecisions().then((recent) => setItems(recent.slice(0, 4)));
+  }, [orchestrator]);
   if (!items.length) return null;
   return (
     <section className="mx-auto max-w-7xl px-4 pb-16 sm:px-6">

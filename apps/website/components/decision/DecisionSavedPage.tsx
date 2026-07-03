@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Clock3, History, Trash2 } from "lucide-react";
 import { Badge, Button, Card } from "@datastorified/ui";
-import { decisionPluginRegistry, type DecisionMemoryDraft, type DecisionMemoryProfile } from "@datastorified/decision-os";
+import { decisionPluginRegistry, type DecisionMemoryDraft } from "@datastorified/decision-os";
+import { DecisionOrchestrator } from "@datastorified/decision-os/core/orchestrator";
 import { getDecisionAdapters } from "@datastorified/decision-os/adapters";
 import { authClient, GoogleSignInButton, LegalAcceptanceGate } from "@datastorified/auth";
 import { HybridDecisionRepository } from "@datastorified/decision-repository";
@@ -12,33 +13,41 @@ import type { DecisionRepositoryDecision } from "@datastorified/decision-reposit
 
 export function DecisionSavedPage() {
   const router = useRouter();
-  const adapters = getDecisionAdapters();
   const { data: session } = authClient.useSession();
   const repository = useMemo(() => new HybridDecisionRepository({ authenticated: Boolean(session?.user) }), [session?.user]);
+  const orchestrator = useMemo(() => new DecisionOrchestrator({ repository }), [repository]);
+  const adapters = getDecisionAdapters();
   const [saved, setSaved] = useState<DecisionRepositoryDecision[]>([]);
   const [drafts, setDrafts] = useState<DecisionMemoryDraft[]>([]);
-  const [profile, setProfile] = useState<DecisionMemoryProfile>({});
+  const [lastOpenedWorkflow, setLastOpenedWorkflow] = useState<DecisionMemoryDraft["workflowId"] | null>(null);
+  const [profileLastOpenedWorkflow, setProfileLastOpenedWorkflow] = useState<DecisionMemoryDraft["workflowId"] | null>(null);
 
   const refresh = useCallback(() => {
     void Promise.all([
-      repository.listDecisions(),
-      adapters.memory.listDrafts(),
-      adapters.memory.getProfile(),
-    ]).then(([savedItems, draftItems, profileItem]) => {
+      orchestrator.listSavedDecisions(),
+      orchestrator.listDrafts(),
+    ]).then(([savedItems, draftItems]) => {
       setSaved(savedItems);
       setDrafts(draftItems);
-      setProfile(profileItem);
+      setLastOpenedWorkflow(draftItems[0]?.workflowId ?? null);
     });
-  }, [adapters.memory, repository]);
+  }, [orchestrator]);
 
   useEffect(() => {
     refresh();
   }, [refresh]);
 
+  useEffect(() => {
+    void adapters.memory.getProfile().then((profile) => {
+      setProfileLastOpenedWorkflow(profile.lastOpenedWorkflow?.workflowId ?? null);
+    });
+  }, [adapters.memory]);
+
   const lastWorkflow = useMemo(() => {
-    if (!profile.lastOpenedWorkflow) return undefined;
-    return decisionPluginRegistry.getWorkflow(profile.lastOpenedWorkflow.workflowId);
-  }, [profile]);
+    const workflowId = profileLastOpenedWorkflow ?? lastOpenedWorkflow;
+    if (!workflowId) return undefined;
+    return decisionPluginRegistry.getWorkflow(workflowId);
+  }, [lastOpenedWorkflow, profileLastOpenedWorkflow]);
   const storageLabel = session?.user ? "Synced memory" : "Local memory";
   const storageDescription = session?.user
     ? "Saved decisions sync to your account, while drafts still stay on this device."
@@ -69,7 +78,7 @@ export function DecisionSavedPage() {
       )}
 
       <LegalAcceptanceGate mode="account">
-        {profile.lastOpenedWorkflow && (
+        {(profileLastOpenedWorkflow || lastOpenedWorkflow) && (
           <Card className="mt-8 border-primary/20 bg-primary/[.04] p-5">
             <div className="flex flex-wrap items-center gap-2">
               <Clock3 className="text-primary" size={16} />
@@ -77,10 +86,10 @@ export function DecisionSavedPage() {
             </div>
             <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="font-semibold">{lastWorkflow?.title ?? profile.lastOpenedWorkflow.workflowId}</p>
-                <p className="mt-1 text-sm text-muted">Opened {new Date(profile.lastOpenedWorkflow.openedAt).toLocaleString("en-IN")}</p>
+                <p className="font-semibold">{lastWorkflow?.title ?? profileLastOpenedWorkflow ?? lastOpenedWorkflow}</p>
+                <p className="mt-1 text-sm text-muted">Continue from your most recent workspace</p>
               </div>
-              <Button variant="ghost" onClick={() => router.push(`/decision/${profile.lastOpenedWorkflow?.pluginId}/${profile.lastOpenedWorkflow?.slug}`)}>Continue</Button>
+              <Button variant="ghost" onClick={() => router.push(`/decision/${lastWorkflow?.pluginId ?? "decision"}/${lastWorkflow?.slug ?? profileLastOpenedWorkflow ?? lastOpenedWorkflow}`)}>Continue</Button>
             </div>
           </Card>
         )}
@@ -101,7 +110,7 @@ export function DecisionSavedPage() {
                     <p className="mt-2 text-sm text-muted">Updated {new Date(draft.updatedAt).toLocaleString("en-IN")}</p>
                     <div className="mt-4 flex flex-wrap gap-2">
                       <Button onClick={() => router.push(`/decision/${draft.pluginId}/${workflow?.slug ?? draft.workflowId}`)}>Resume</Button>
-                      <Button variant="secondary" onClick={() => { void adapters.memory.clearDraft(draft.workflowId).then(refresh); }}>Delete draft</Button>
+                      <Button variant="secondary" onClick={() => { void orchestrator.clearDraft(draft.workflowId).then(refresh); }}>Delete draft</Button>
                     </div>
                   </Card>
                 );
@@ -132,7 +141,7 @@ export function DecisionSavedPage() {
                         <h3 className="mt-2 text-lg font-semibold">{workflow?.title ?? item.workflowId}</h3>
                         <p className="mt-2 text-sm text-muted">Updated {new Date(item.updatedAt).toLocaleString("en-IN")}</p>
                       </div>
-                      <Button variant="ghost" onClick={() => { void repository.deleteDecision(item.id).then(refresh); }}><Trash2 size={16} /></Button>
+                      <Button variant="ghost" onClick={() => { void orchestrator.deleteDecision(item.id).then(refresh); }}><Trash2 size={16} /></Button>
                     </div>
                     <div className="mt-4 flex flex-wrap gap-2">
                       <Button onClick={() => router.push(`/decision/result/${item.id}`)}>Open result</Button>

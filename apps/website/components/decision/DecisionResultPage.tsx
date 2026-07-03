@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { BookmarkPlus, Copy, Printer, Share2, Trash2 } from "lucide-react";
 import { Badge, Button, Card } from "@datastorified/ui";
 import { buildDecisionReport, decisionPluginRegistry } from "@datastorified/decision-os";
+import { DecisionOrchestrator, type DecisionOrchestratorRepositoryDecision } from "@datastorified/decision-os/core/orchestrator";
 import { buildProfileAwareRecommendation, getProfileAnalysis, type DecisionProfileEnvelope } from "@datastorified/profile";
 import { getDecisionAdapters } from "@datastorified/decision-os/adapters";
 import { authClient } from "@datastorified/auth";
@@ -29,16 +30,17 @@ export function DecisionResultPage({ id }: { id: string }) {
   const adapters = getDecisionAdapters();
   const { data: session } = authClient.useSession();
   const repository = useMemo(() => new HybridDecisionRepository({ authenticated: Boolean(session?.user) }), [session?.user]);
+  const orchestrator = useMemo(() => new DecisionOrchestrator({ repository }), [repository]);
   const [item, setItem] = useState<DecisionRepositoryDecision | null | undefined>(undefined);
   const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState(false);
   const [profile, setProfile] = useState<DecisionProfileEnvelope | null>(null);
   useEffect(() => {
-    void repository.getDecision(id).then((decision) => {
+    void orchestrator.getDecision(id).then((decision) => {
       setItem(decision ?? null);
       setSaved(Boolean(decision));
     });
-  }, [id, repository]);
+  }, [id, orchestrator]);
   useEffect(() => {
     void adapters.profile.getProfile().then(setProfile);
   }, [adapters.profile]);
@@ -53,7 +55,7 @@ export function DecisionResultPage({ id }: { id: string }) {
   const copy = async () => { await navigator.clipboard.writeText(summary); setCopied(true); window.setTimeout(() => setCopied(false), 1200); };
   const share = async () => { if (navigator.share) await navigator.share({ title: workflow.title, text: summary, url: window.location.href }); else await copy(); };
   const saveLocally = async () => {
-    await repository.saveDecision({
+    await orchestrator.saveDecisionRecord({
       ...item,
       workflow,
       plugin: decisionPluginRegistry.getPlugin(workflow.pluginId) ?? item.plugin,
@@ -65,10 +67,10 @@ export function DecisionResultPage({ id }: { id: string }) {
       recommendation: item.recommendation,
       actionPlan: item.actionPlan,
       assumptions: item.assumptions,
-    });
+    } as DecisionOrchestratorRepositoryDecision);
     setSaved(true);
   };
-  const deleteSaved = async () => { await repository.deleteDecision(item.id); setSaved(false); };
+  const deleteSaved = async () => { await orchestrator.deleteDecision(item.id); setSaved(false); };
 
   return <main className="mx-auto max-w-7xl overflow-x-hidden px-4 py-8 sm:px-6 sm:py-12"><div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><Badge>{workflow.category ?? workflow.pluginId} result</Badge><DecisionAccuracyBadge analysis={profileAnalysis} /></div><h1 className="mt-4 text-balance text-3xl font-bold tracking-[-.035em] sm:text-5xl">{workflow.title}</h1><p className="mt-2 text-sm text-muted">Created {new Date(item.createdAt).toLocaleString("en-IN")}</p></div><div className="flex flex-wrap gap-2 print:hidden"><Button variant="secondary" onClick={copy}><Copy size={16} />{copied ? "Copied" : "Copy summary"}</Button><Button variant="secondary" onClick={share}><Share2 size={16} />Share</Button><Button variant="secondary" onClick={() => window.print()}><Printer size={16} />Print</Button></div></div>
     <div className="mt-6 flex flex-wrap gap-2 print:hidden">

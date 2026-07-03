@@ -15,6 +15,7 @@ import type {
   DecisionRecommendationResult,
   DecisionReport,
   DecisionRiskAssessment,
+  DecisionQuestion,
   DecisionSimulationInputChange,
   DecisionSimulationResult,
   DecisionWorkflow,
@@ -227,19 +228,87 @@ export class DecisionOrchestrator {
     return this.toState(state);
   }
 
-  answerCurrentQuestion(sessionId: string, answer: DecisionAnswers[string]): DecisionOrchestratorState {
+  setAnswer(sessionId: string, questionId: string, answer: DecisionAnswers[string], options: { advance?: boolean } = {}): DecisionOrchestratorState {
     const state = this.requireSession(sessionId);
     const currentQuestion = this.flowEngine.getCurrentQuestion(state.session);
     if (!currentQuestion) {
       return this.toState(state);
     }
-    state.session = this.flowEngine.answerQuestion(sessionId, currentQuestion.id, answer);
+    state.session = this.flowEngine.answerQuestion(sessionId, questionId, answer);
+    if (!options.advance) {
+      state.session.currentQuestionId = state.session.currentQuestionId ?? questionId;
+    }
+    this.sessions.set(sessionId, state);
+    return this.toState(state);
+  }
+
+  answerCurrentQuestion(sessionId: string, answer: DecisionAnswers[string], options: { advance?: boolean } = {}): DecisionOrchestratorState {
+    const state = this.requireSession(sessionId);
+    const currentQuestion = this.flowEngine.getCurrentQuestion(state.session);
+    if (!currentQuestion) {
+      return this.toState(state);
+    }
+    return this.setAnswer(sessionId, currentQuestion.id, answer, options);
+  }
+
+  advanceCurrentQuestion(sessionId: string): DecisionOrchestratorState {
+    const state = this.requireSession(sessionId);
+    const nextQuestion = this.flowEngine.getNextQuestion(state.session);
+    if (!nextQuestion) return this.toState(state);
+    state.session = {
+      ...state.session,
+      currentQuestionId: nextQuestion.id,
+      updatedAt: new Date().toISOString(),
+    };
+    this.sessions.set(sessionId, state);
+    return this.toState(state);
+  }
+
+  goBackCurrentQuestion(sessionId: string): DecisionOrchestratorState {
+    const state = this.requireSession(sessionId);
+    const previousQuestion = this.flowEngine.getPreviousQuestion(state.session);
+    if (!previousQuestion) return this.toState(state);
+    state.session = {
+      ...state.session,
+      currentQuestionId: previousQuestion.id,
+      updatedAt: new Date().toISOString(),
+    };
     this.sessions.set(sessionId, state);
     return this.toState(state);
   }
 
   getDecisionState(sessionId: string): DecisionOrchestratorState {
     return this.toState(this.requireSession(sessionId));
+  }
+
+  getCurrentQuestion(sessionId: string): DecisionQuestion | undefined {
+    const state = this.requireSession(sessionId);
+    return this.flowEngine.getCurrentQuestion(state.session);
+  }
+
+  getNextQuestion(sessionId: string): DecisionQuestion | undefined {
+    const state = this.requireSession(sessionId);
+    return this.flowEngine.getNextQuestion(state.session);
+  }
+
+  getPreviousQuestion(sessionId: string): DecisionQuestion | undefined {
+    const state = this.requireSession(sessionId);
+    return this.flowEngine.getPreviousQuestion(state.session);
+  }
+
+  canGoNext(sessionId: string): boolean {
+    const state = this.requireSession(sessionId);
+    return this.flowEngine.canGoNext(state.session);
+  }
+
+  canGoBack(sessionId: string): boolean {
+    const state = this.requireSession(sessionId);
+    return this.flowEngine.canGoBack(state.session);
+  }
+
+  calculateProgress(sessionId: string): number {
+    const state = this.requireSession(sessionId);
+    return this.flowEngine.calculateProgress(state.session);
   }
 
   calculateLivePreview(sessionId: string): DecisionOrchestratorPreview {
@@ -281,6 +350,14 @@ export class DecisionOrchestrator {
     return draft;
   }
 
+  async clearDraft(workflowId: string): Promise<void> {
+    await this.repository.deleteDraft(workflowId);
+  }
+
+  async listDrafts(): Promise<DecisionMemoryDraft[]> {
+    return this.repository.listDrafts();
+  }
+
   async loadDraft(draftId: string): Promise<DecisionOrchestratorState | undefined> {
     const draft = await this.repository.getDraft(draftId);
     if (!draft) return undefined;
@@ -308,6 +385,42 @@ export class DecisionOrchestrator {
       await this.repository.saveRecentDecision(record);
     }
     return record;
+  }
+
+  async saveDecisionRecord(decision: DecisionOrchestratorRepositoryDecision): Promise<DecisionOrchestratorRepositoryDecision> {
+    const saver = this.repository.saveDecisionResult ?? this.repository.saveResult ?? this.repository.saveDecision;
+    if (!saver) {
+      throw new Error("The configured repository does not support saving decision records.");
+    }
+    await saver.call(this.repository, decision);
+    if (this.repository.saveRecentDecision) {
+      await this.repository.saveRecentDecision(decision);
+    }
+    return decision;
+  }
+
+  async listRecentDecisions(): Promise<DecisionOrchestratorRepositoryDecision[]> {
+    if (this.repository.listRecentDecisions) return this.repository.listRecentDecisions();
+    if (this.repository.listDecisions) return this.repository.listDecisions();
+    return [];
+  }
+
+  async listSavedDecisions(): Promise<DecisionOrchestratorRepositoryDecision[]> {
+    if (this.repository.listDecisions) return this.repository.listDecisions();
+    if (this.repository.listDecisionResults) return this.repository.listDecisionResults();
+    return [];
+  }
+
+  async getDecision(id: string): Promise<DecisionOrchestratorRepositoryDecision | undefined> {
+    if (this.repository.getDecision) return this.repository.getDecision(id);
+    const saved = await this.listSavedDecisions();
+    return saved.find((decision) => decision.id === id);
+  }
+
+  async deleteDecision(id: string): Promise<void> {
+    if (this.repository.deleteDecision) {
+      await this.repository.deleteDecision(id);
+    }
   }
 
   simulate(sessionId: string, changes: readonly DecisionSimulationInputChange[]): DecisionSimulationResult {
