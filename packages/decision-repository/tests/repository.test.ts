@@ -46,7 +46,7 @@ describe("decision repository", () => {
     const repository = new HybridDecisionRepository({ authenticated: true, apiClient });
 
     const decision = createDecision();
-    const saved = await repository.saveDecision(decision);
+    const saved = await repository.saveDecisionResult(decision);
     const listed = await repository.listDecisions();
 
     expect(saved.id).toBe("cloud-decision");

@@ -22,12 +22,20 @@ import { DecisionProgress } from "./DecisionProgress";
 import { DecisionQuestion } from "./DecisionQuestion";
 import { DecisionRecommendation } from "./DecisionRecommendation";
 import { DecisionScoreCard } from "./DecisionScoreCard";
+import { DecisionOSStatusService } from "../../lib/decision-os-status/service";
+import { DecisionOSMaintenanceBanner } from "./DecisionOSMaintenanceBanner";
+import { DecisionOSScheduledMaintenanceBanner } from "./DecisionOSScheduledMaintenanceBanner";
+import { DecisionOSOutagePage } from "./DecisionOSOutagePage";
 
 export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: string }) {
+  const { state: maintenanceState, message: maintenanceMessage } = DecisionOSStatusService.getStatus();
   const workflow = decisionPluginRegistry.getWorkflowBySlug(slug);
   const router = useRouter();
   const { data: session } = authClient.useSession();
-  const repository = useMemo(() => new HybridDecisionRepository({ authenticated: Boolean(session?.user) }), [session?.user]);
+  const repository = useMemo(() => new HybridDecisionRepository({ 
+    authenticated: Boolean(session?.user),
+    isCloudAvailable: maintenanceState !== 'outage_blocking'
+  }), [session?.user, maintenanceState]);
   const orchestrator = useMemo(() => new DecisionOrchestrator({ repository }), [repository]);
   const [state, setState] = useState<DecisionOrchestratorState | null>(null);
   const [loading, setLoading] = useState(true);
@@ -74,13 +82,19 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
   useEffect(() => {
     void (async () => {
       try {
-        const profileEnvelope = await getDecisionAdapters().profile.getProfile();
-        setProfile(profileEnvelope as DecisionProfileEnvelope);
+        if (maintenanceState !== 'outage_blocking') {
+          const profileEnvelope = await getDecisionAdapters().profile.getProfile();
+          setProfile(profileEnvelope as DecisionProfileEnvelope);
+        }
       } catch {
         // Profile is optional; ignore failures.
       }
     })();
-  }, []);
+  }, [maintenanceState]);
+
+  if (maintenanceState === 'outage_blocking') {
+    return <DecisionOSOutagePage message={maintenanceMessage} />;
+  }
 
   if (!workflow || workflow.pluginId !== pluginId) {
     return <main className="mx-auto max-w-7xl px-4 py-20 sm:px-6"><Card className="p-6">This decision is unavailable right now.</Card></main>;
@@ -89,6 +103,8 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
   if (loading || !state) {
     return (
       <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12">
+        {maintenanceState === 'maintenance_banner' && <DecisionOSMaintenanceBanner message={maintenanceMessage || "We are currently performing maintenance. Some features may be temporarily unavailable."} />}
+        {maintenanceState === 'scheduled_maintenance' && <DecisionOSScheduledMaintenanceBanner message={maintenanceMessage || "Scheduled maintenance is in progress. The platform will be back to full functionality soon."} />}
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
           <Card className="h-72 animate-pulse rounded-3xl bg-soft" />
           <Card className="h-72 animate-pulse rounded-3xl bg-soft" />
@@ -171,110 +187,114 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
   const mobileQuestion = currentQuestion ?? visibleQuestions[0];
 
   return (
-    <main className="mx-auto max-w-7xl overflow-x-hidden px-4 py-8 sm:px-6 sm:py-12">
-      <div className="flex max-w-4xl flex-wrap items-center gap-2">
-        <Badge>{workflow.category ?? workflow.pluginId}</Badge>
-        <DecisionAccuracyBadge analysis={profileAnalysis} />
-      </div>
+    <>
+      {maintenanceState === 'maintenance_banner' && <DecisionOSMaintenanceBanner message={maintenanceMessage || "We are currently performing maintenance. Some features may be temporarily unavailable."} />}
+      {maintenanceState === 'scheduled_maintenance' && <DecisionOSScheduledMaintenanceBanner message={maintenanceMessage || "Scheduled maintenance is in progress. The platform will be back to full functionality soon."} />}
+      <main className="mx-auto max-w-7xl overflow-x-hidden px-4 py-8 sm:px-6 sm:py-12">
+        <div className="flex max-w-4xl flex-wrap items-center gap-2">
+          <Badge>{workflow.category ?? workflow.pluginId}</Badge>
+          <DecisionAccuracyBadge analysis={profileAnalysis} />
+        </div>
 
-      <h1 className="mt-4 max-w-4xl text-balance text-3xl font-bold tracking-[-.035em] sm:text-5xl">{workflow.title}</h1>
-      <p className="mt-3 max-w-3xl text-base leading-7 text-muted sm:text-lg">{workflow.description}</p>
-      <div className="mt-6 max-w-3xl">
-        <DecisionProgress value={state.progress} current={visibleQuestions.findIndex((question) => question.id === mobileQuestion?.id) + 1} total={visibleQuestions.length} />
-      </div>
+        <h1 className="mt-4 max-w-4xl text-balance text-3xl font-bold tracking-[-.035em] sm:text-5xl">{workflow.title}</h1>
+        <p className="mt-3 max-w-3xl text-base leading-7 text-muted sm:text-lg">{workflow.description}</p>
+        <div className="mt-6 max-w-3xl">
+          <DecisionProgress value={state.progress} current={visibleQuestions.findIndex((question) => question.id === mobileQuestion?.id) + 1} total={visibleQuestions.length} />
+        </div>
 
-      <div className="mt-8 grid min-w-0 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="min-w-0">
-          <div className="md:hidden">
-            {mobileQuestion && (
-              <DecisionQuestion
-                question={mobileQuestion}
-                value={state.session.answers[mobileQuestion.id]}
-                onChange={(value) => update(mobileQuestion.id, value)}
-                error={validationErrors[mobileQuestion.id]}
-              />
+        <div className="mt-8 grid min-w-0 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="min-w-0">
+            <div className="md:hidden">
+              {mobileQuestion && (
+                <DecisionQuestion
+                  question={mobileQuestion}
+                  value={state.session.answers[mobileQuestion.id]}
+                  onChange={(value) => update(mobileQuestion.id, value)}
+                  error={validationErrors[mobileQuestion.id]}
+                />
+              )}
+            </div>
+
+            <div className="hidden min-w-0 gap-4 md:grid md:grid-cols-2">
+              {visibleQuestions.map((question) => (
+                <DecisionQuestion
+                  key={question.id}
+                  question={question}
+                  value={state.session.answers[question.id]}
+                  onChange={(value) => update(question.id, value)}
+                  error={validationErrors[question.id]}
+                />
+              ))}
+            </div>
+
+            <Card className="mt-5 flex min-w-0 flex-col gap-4 bg-gradient-to-br from-primary/[.04] to-accent/[.06] p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+              <div className="flex min-w-0 gap-3">
+                <ShieldCheck className="shrink-0 text-primary" />
+                <div>
+                  <p className="font-bold">Private by default</p>
+                  <p className="mt-1 text-sm text-muted">
+                    {session?.user ? "Your decision is saved on this device, and you can sync it to your account when ready." : "Your decision is saved on this device. Sign in to back it up."}
+                  </p>
+                </div>
+              </div>
+              <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+                <Button variant="ghost" onClick={saveDraftNow}><Save size={16} /> Save draft</Button>
+                <Button variant="secondary" onClick={reset}>Reset</Button>
+                {session?.user ? null : <GoogleSignInButton className="rounded-xl border border-border bg-white px-4 py-2.5 text-sm font-semibold text-ink shadow-soft">Sign in with Google</GoogleSignInButton>}
+                {mobileQuestion && visibleQuestions.findIndex((question) => question.id === mobileQuestion.id) > 0 && (
+                  <Button variant="secondary" className="md:hidden" onClick={back}><ArrowLeft size={16} /> Back</Button>
+                )}
+                {mobileQuestion && visibleQuestions.findIndex((question) => question.id === mobileQuestion.id) < visibleQuestions.length - 1 ? (
+                  <Button className="ml-auto md:hidden" onClick={next}>Next <ArrowRight size={16} /></Button>
+                ) : (
+                  <Button className="ml-auto md:hidden" onClick={complete}>View result <ArrowRight size={16} /></Button>
+                )}
+                <Button className="ml-auto hidden md:inline-flex" onClick={complete}>View recommendation <ArrowRight size={16} /></Button>
+              </div>
+            </Card>
+
+            {!session?.user && (
+              <Card className="mt-5 border-primary/15 bg-primary/[.04] p-5">
+                <p className="text-xs font-bold uppercase tracking-[.14em] text-primary">Optional sign in</p>
+                <h2 className="mt-2 text-xl font-bold">Sign in to save and sync your decisions across devices.</h2>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
+                  You can keep going anonymously. A Google sign-in later will unlock backup and sync without blocking the decision flow.
+                </p>
+              </Card>
+            )}
+
+            {(workflow.faqs?.length ?? 0) > 0 && (
+              <section className="mt-10">
+                <h2 className="text-2xl font-bold">Common questions</h2>
+                <div className="mt-4 space-y-3">
+                  {workflow.faqs?.map((item) => (
+                    <details key={item.question} className="rounded-2xl border border-border bg-white p-5">
+                      <summary className="cursor-pointer font-semibold">{item.question}</summary>
+                      <p className="mt-3 text-sm leading-6 text-muted">{item.answer}</p>
+                    </details>
+                  ))}
+                </div>
+              </section>
             )}
           </div>
 
-          <div className="hidden min-w-0 gap-4 md:grid md:grid-cols-2">
-            {visibleQuestions.map((question) => (
-              <DecisionQuestion
-                key={question.id}
-                question={question}
-                value={state.session.answers[question.id]}
-                onChange={(value) => update(question.id, value)}
-                error={validationErrors[question.id]}
-              />
-            ))}
-          </div>
-
-          <Card className="mt-5 flex min-w-0 flex-col gap-4 bg-gradient-to-br from-primary/[.04] to-accent/[.06] p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-            <div className="flex min-w-0 gap-3">
-              <ShieldCheck className="shrink-0 text-primary" />
-              <div>
-                <p className="font-bold">Private by default</p>
-                <p className="mt-1 text-sm text-muted">
-                  {session?.user ? "Your decision is saved on this device, and you can sync it to your account when ready." : "Your decision is saved on this device. Sign in to back it up."}
-                </p>
-              </div>
-            </div>
-            <div className="flex w-full flex-wrap gap-2 sm:w-auto">
-              <Button variant="ghost" onClick={saveDraftNow}><Save size={16} /> Save draft</Button>
-              <Button variant="secondary" onClick={reset}>Reset</Button>
-              {session?.user ? null : <GoogleSignInButton className="rounded-xl border border-border bg-white px-4 py-2.5 text-sm font-semibold text-ink shadow-soft">Sign in with Google</GoogleSignInButton>}
-              {mobileQuestion && visibleQuestions.findIndex((question) => question.id === mobileQuestion.id) > 0 && (
-                <Button variant="secondary" className="md:hidden" onClick={back}><ArrowLeft size={16} /> Back</Button>
-              )}
-              {mobileQuestion && visibleQuestions.findIndex((question) => question.id === mobileQuestion.id) < visibleQuestions.length - 1 ? (
-                <Button className="ml-auto md:hidden" onClick={next}>Next <ArrowRight size={16} /></Button>
-              ) : (
-                <Button className="ml-auto md:hidden" onClick={complete}>View result <ArrowRight size={16} /></Button>
-              )}
-              <Button className="ml-auto hidden md:inline-flex" onClick={complete}>View recommendation <ArrowRight size={16} /></Button>
-            </div>
-          </Card>
-
-          {!session?.user && (
-            <Card className="mt-5 border-primary/15 bg-primary/[.04] p-5">
-              <p className="text-xs font-bold uppercase tracking-[.14em] text-primary">Optional sign in</p>
-              <h2 className="mt-2 text-xl font-bold">Sign in to save and sync your decisions across devices.</h2>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
-                You can keep going anonymously. A Google sign-in later will unlock backup and sync without blocking the decision flow.
-              </p>
-            </Card>
-          )}
-
-          {(workflow.faqs?.length ?? 0) > 0 && (
-            <section className="mt-10">
-              <h2 className="text-2xl font-bold">Common questions</h2>
-              <div className="mt-4 space-y-3">
-                {workflow.faqs?.map((item) => (
-                  <details key={item.question} className="rounded-2xl border border-border bg-white p-5">
-                    <summary className="cursor-pointer font-semibold">{item.question}</summary>
-                    <p className="mt-3 text-sm leading-6 text-muted">{item.answer}</p>
-                  </details>
+          <aside className="min-w-0 space-y-4 lg:sticky lg:top-24">
+            <DecisionScoreCard score={score} />
+            <DecisionRecommendation recommendation={recommendation} analysis={profileAnalysis} note={autosaveState === "saved" ? "Draft saved locally." : autosaveState === "saving" ? "Saving draft…" : autosaveState === "error" ? "Draft save failed. You can still continue." : undefined} />
+            <Card className="p-5">
+              <p className="text-sm font-bold">Live decision signals</p>
+              <div className="mt-3 space-y-2">
+                {preview.report.ruleEvaluations.filter(({ matched }) => matched).slice(0, 5).map(({ rule }) => (
+                  <div key={rule.id} className={`rounded-xl px-3 py-2 text-xs font-semibold ${rule.risk ? "bg-warning/10 text-warning" : "bg-success/10 text-success"}`}>
+                    {rule.description}
+                  </div>
                 ))}
+                {!preview.report.ruleEvaluations.some(({ matched }) => matched) && <p className="text-sm text-muted">Adjust your answers to reveal the strongest signals.</p>}
               </div>
-            </section>
-          )}
+            </Card>
+          </aside>
         </div>
-
-        <aside className="min-w-0 space-y-4 lg:sticky lg:top-24">
-          <DecisionScoreCard score={score} />
-          <DecisionRecommendation recommendation={recommendation} analysis={profileAnalysis} note={autosaveState === "saved" ? "Draft saved locally." : autosaveState === "saving" ? "Saving draft…" : autosaveState === "error" ? "Draft save failed. You can still continue." : undefined} />
-          <Card className="p-5">
-            <p className="text-sm font-bold">Live decision signals</p>
-            <div className="mt-3 space-y-2">
-              {preview.report.ruleEvaluations.filter(({ matched }) => matched).slice(0, 5).map(({ rule }) => (
-                <div key={rule.id} className={`rounded-xl px-3 py-2 text-xs font-semibold ${rule.risk ? "bg-warning/10 text-warning" : "bg-success/10 text-success"}`}>
-                  {rule.description}
-                </div>
-              ))}
-              {!preview.report.ruleEvaluations.some(({ matched }) => matched) && <p className="text-sm text-muted">Adjust your answers to reveal the strongest signals.</p>}
-            </div>
-          </Card>
-        </aside>
-      </div>
-    </main>
+      </main>
+    </>
   );
 }
