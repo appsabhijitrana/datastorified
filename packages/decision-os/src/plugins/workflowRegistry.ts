@@ -49,11 +49,15 @@ function validateWorkflow(workflow: DecisionWorkflow, existing: Iterable<Decisio
 export class DecisionWorkflowRegistry {
   private readonly workflows = new Map<string, RegisteredWorkflow>();
   private readonly slugs = new Map<string, RegisteredWorkflow>();
+  private readonly aliases = new Map<string, RegisteredWorkflow>();
 
   registerWorkflow(workflow: DecisionWorkflow): void {
     validateWorkflow(workflow, this.workflows.values());
     this.workflows.set(workflow.id, workflow);
     this.slugs.set(workflow.slug, workflow);
+    for (const alias of [workflow.id, ...(workflow.aliases ?? []), ...(workflow.intent.aliases ?? [])]) {
+      this.aliases.set(normalizeText(alias), workflow);
+    }
   }
 
   unregisterWorkflow(workflowId: string): boolean {
@@ -61,6 +65,9 @@ export class DecisionWorkflowRegistry {
     if (!workflow) return false;
     this.workflows.delete(workflowId);
     this.slugs.delete(workflow.slug);
+    for (const alias of [workflow.id, workflow.slug, ...(workflow.aliases ?? []), ...(workflow.intent.aliases ?? [])]) {
+      this.aliases.delete(normalizeText(alias));
+    }
     return true;
   }
 
@@ -69,7 +76,7 @@ export class DecisionWorkflowRegistry {
   }
 
   getWorkflowBySlug(slug: string): DecisionWorkflow | undefined {
-    return this.slugs.get(slug);
+    return this.slugs.get(slug) ?? this.aliases.get(normalizeText(slug));
   }
 
   getAllWorkflows(): DecisionWorkflow[] {
@@ -120,6 +127,7 @@ export class DecisionWorkflowRegistry {
   clear(): void {
     this.workflows.clear();
     this.slugs.clear();
+    this.aliases.clear();
   }
 }
 

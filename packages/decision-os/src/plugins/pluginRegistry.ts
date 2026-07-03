@@ -7,6 +7,7 @@ export class DecisionPluginRegistry {
   private readonly plugins = new Map<string, DecisionPlugin>();
   private readonly workflows = new Map<string, DecisionWorkflow>();
   private readonly workflowsBySlug = new Map<string, DecisionWorkflow>();
+  private readonly workflowAliases = new Map<string, DecisionWorkflow>();
 
   registerPlugin(plugin: DecisionPlugin): void {
     if (this.plugins.has(plugin.id)) throw new Error(`Decision plugin "${plugin.id}" is already registered.`);
@@ -23,6 +24,10 @@ export class DecisionPluginRegistry {
     for (const workflow of plugin.workflows) {
       this.workflows.set(workflow.id, workflow);
       this.workflowsBySlug.set(workflow.slug, workflow);
+      for (const alias of [workflow.id, ...(workflow.aliases ?? []), ...(workflow.intent.aliases ?? [])]) {
+        if (!alias) continue;
+        this.workflowAliases.set(normalizeText(alias), workflow);
+      }
     }
   }
 
@@ -34,6 +39,9 @@ export class DecisionPluginRegistry {
     for (const workflow of plugin.workflows) {
       this.workflows.delete(workflow.id);
       this.workflowsBySlug.delete(workflow.slug);
+      for (const alias of [workflow.id, workflow.slug, ...(workflow.aliases ?? []), ...(workflow.intent.aliases ?? [])]) {
+        this.workflowAliases.delete(normalizeText(alias));
+      }
     }
     return this.plugins.delete(pluginId);
   }
@@ -47,7 +55,7 @@ export class DecisionPluginRegistry {
   }
 
   getWorkflowBySlug(slug: string): DecisionWorkflow | undefined {
-    return this.workflowsBySlug.get(slug);
+    return this.workflowsBySlug.get(slug) ?? this.workflowAliases.get(normalizeText(slug));
   }
 
   listPlugins(): DecisionPlugin[] {
@@ -101,5 +109,6 @@ export class DecisionPluginRegistry {
     this.plugins.clear();
     this.workflows.clear();
     this.workflowsBySlug.clear();
+    this.workflowAliases.clear();
   }
 }

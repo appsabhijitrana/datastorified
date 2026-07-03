@@ -40,7 +40,7 @@ describe("DecisionPluginRegistry", () => {
   });
 
   it.each([
-    ["Should I invest through a SIP or use a fixed deposit?", "sip-vs-fd"],
+    ["Should I invest through a SIP or use a fixed deposit?", "fd-vs-sip"],
     ["Is it better to rent or buy a house?", "rent-vs-buy"],
     ["Should I get an electric vehicle or petrol car?", "ev-vs-petrol"],
     ["Should I accept this new job offer?", "job-switch"],
@@ -58,5 +58,10 @@ describe("DecisionPluginRegistry", () => {
 
   it("routes the homepage acceptance query to the house workflow", () => {
     expect(createStaticPluginRegistry().detectWorkflowFromText("Should I buy a house?")?.slug).toBe("buy-house");
+  });
+
+  it("keeps the legacy SIP vs FD slug working as an alias", () => {
+    const registry = createStaticPluginRegistry();
+    expect(registry.getWorkflowBySlug("sip-vs-fd")?.slug).toBe("fd-vs-sip");
   });
 });
