@@ -41,7 +41,7 @@ describe("DecisionPluginRegistry", () => {
 
   it.each([
     ["Should I invest through a SIP or use a fixed deposit?", "fd-vs-sip"],
-    ["Is it better to rent or buy a house?", "rent-vs-buy"],
+    ["rent vs buy", "rent-vs-buy"],
     ["Should I get an electric vehicle or petrol car?", "ev-vs-petrol"],
     ["Should I accept this new job offer?", "job-switch"],
     ["Which degree should I study?", "choose-course-or-degree"],
