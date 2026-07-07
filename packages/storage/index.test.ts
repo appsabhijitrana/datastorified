@@ -24,6 +24,11 @@ describe("local storage adapter", () => {
     storage.savePreferences({ locale: "en-IN" }); expect(storage.getPreferences()).toEqual({ locale: "en-IN" });
   });
 
+  it("stores decision suggestions locally", () => {
+    storage.addDecisionSuggestion("phone comparison"); storage.addDecisionSuggestion("buy a house"); storage.addDecisionSuggestion("phone comparison");
+    expect(storage.getDecisionSuggestions()).toEqual(["phone comparison", "buy a house"]);
+  });
+
   it("returns fallbacks for malformed stored values", () => {
     localStorage.setItem(storageKeys.recentCalculators, "not-json");
     expect(storage.getRecent("calculators")).toEqual([]);

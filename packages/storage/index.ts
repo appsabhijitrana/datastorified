@@ -1,4 +1,4 @@
-const KEYS = { recentCalculators: "ds.recent.calculators", recentTools: "ds.recent.tools", favoriteCalculators: "ds.favorites.calculators", favoriteTools: "ds.favorites.tools", searches: "ds.search.history", preferences: "ds.preferences", drafts: "ds.drafts" } as const;
+const KEYS = { recentCalculators: "ds.recent.calculators", recentTools: "ds.recent.tools", favoriteCalculators: "ds.favorites.calculators", favoriteTools: "ds.favorites.tools", searches: "ds.search.history", preferences: "ds.preferences", drafts: "ds.drafts", decisionSuggestions: "ds.decision.suggestions" } as const;
 type Surface = "calculators" | "tools";
 const isRecord = (value: unknown): value is Record<string, unknown> => Boolean(value) && typeof value === "object" && !Array.isArray(value);
 const readUnknown = (key: string): unknown => { if (typeof window === "undefined") return undefined; try { return JSON.parse(localStorage.getItem(key) || "null") as unknown; } catch { return undefined; } };
@@ -15,6 +15,8 @@ export const storage = {
   addSearch: (query: string) => pushUnique(KEYS.searches, query, 25), getSearches: () => readList(KEYS.searches),
   getDraft: <T>(slug: string, fallback: T): T => { const drafts = readUnknown(KEYS.drafts); return isRecord(drafts) && Object.hasOwn(drafts, slug) ? drafts[slug] as T : fallback; },
   saveDraft<T>(slug: string, draft: T) { const current = readUnknown(KEYS.drafts); write(KEYS.drafts, { ...(isRecord(current) ? current : {}), [slug]: draft }); },
+  getDecisionSuggestions: () => readList(KEYS.decisionSuggestions),
+  addDecisionSuggestion: (query: string) => pushUnique(KEYS.decisionSuggestions, query, 20),
   getPreferences: () => { const value = readUnknown(KEYS.preferences); return isRecord(value) ? Object.fromEntries(Object.entries(value).filter((entry): entry is [string, string] => typeof entry[1] === "string")) : {}; },
   savePreferences: (value: Record<string, string>) => write(KEYS.preferences, value), clearSearches: () => write(KEYS.searches, []),
 };

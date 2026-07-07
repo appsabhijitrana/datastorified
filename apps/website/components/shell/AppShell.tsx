@@ -20,7 +20,7 @@ type NavItem = {
 
 const mobileNav: NavItem[] = [
   { label: "Home", href: "/", icon: Home },
-  { label: "Explore", href: "/decision", icon: Compass },
+  { label: "Explore", href: "/explore", icon: Compass },
   { label: "Start", href: "/decision", icon: Sparkles },
   { label: "My Decisions", href: "/decision/saved", icon: Layers3 },
   { label: "Profile", href: "/profile", icon: UserRound },
@@ -28,7 +28,7 @@ const mobileNav: NavItem[] = [
 
 const desktopNav: NavItem[] = [
   { label: "Home", href: "/", icon: Home },
-  { label: "Explore", href: "/decision", icon: Compass },
+  { label: "Explore", href: "/explore", icon: Compass },
   { label: "My Decisions", href: "/decision/saved", icon: Layers3 },
   { label: "Insights", href: "/#recent", icon: Sparkles },
   { label: "Tools", href: "https://tools.datastorified.com", icon: Wrench },
@@ -41,9 +41,11 @@ export function AppShell({ children }: AppShellProps) {
     ? "home"
     : pathname.startsWith("/decision/saved")
       ? "my-decisions"
-      : pathname.startsWith("/profile")
-        ? "profile"
-        : pathname.startsWith("/decision")
+        : pathname.startsWith("/profile")
+          ? "profile"
+          : pathname.startsWith("/explore")
+            ? "explore"
+          : pathname.startsWith("/decision")
           ? "explore"
           : "";
 
@@ -59,7 +61,7 @@ export function AppShell({ children }: AppShellProps) {
             {desktopNav.map((item) => {
               const Icon = item.icon;
               const isExternal = item.href.startsWith("http");
-              const isActive = !isExternal && ((item.href === "/" && active === "home") || (item.href === "/decision" && active === "explore") || (item.href === "/decision/saved" && active === "my-decisions") || (item.href === "/profile" && active === "profile"));
+              const isActive = !isExternal && ((item.href === "/" && active === "home") || (item.href === "/explore" && active === "explore") || (item.href === "/decision/saved" && active === "my-decisions") || (item.href === "/profile" && active === "profile"));
               const content = (
                 <span className={cn("flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition", isActive ? "bg-primary text-white shadow-glow" : "text-muted hover:bg-soft hover:text-ink")}>
                   <Icon size={18} />
