@@ -6,10 +6,21 @@ import { authClient, GoogleSignInButton, LegalAcceptanceGate } from "@datastorif
 import { ProfileCompletenessCard } from "./ProfileCompletenessCard";
 import { ImproveAnalysisCTA } from "./ImproveAnalysisCTA";
 import { getProfileAnalysis } from "@datastorified/profile";
+import { ConfidenceImprovementNudge, DecisionConfidenceCard, getDecisionConfidence } from "../decision/DecisionConfidence";
 
 export function ProfilePageContent() {
   const { data: session } = authClient.useSession();
   const analysis = useMemo(() => getProfileAnalysis(session?.user ? { source: "cloud" } : undefined), [session?.user]);
+  const confidence = useMemo(
+    () =>
+      getDecisionConfidence({
+        answerProgress: { answered: session?.user ? 4 : 1, total: 8, requiredAnswered: session?.user ? 4 : 1, requiredTotal: 5 },
+        profileAnalysis: analysis,
+        decisionSignals: session?.user ? 3 : 1,
+        assumptions: [],
+      }),
+    [analysis, session?.user],
+  );
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
@@ -40,6 +51,16 @@ export function ProfilePageContent() {
         <div className="mt-8 grid gap-4 lg:grid-cols-[1.2fr_.8fr]">
           <ProfileCompletenessCard analysis={analysis} />
           <ImproveAnalysisCTA />
+        </div>
+        <div className="mt-4 grid gap-4 lg:grid-cols-[1.2fr_.8fr]">
+          <DecisionConfidenceCard confidence={confidence} />
+          <ConfidenceImprovementNudge
+            title="Add your city to improve home and cost-of-living decisions."
+            description="This helps location-sensitive decisions stay more accurate. You can skip and continue anonymously."
+            actionLabel="Add city"
+            onAction={() => window.location.assign("/profile")}
+            onSkip={() => window.location.assign("/decision")}
+          />
         </div>
       </LegalAcceptanceGate>
     </main>

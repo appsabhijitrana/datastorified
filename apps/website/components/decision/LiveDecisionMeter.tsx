@@ -6,6 +6,7 @@ import { Card } from "@datastorified/ui";
 import { ProgressBar } from "@datastorified/ui/design-system";
 import type { DecisionOrchestratorPreview } from "@datastorified/decision-os/core/orchestrator";
 import type { ProfileAnalysis } from "@datastorified/profile";
+import { getDecisionConfidence, MissingSignalList } from "./DecisionConfidence";
 
 type LiveDecisionMeterProps = {
   preview: DecisionOrchestratorPreview;
@@ -23,6 +24,12 @@ export function LiveDecisionMeter({ preview, answerProgress, profileAnalysis, co
   const leadingScore = enoughAnswers && leading ? Math.round(leading.totalScore) : null;
   const factorCount = preview.rankedScores[0]?.factors.length ?? 0;
   const profileHint = profileAnalysis?.nextBestField?.label;
+  const confidenceState = getDecisionConfidence({
+    answerProgress,
+    profileAnalysis,
+    decisionSignals: preview.report.ruleEvaluations.filter(({ matched }) => matched).length,
+    assumptions: [],
+  });
 
   return (
     <Card className="overflow-hidden rounded-[1.75rem] border-primary/15 bg-gradient-to-br from-primary/[.06] to-accent/[.08] p-4 shadow-soft">
@@ -61,6 +68,19 @@ export function LiveDecisionMeter({ preview, answerProgress, profileAnalysis, co
             value={profileHint ? `Improve with ${profileHint}` : "Optional profile hint"}
             detail={profileHint ? profileAnalysis?.description ?? "Add one detail to improve future previews." : "Add one profile detail to improve future previews."}
           />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-2xl border border-primary/10 bg-primary/[.04] p-4">
+              <p className="text-xs font-bold uppercase tracking-[.14em] text-primary">Decision confidence</p>
+              <p className="mt-2 text-2xl font-bold">{confidenceState.score}%</p>
+              <p className="mt-1 text-sm leading-6 text-muted">Visible confidence, not a final result.</p>
+            </div>
+            <div className="rounded-2xl border border-border bg-white/85 p-4">
+              <p className="text-xs font-bold uppercase tracking-[.14em] text-muted">Answer progress</p>
+              <p className="mt-2 text-2xl font-bold">{answerProgress.answered}/{answerProgress.total}</p>
+              <p className="mt-1 text-sm leading-6 text-muted">Confidence improves as more required answers are completed.</p>
+            </div>
+          </div>
+          <MissingSignalList signals={confidenceState.missingSignals} />
           {profileAnalysis?.nextBestField && (
             <div className="rounded-2xl border border-primary/10 bg-primary/[.04] p-4 text-sm leading-6 text-muted">
               <p className="font-semibold text-ink">Optional profile improvement hint</p>

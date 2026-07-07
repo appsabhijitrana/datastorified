@@ -25,6 +25,7 @@ import { DecisionRetentionLoop } from "./DecisionRetentionLoop";
 import { PersonalizedRecommendations } from "../personalization/PersonalizedRecommendations";
 import { ImproveAnalysisCTA } from "../profile/ImproveAnalysisCTA";
 import { ProfileCompletenessCard } from "../profile/ProfileCompletenessCard";
+import { DecisionConfidenceCard, MissingSignalList, getDecisionConfidence } from "./DecisionConfidence";
 
 export function DecisionResultPage({ id }: { id: string }) {
   const router = useRouter();
@@ -67,6 +68,18 @@ export function DecisionResultPage({ id }: { id: string }) {
   const profileRecommendation = useMemo(
     () => (report?.recommendation ? buildProfileAwareRecommendation(report.recommendation, profile) : undefined),
     [profile, report?.recommendation],
+  );
+  const confidence = useMemo(
+    () =>
+      report
+        ? getDecisionConfidence({
+            answerProgress: { answered: Object.keys(item?.answers ?? {}).length, total: workflow?.questions.length ?? 0, requiredAnswered: Object.keys(item?.answers ?? {}).length, requiredTotal: workflow?.questions.length ?? 0 },
+            profileAnalysis,
+            decisionSignals: report.score.factors.length,
+            assumptions: [],
+          })
+        : undefined,
+    [item?.answers, profileAnalysis, report, workflow?.questions.length],
   );
 
   if (item === undefined) {
@@ -175,6 +188,12 @@ export function DecisionResultPage({ id }: { id: string }) {
           <DecisionRecommendation recommendation={profileRecommendation.recommendation} analysis={profileRecommendation.analysis} note={profileRecommendation.analysisNote} />
         )}
       </div>
+      {confidence && (
+        <section className="mt-8 grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)] print:hidden">
+          <DecisionConfidenceCard confidence={confidence} title="Result confidence" subtitle="This is the confidence of the completed decision, not a guarantee." />
+          <MissingSignalList signals={confidence.missingSignals} />
+        </section>
+      )}
       <section className="mt-8 grid min-w-0 gap-6 lg:grid-cols-[360px_minmax(0,1fr)] print:hidden">
         <ProfileCompletenessCard analysis={profileAnalysis} />
         <ImproveAnalysisCTA />

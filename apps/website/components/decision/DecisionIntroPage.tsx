@@ -6,6 +6,7 @@ import { ArrowRight, Bookmark, CheckCircle2, ShieldAlert, Sparkles } from "lucid
 import { authClient } from "@datastorified/auth";
 import { Badge, Button, Card } from "@datastorified/ui";
 import { DecisionTimelineMini } from "./TrustIndicators";
+import { ConfidenceImprovementNudge, getDecisionConfidence } from "./DecisionConfidence";
 export type DecisionIntroWorkflow = {
   pluginId: string;
   slug: string;
@@ -25,6 +26,12 @@ export function DecisionIntroPage({ workflow }: { workflow: DecisionIntroWorkflo
   const { data: session } = authClient.useSession();
   const disclaimer = getDisclaimerCopy(workflow.disclaimerType);
   const startHref = `/decision/${workflow.pluginId}/${workflow.slug}/start`;
+  const confidence = getDecisionConfidence({
+    answerProgress: { answered: 0, total: workflow.questionCount, requiredAnswered: 0, requiredTotal: workflow.questionCount },
+    profileAnalysis: session?.user ? { label: "Decision confidence", description: "Your saved profile can improve previews.", percentage: 0 } : undefined,
+    decisionSignals: Math.min(3, Math.ceil(workflow.factorCount / 4)),
+    assumptions: workflow.disclaimerType === "finance" ? ["Rates and inflation may change"] : [],
+  });
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-10">
@@ -104,6 +111,14 @@ export function DecisionIntroPage({ workflow }: { workflow: DecisionIntroWorkflo
           </Card>
         )}
 
+        <ConfidenceImprovementNudge
+          title={workflow.disclaimerType === "finance" ? "Add your risk comfort to improve money decision confidence." : workflow.disclaimerType === "health" ? "Add one detail to improve health decision confidence." : "Add one detail to improve future decision confidence."}
+          description={session?.user ? "This stays optional. We only use it to sharpen the preview confidence, not to force onboarding." : "You can keep going anonymously and skip this anytime."}
+          actionLabel="Add one detail"
+          onAction={() => router.push("/profile")}
+          onSkip={() => router.push(startHref)}
+        />
+
         <Card className="border-primary/15 bg-primary/[.04] p-5 sm:p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
@@ -124,6 +139,12 @@ export function DecisionIntroPage({ workflow }: { workflow: DecisionIntroWorkflo
             { label: "Draft saved" },
           ]}
         />
+
+        <Card className="p-5">
+          <p className="text-xs font-bold uppercase tracking-[.14em] text-primary">Decision confidence</p>
+          <p className="mt-2 text-3xl font-bold">{confidence.score}%</p>
+          <p className="mt-2 text-sm leading-6 text-muted">Preview confidence grows as answers and optional profile details improve.</p>
+        </Card>
       </div>
     </main>
   );
