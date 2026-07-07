@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@datastorified/auth/server";
 import { prisma } from "@datastorified/database";
 import { decisionPluginRegistry } from "@datastorified/decision-os";
+import { requiresLegalAcceptance } from "@datastorified/legal";
 import { getProfileCompleteness } from "@datastorified/profile";
 import {
   mergeByFingerprintOrLocalId,
@@ -17,6 +18,11 @@ async function requireSession(request: NextRequest) {
   const session = await getAuthSession(request.headers);
   if (!session?.user?.id) return undefined;
   return session;
+}
+
+async function ensureAcceptance(userId: string) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  return !requiresLegalAcceptance(user);
 }
 
 function toDate(value: string | Date | null | undefined): Date {
@@ -107,6 +113,9 @@ export async function POST(request: NextRequest) {
   const session = await requireSession(request);
   if (!session) {
     return NextResponse.json({ error: "Please sign in to sync decisions." }, { status: 401 });
+  }
+  if (!(await ensureAcceptance(session.user.id))) {
+    return NextResponse.json({ error: "Legal acceptance required." }, { status: 403 });
   }
 
   const body = (await request.json().catch(() => ({}))) as Partial<SyncPayload>;

@@ -155,8 +155,9 @@ export function DecisionScenarioSimulator({ workflow, answers, baseReport }: { w
             <button
               key={scenario.id}
               type="button"
+              aria-pressed={activePreset === scenario.id}
               onClick={() => applyScenario(scenario)}
-              className={`inline-flex min-h-10 items-center gap-2 rounded-full border px-4 text-sm font-semibold transition ${activePreset === scenario.id ? "border-primary bg-primary/10 text-primary shadow-sm" : "border-border bg-white text-muted hover:border-primary/30 hover:text-primary"}`}
+              className={`inline-flex min-h-10 items-center gap-2 rounded-full border px-4 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 ${activePreset === scenario.id ? "border-primary bg-primary/10 text-primary shadow-sm" : "border-border bg-white text-muted hover:border-primary/30 hover:text-primary"}`}
             >
               {scenario.label}
               {activePreset === scenario.id && <Sparkles size={14} />}

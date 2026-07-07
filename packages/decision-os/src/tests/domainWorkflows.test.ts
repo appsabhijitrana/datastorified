@@ -6,7 +6,7 @@ import { decisionPluginRegistry } from "../plugins/staticPlugins";
 import type { DecisionQuestionType, DecisionWorkflow } from "../types";
 
 const workflowSlugs = [
-  "sip-vs-fd",
+  "fd-vs-sip",
   "emergency-fund",
   "loan-prepayment",
   "buy-house",

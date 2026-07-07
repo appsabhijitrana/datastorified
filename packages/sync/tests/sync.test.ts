@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createFingerprint, mergeByFingerprintOrLocalId } from "../src/merge";
 import { resolveSyncConflict } from "../src/conflict";
+import { syncLocalToCloud } from "../src/syncLocalToCloud";
 
 describe("sync merge", () => {
   it("keeps the latest record when fingerprint and local id collide", () => {
@@ -34,5 +35,15 @@ describe("sync conflict resolution", () => {
   it("treats equal timestamps as same-time", () => {
     const record = { updatedAt: "2026-07-02T10:00:00.000Z", value: "same" };
     expect(resolveSyncConflict(record, record).reason).toBe("same-time");
+  });
+});
+
+describe("sync local to cloud", () => {
+  it("surfaces a friendly error when the cloud sync fails", async () => {
+    await expect(
+      syncLocalToCloud({
+        fetcher: async () => new Response(JSON.stringify({ error: "nope" }), { status: 500, headers: { "Content-Type": "application/json" } }),
+      }),
+    ).rejects.toThrow(/local copy is safe/i);
   });
 });

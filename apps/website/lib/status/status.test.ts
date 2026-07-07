@@ -42,6 +42,8 @@ describe("StatusService", () => {
   });
 
   it("returns a healthy status when no outage flags are enabled", () => {
+    vi.stubEnv("NEXT_PUBLIC_MAINTENANCE_ENABLED", "false");
+    vi.stubEnv("NEXT_PUBLIC_OUTAGE_ENABLED", "false");
     expect(StatusService.getHealth().status).toBe("operational");
     expect(StatusService.getHealth().message).toBeUndefined();
     expect(StatusService.getHealth().version).toBeTruthy();

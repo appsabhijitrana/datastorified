@@ -10,7 +10,7 @@ function fallbackProfileAnalysis(context: PersonalizationContext) {
 function genericWorkflows() {
   return [
     decisionPluginRegistry.getWorkflowBySlug("emergency-fund"),
-    decisionPluginRegistry.getWorkflowBySlug("sip-vs-fd"),
+    decisionPluginRegistry.getWorkflowBySlug("fd-vs-sip"),
     decisionPluginRegistry.getWorkflowBySlug("rent-vs-buy"),
     decisionPluginRegistry.getWorkflowBySlug("loan-prepayment"),
     decisionPluginRegistry.getWorkflowBySlug("job-switch"),
@@ -39,4 +39,3 @@ export function buildPersonalizedRecommendations(context: PersonalizationContext
     topWorkflow: withFallback[0],
   };
 }
-

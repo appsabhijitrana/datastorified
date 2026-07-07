@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const getAuthSession = vi.fn();
 const profileFindUnique = vi.fn();
 const profileUpsert = vi.fn();
+const userFindUnique = vi.fn();
+const userUpdate = vi.fn();
 const decisionFindMany = vi.fn();
 const decisionFindFirst = vi.fn();
 const decisionUpsert = vi.fn();
@@ -29,6 +31,7 @@ vi.mock("@datastorified/auth", () => ({
 
 vi.mock("@datastorified/database", () => ({
   prisma: {
+    user: { findUnique: userFindUnique, update: userUpdate },
     profile: { findUnique: profileFindUnique, upsert: profileUpsert },
     decision: { findMany: decisionFindMany, findFirst: decisionFindFirst, upsert: decisionUpsert, create: decisionCreate, update: decisionUpdate, deleteMany: decisionDeleteMany },
     historyItem: { findMany: historyFindMany, findFirst: historyItemFindFirst, create: historyItemCreate, update: historyItemUpdate },
@@ -41,6 +44,8 @@ const decisionsRoutePromise = import("../app/api/decisions/route");
 const syncRoutePromise = import("../app/api/sync/route");
 const recommendationsRoutePromise = import("../app/api/recommendations/route");
 const decisionByIdRoutePromise = import("../app/api/decisions/[id]/route");
+const legalAcceptanceRoutePromise = import("../app/api/legal/acceptance/route");
+const legalAcceptanceStatusRoutePromise = import("../app/api/legal/acceptance/status/route");
 
 function jsonRequest(url: string, body?: unknown) {
   return new Request(url, {
@@ -60,6 +65,22 @@ function nextRequest(url: string) {
 beforeEach(() => {
   vi.clearAllMocks();
   getAuthSession.mockResolvedValue(null);
+  userFindUnique.mockResolvedValue({
+    termsAcceptedAt: new Date(),
+    termsVersion: "terms-v1.0",
+    privacyAcceptedAt: new Date(),
+    privacyVersion: "privacy-v1.0",
+    legalAcceptedAt: new Date(),
+    legalAcceptanceVersion: "legal-v1.0",
+  });
+  userUpdate.mockResolvedValue({
+    termsAcceptedAt: new Date(),
+    termsVersion: "terms-v1.0",
+    privacyAcceptedAt: new Date(),
+    privacyVersion: "privacy-v1.0",
+    legalAcceptedAt: new Date(),
+    legalAcceptanceVersion: "legal-v1.0",
+  });
 });
 
 describe("backend foundation route contracts", () => {
@@ -125,5 +146,21 @@ describe("backend foundation route contracts", () => {
     const { GET } = await decisionByIdRoutePromise;
     const response = await GET(jsonRequest("http://localhost/api/decisions/one") as never, { params: Promise.resolve({ id: "one" }) } as never);
     expect(response.status).toBe(401);
+  });
+
+  it("keeps legal status public and acceptance write-protected", async () => {
+    const { GET: getStatus } = await legalAcceptanceStatusRoutePromise;
+    const { POST } = await legalAcceptanceRoutePromise;
+
+    const statusResponse = await getStatus(nextRequest("http://localhost/api/legal/acceptance/status"));
+    expect(statusResponse.status).toBe(200);
+
+    const postResponse = await POST(jsonRequest("http://localhost/api/legal/acceptance", {
+      termsVersion: "terms-v1.0",
+      privacyVersion: "privacy-v1.0",
+      legalAcceptanceVersion: "legal-v1.0",
+      acceptedAt: new Date().toISOString(),
+    }) as never);
+    expect(postResponse.status).toBe(401);
   });
 });

@@ -29,7 +29,7 @@ export function runCalculatorBridge(config: DecisionConfig, answers: DecisionAns
     const annualSaving = calculations.ev.primaryResult.value;
     Object.assign(metrics, { annualKm, annualSaving, paybackYears: annualSaving > 0 ? n(answers, "evPremium") / annualSaving : 99, homeCharging: b(answers, "homeCharging"), holdingYears: n(answers, "holdingYears") });
   }
-  if (config.id === "sip-vs-fd") {
+  if (config.id === "fd-vs-sip") {
     calculations.sip = calculate("sip-calculator", { monthly: n(answers, "investmentAmount"), rate: n(answers, "sipReturn"), years: n(answers, "timeHorizon") });
     calculations.fd = calculate("fd-calculator", { principal: n(answers, "investmentAmount") * 12, rate: n(answers, "fdRate"), years: n(answers, "timeHorizon") });
     Object.assign(metrics, { timeHorizon: n(answers, "timeHorizon"), riskTolerance: n(answers, "riskTolerance"), emergencyMonths: n(answers, "emergencyMonths"), sipRealReturn: n(answers, "sipReturn") - n(answers, "inflationRate"), sipValue: calculations.sip.primaryResult.value, fdValue: calculations.fd.primaryResult.value });

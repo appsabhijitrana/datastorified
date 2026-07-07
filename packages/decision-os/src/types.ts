@@ -9,6 +9,8 @@ export type DecisionAnswer = {
 };
 
 export type DecisionQuestionType =
+  | "single_choice"
+  | "multi_choice"
   | "text"
   | "number"
   | "boolean"
@@ -75,6 +77,101 @@ export type DecisionRisk = {
   mitigation?: string;
 };
 
+export type DecisionRiskLevel = "low" | "medium" | "high";
+
+export type DecisionRiskFactorAssessment = {
+  id: string;
+  label: string;
+  score: number;
+  severity: DecisionRiskLevel;
+  explanation: string;
+  mitigationTips: string[];
+  source: "workflow-rule" | "score-factor" | "missing-input" | "uncertainty";
+  optionId?: string;
+};
+
+export type DecisionRiskAssessment = {
+  optionId: string;
+  riskScore: number;
+  riskLevel: DecisionRiskLevel;
+  riskFactors: DecisionRiskFactorAssessment[];
+  explanation: string;
+  mitigationTips: string[];
+};
+
+export type DecisionRecommendationAlternative = {
+  optionId: string;
+  label: string;
+  totalScore: number;
+  confidence: number;
+  riskScore: number;
+  riskLevel: DecisionRiskLevel;
+  adjustedScore: number;
+  strengths: string[];
+  weaknesses: string[];
+  whyNotWinner: string;
+  tradeOffs: string[];
+};
+
+export type DecisionRecommendationResult = {
+  winnerOptionId: string;
+  summary: string;
+  confidence: number;
+  whyThisWins: string[];
+  tradeOffs: string[];
+  bestFor: string[];
+  avoidIf: string[];
+  alternativeOptions: DecisionRecommendationAlternative[];
+  disclaimerNote: string;
+};
+
+export type DecisionActionPlanPriority = "low" | "medium" | "high";
+
+export type DecisionActionPlanResult = {
+  title: string;
+  summary: string;
+  steps: string[];
+  priority: DecisionActionPlanPriority;
+  estimatedEffort: string;
+  recommendedTimeline: string;
+  followUpQuestions: string[];
+};
+
+export type DecisionSimulationChange = {
+  questionId: string;
+  beforeValue?: DecisionValue;
+  afterValue?: DecisionValue;
+};
+
+export type DecisionSimulationInputChange = {
+  questionId: string;
+  value: DecisionValue;
+};
+
+export type DecisionSimulationSnapshot = {
+  score: number;
+  winnerOptionId?: string;
+  recommendationId?: string;
+  recommendationChanged?: boolean;
+  confidence: number;
+};
+
+export type DecisionSimulationComparison = {
+  changedInputs: DecisionSimulationChange[];
+  beforeScore: number;
+  afterScore: number;
+  scoreDelta: number;
+  beforeWinner?: string;
+  afterWinner?: string;
+  recommendationChanged: boolean;
+  explanation: string;
+};
+
+export type DecisionSimulationResult = DecisionSimulationComparison & {
+  beforeResult: DecisionSimulationSnapshot;
+  afterResult: DecisionSimulationSnapshot;
+};
+
 export type DecisionRule = {
   id: string;
   description: string;
@@ -98,6 +195,55 @@ export type DecisionWeight = {
   label: string;
   weight: number;
   baselineScore?: number;
+};
+
+export type DecisionScoreDirection = "higher_better" | "lower_better";
+
+export type DecisionScoreFactor = {
+  id: string;
+  label: string;
+  weight: number;
+  direction?: DecisionScoreDirection;
+  questionId?: string;
+  min?: number;
+  max?: number;
+  explanation?: string;
+  missingScore?: number;
+  evaluate?: (answers: Readonly<DecisionAnswers>, workflow: Readonly<DecisionWorkflow>, option: Readonly<DecisionScoringOption>) => number | null | undefined;
+};
+
+export type DecisionScoringOption = {
+  id: string;
+  label: string;
+  description?: string;
+  factors: DecisionScoreFactor[];
+};
+
+export type DecisionScoringConfig = {
+  missingAnswerScore?: number;
+  options: DecisionScoringOption[];
+};
+
+export type DecisionScoringFactorBreakdown = {
+  factorId: string;
+  label: string;
+  weight: number;
+  rawScore: number | null;
+  normalizedScore: number;
+  direction: DecisionScoreDirection;
+  explanation?: string;
+  contribution: number;
+  missing: boolean;
+};
+
+export type DecisionOptionScore = {
+  optionId: string;
+  label: string;
+  totalScore: number;
+  confidence: number;
+  factors: DecisionScoringFactorBreakdown[];
+  strengths: string[];
+  weaknesses: string[];
 };
 
 export type DecisionFactorScore = {
@@ -204,6 +350,7 @@ export type DecisionWorkflow = {
   scenarios?: readonly DecisionScenario[];
   scenarioVariables?: readonly DecisionScenarioVariable[];
   scoreBands?: Array<{ min: number; max: number; label: string }>;
+  scoring?: DecisionScoringConfig;
   deriveFacts?: (answers: Readonly<DecisionAnswers>) => DecisionFacts;
 };
 

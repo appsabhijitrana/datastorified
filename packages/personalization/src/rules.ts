@@ -135,7 +135,7 @@ const workflowRules: Array<{ slug: string; rules: WorkflowScoreRule[] }> = [
     ],
   },
   {
-    slug: "sip-vs-fd",
+    slug: "fd-vs-sip",
     rules: [
       {
         id: "wealth-goal",

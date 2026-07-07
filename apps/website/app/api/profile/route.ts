@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@datastorified/auth/server";
 import { prisma } from "@datastorified/database";
+import { requiresLegalAcceptance } from "@datastorified/legal";
 import { decisionProfileSchema, getProfileCompleteness, type DecisionProfile } from "@datastorified/profile";
 
 type ProfileResponse = {
@@ -58,6 +59,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Anonymous profile access requires local storage." }, { status: 401 });
   }
 
+  const user = await prisma.user.findUnique({ where: { id: session.user.id } });
+  if (requiresLegalAcceptance(user)) {
+    return NextResponse.json({ error: "Legal acceptance required." }, { status: 403 });
+  }
+
   const record = await prisma.profile.findUnique({ where: { userId: session.user.id } });
   const profile = toProfile(record);
   return NextResponse.json(buildResponse(profile, "authenticated", record?.updatedAt.toISOString()));
@@ -67,6 +73,11 @@ export async function PATCH(request: NextRequest) {
   const session = await getAuthSession(request.headers);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Anonymous users store profiles locally." }, { status: 401 });
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: session.user.id } });
+  if (requiresLegalAcceptance(user)) {
+    return NextResponse.json({ error: "Legal acceptance required." }, { status: 403 });
   }
 
   const body = await request.json().catch(() => ({}));

@@ -6,7 +6,7 @@ import { DecisionSuggestionCard } from "../components/decision/DecisionSuggestio
 import { DecisionRecent } from "../components/decision/DecisionRecent";
 import { PersonalizedRecommendations } from "../components/personalization/PersonalizedRecommendations";
 
-const popularSlugs = ["buy-house", "rent-vs-buy", "sip-vs-fd", "emergency-fund", "loan-prepayment", "ev-vs-petrol", "buy-car", "job-switch"];
+const popularSlugs = ["buy-house", "rent-vs-buy", "fd-vs-sip", "emergency-fund", "loan-prepayment", "ev-vs-petrol", "buy-car", "job-switch"];
 const popular = popularSlugs.map((slug) => decisionPluginRegistry.getWorkflowBySlug(slug)).filter(Boolean);
 
 export default function Home() {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DECISION_MEMORY_KEYS, LocalDecisionStorage, type StorageLike } from "../storage/localDecisionStorage";
+import { DECISION_MEMORY_KEYS, DECISION_MEMORY_SCHEMA_VERSION, LocalDecisionStorage, type StorageLike } from "../storage/localDecisionStorage";
 import type { DecisionMemoryDraft, StoredDecision } from "../types";
 
 class TestStorage implements StorageLike {
@@ -77,11 +77,20 @@ describe("local decision storage", () => {
     expect(backing.dump().has(DECISION_MEMORY_KEYS.drafts)).toBe(true);
     expect(backing.dump().has(DECISION_MEMORY_KEYS.history)).toBe(true);
     expect(backing.dump().has(DECISION_MEMORY_KEYS.profile)).toBe(true);
+    expect(JSON.parse(backing.dump().get(DECISION_MEMORY_KEYS.recent) ?? "{}")).toMatchObject({ version: DECISION_MEMORY_SCHEMA_VERSION });
     expect(storage.listRecent()).toEqual([decision]);
     expect(storage.listSaved()).toEqual([decision]);
     expect(storage.listHistory()).toEqual([decision]);
     expect(storage.getDraft(decision.workflowId)).toMatchObject({ answers: decision.answers, currentStep: 3 });
     expect(storage.getProfile()).toMatchObject({ lastOpenedWorkflow: { workflowId: decision.workflowId, slug: "workspace-choice" } });
+  });
+
+  it("safely ignores malformed stored JSON", () => {
+    const backing = new TestStorage();
+    backing.setItem(DECISION_MEMORY_KEYS.recent, "{bad json");
+    const storage = new LocalDecisionStorage(backing);
+    expect(storage.listRecent()).toEqual([]);
+    expect(storage.listDrafts()).toEqual([]);
   });
 
   it("keeps recent decisions limited to 20, saved decisions limited to 50, and drafts limited to 10", () => {

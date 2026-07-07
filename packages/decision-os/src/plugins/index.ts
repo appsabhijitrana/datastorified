@@ -1,5 +1,6 @@
 export * from "./pluginTypes";
 export * from "./pluginRegistry";
+export * from "./workflowRegistry";
 export * from "./staticPlugins";
 export { financePlugin } from "./finance";
 export { propertyPlugin } from "./property";
