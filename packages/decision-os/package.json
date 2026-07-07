@@ -23,6 +23,7 @@
     "./plugins/shopping": "./src/plugins/shopping/index.ts",
     "./plugins/travel": "./src/plugins/travel/index.ts",
     "./plugins/business": "./src/plugins/business/index.ts",
+    "./discovery/decisionRegistry": "./src/discovery/decisionRegistry.ts",
     "./storage": "./src/storage/localDecisionStorage.ts"
   },
   "scripts": {
