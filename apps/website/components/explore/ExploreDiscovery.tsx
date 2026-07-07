@@ -17,6 +17,7 @@ import {
 import { Badge, Button, Card, Chip, PageHeader, SectionHeader } from "@datastorified/ui/design-system";
 import { storage } from "@datastorified/storage";
 import { DecisionSearch } from "../decision/DecisionSearch";
+import { RecommendedDecisionRail } from "../recommendations/RecommendationFeed";
 
 const curatedTrending = ["EV vs Petrol", "Should I buy a house?", "Should I switch jobs?", "FD vs SIP", "Rent vs Buy"];
 const quickQueries = ["Emergency Fund", "Term Insurance", "Phone Comparison", "Job Switch"];
@@ -65,6 +66,8 @@ export function ExploreDiscovery() {
       <RailSection title="Trending now" eyebrow="Discovery" items={getTrendingDecisions().slice(0, 6)} />
       <RailSection title="Quick 2-minute decisions" eyebrow="Discovery" items={liveDecisions.filter((decision) => decision.isQuickDecision).slice(0, 6)} />
       <RailSection title="Popular comparisons" eyebrow="Discovery" items={getPopularDecisions().slice(0, 6)} />
+
+      <RecommendedDecisionRail onProfileNudge={() => window.location.assign("/profile")} />
 
       <section className="space-y-4">
         <SectionHeader eyebrow="Categories" title="Categories" description="Start with a large category tile when you are not sure what to search." />

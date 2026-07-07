@@ -14,6 +14,7 @@ import { DecisionSearch } from "../decision/DecisionSearch";
 import { DecisionAccuracyBadge } from "../decision/DecisionAccuracyBadge";
 import { HybridDecisionRepository } from "@datastorified/decision-repository";
 import { decisionRouteFromText } from "../../lib/decision-routing";
+import { RecommendedDecisionRail } from "../recommendations/RecommendationFeed";
 
 const quickChips = [
   "FD vs SIP",
@@ -105,6 +106,8 @@ export function DecisionHubHome() {
           </Card>
         )}
       </section>
+
+      <RecommendedDecisionRail drafts={drafts} recentDecisions={recent} onProfileNudge={() => router.push("/profile")} />
 
       <section className="space-y-4">
         <SectionHeader eyebrow="Popular decisions" title="Popular decisions" description="Fast, high-intent decisions people open most often." />
