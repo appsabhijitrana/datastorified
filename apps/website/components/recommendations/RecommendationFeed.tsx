@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Clock3, Sparkles } from "lucide-react";
 import { authClient } from "@datastorified/auth";
+import { trackDiscoveryEvent } from "@datastorified/analytics";
 import {
   getDecisionRoute,
   getLiveDecisions,
@@ -154,7 +155,25 @@ export function RecommendedDecisionRail({
                 <span>{item.source === "quick" ? "Quick decision under 2 minutes" : item.source === "trending" ? "Popular with users comparing investments" : "Because you explored Money decisions"}</span>
               </div>
               <div className="mt-auto pt-5">
-                <Link href={getDecisionRoute(item.decision.slug) ?? "/decision"}>
+                <Link
+                  href={getDecisionRoute(item.decision.slug) ?? "/decision"}
+                  onClick={() => {
+                    trackDiscoveryEvent("recommendation_clicked", {
+                      decision_slug: item.decision.slug,
+                      category: item.decision.category,
+                      source_section: "recommendation_feed",
+                      is_logged_in: Boolean(session?.user),
+                      device_type: typeof window === "undefined" ? "unknown" : window.innerWidth < 768 ? "mobile" : "desktop",
+                    });
+                    trackDiscoveryEvent("decision_started", {
+                      decision_slug: item.decision.slug,
+                      category: item.decision.category,
+                      source_section: "recommendation_feed",
+                      is_logged_in: Boolean(session?.user),
+                      device_type: typeof window === "undefined" ? "unknown" : window.innerWidth < 768 ? "mobile" : "desktop",
+                    });
+                  }}
+                >
                   <Button variant="secondary">Start <ArrowRight size={16} /></Button>
                 </Link>
               </div>

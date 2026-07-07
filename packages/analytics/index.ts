@@ -10,6 +10,26 @@ export function trackEvent(name: string, payload: AnalyticsPayload = {}) {
   try { browser.gtag?.("event", name, payload); } catch { /* Analytics must never interrupt product use. */ }
   window.dispatchEvent(new CustomEvent("datastorified:analytics", { detail: { name, payload } }));
 }
+export const trackDiscoveryEvent = (
+  eventName:
+    | "decision_search_opened"
+    | "decision_search_submitted"
+    | "decision_search_result_clicked"
+    | "decision_card_clicked"
+    | "category_clicked"
+    | "decision_started"
+    | "decision_suggested"
+    | "related_decision_clicked"
+    | "recommendation_clicked",
+  metadata: {
+    decision_slug?: string;
+    category?: string;
+    source_section?: string;
+    search_result_count?: number;
+    is_logged_in?: boolean;
+    device_type?: string;
+  } = {},
+) => trackEvent(eventName, metadata);
 export const trackToolUsed = (slug: string) => trackEvent("tool_used", { slug });
 export const trackCalculatorUsed = (slug: string) => trackEvent("calculator_used", { slug });
 export const trackSearch = (query: string, surface: string) => trackEvent("search", { query, surface });

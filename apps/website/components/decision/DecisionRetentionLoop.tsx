@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { ArrowRight, Clock3, Sparkles } from "lucide-react";
+import { authClient } from "@datastorified/auth";
+import { trackDiscoveryEvent } from "@datastorified/analytics";
 import {
   getDecisionBySlug,
   getDecisionRoute,
@@ -15,6 +17,8 @@ import {
 import { Badge, Button, Card, SectionHeader } from "@datastorified/ui/design-system";
 
 export function DecisionRetentionLoop({ slug }: { slug: string }) {
+  const { data: session } = authClient.useSession();
+  const deviceType = typeof window === "undefined" ? "unknown" : window.innerWidth < 768 ? "mobile" : "desktop";
   const current = getDecisionBySlug(slug);
   const related = getRelatedDecisions(slug).slice(0, 4);
   const comparisons = pickPeopleAlsoCompare(current, slug);
@@ -36,7 +40,7 @@ export function DecisionRetentionLoop({ slug }: { slug: string }) {
         </div>
       </div>
 
-      <RetentionRail title="Related to this decision" eyebrow="Retention" items={related.length ? related : fallbackByCategory(current?.category, slug)} />
+      <RetentionRail title="Related to this decision" eyebrow="Retention" items={related.length ? related : fallbackByCategory(current?.category, slug)} isLoggedIn={Boolean(session?.user)} deviceType={deviceType} />
       <RetentionRail title="People also compare" eyebrow="Retention" items={comparisons} />
       <RetentionRail title="Quick next decisions" eyebrow="Retention" items={quick} />
       <RetentionRail title="Trending now" eyebrow="Retention" items={trending} />
@@ -44,7 +48,7 @@ export function DecisionRetentionLoop({ slug }: { slug: string }) {
   );
 }
 
-function RetentionRail({ title, eyebrow, items }: { title: string; eyebrow: string; items: DiscoveryDecision[] }) {
+function RetentionRail({ title, eyebrow, items, isLoggedIn, deviceType }: { title: string; eyebrow: string; items: DiscoveryDecision[]; isLoggedIn?: boolean; deviceType?: string }) {
   if (!items.length) return null;
   return (
     <section className="space-y-4">
@@ -68,7 +72,25 @@ function RetentionRail({ title, eyebrow, items }: { title: string; eyebrow: stri
               </div>
               <div className="mt-auto">
                 {href ? (
-                  <Link href={href}>
+                  <Link
+                    href={href}
+                    onClick={() => {
+                      trackDiscoveryEvent("related_decision_clicked", {
+                        decision_slug: decision.slug,
+                        category: decision.category,
+                        source_section: title,
+                        is_logged_in: Boolean(isLoggedIn),
+                        device_type: deviceType ?? "unknown",
+                      });
+                      trackDiscoveryEvent("decision_started", {
+                        decision_slug: decision.slug,
+                        category: decision.category,
+                        source_section: title,
+                        is_logged_in: Boolean(isLoggedIn),
+                        device_type: deviceType ?? "unknown",
+                      });
+                    }}
+                  >
                     <Button variant="secondary">Start <ArrowRight size={16} /></Button>
                   </Link>
                 ) : (

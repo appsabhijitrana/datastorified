@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight, Clock3 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { authClient, GoogleSignInButton } from "@datastorified/auth";
+import { trackDiscoveryEvent } from "@datastorified/analytics";
 import { Badge, Button, Card, Chip, EmptyState, PageHeader, ProgressBar, ProfileNudgeCard, ScoreRing, SectionHeader, StatusBadge } from "@datastorified/ui/design-system";
 import { decisionPluginRegistry, getDecisionRoute, getLiveDecisions, getPopularDecisions, type DecisionMemoryDraft, type StoredDecision } from "@datastorified/decision-os";
 import { DecisionOrchestrator } from "@datastorified/decision-os/core/orchestrator";
@@ -72,11 +73,16 @@ export function DecisionHubHome() {
           title="What decision are you trying to make today?"
           description="Search a decision, pick a quick chip, or jump back into something you already started."
         />
-        <DecisionSearch large placeholder="Search any decision…" ariaLabel="Search any decision…" />
+        <DecisionSearch large placeholder="Search any decision…" ariaLabel="Search any decision…" sourceSection="home_search" />
         <div className="flex gap-2 overflow-x-auto pb-1">
           {quickChips.map((chip) => (
             <Chip key={chip} className="whitespace-nowrap" onClick={() => {
               const route = decisionRouteFromText(chip);
+              trackDiscoveryEvent("decision_card_clicked", {
+                source_section: "home_quick_chip",
+                is_logged_in: Boolean(session?.user),
+                device_type: typeof window === "undefined" ? "unknown" : window.innerWidth < 768 ? "mobile" : "desktop",
+              });
               if (route) router.push(route);
             }}>{chip}</Chip>
           ))}
@@ -128,7 +134,25 @@ export function DecisionHubHome() {
                 </div>
                 <div className="mt-4 flex items-center justify-between gap-3">
                   <span className="text-sm font-semibold text-muted">Category: {decision.category}</span>
-                  <Link href={route}>
+                  <Link
+                    href={route}
+                    onClick={() => {
+                      trackDiscoveryEvent("decision_card_clicked", {
+                        decision_slug: decision.slug,
+                        category: decision.category,
+                        source_section: "home_popular",
+                        is_logged_in: Boolean(session?.user),
+                        device_type: typeof window === "undefined" ? "unknown" : window.innerWidth < 768 ? "mobile" : "desktop",
+                      });
+                      trackDiscoveryEvent("decision_started", {
+                        decision_slug: decision.slug,
+                        category: decision.category,
+                        source_section: "home_popular",
+                        is_logged_in: Boolean(session?.user),
+                        device_type: typeof window === "undefined" ? "unknown" : window.innerWidth < 768 ? "mobile" : "desktop",
+                      });
+                    }}
+                  >
                     <Button variant="secondary">Start <ArrowRight size={16} /></Button>
                   </Link>
                 </div>

@@ -18,6 +18,7 @@ import { Badge, Button, Card, Chip, PageHeader, SectionHeader } from "@datastori
 import { storage } from "@datastorified/storage";
 import { DecisionSearch } from "../decision/DecisionSearch";
 import { RecommendedDecisionRail } from "../recommendations/RecommendationFeed";
+import { trackDiscoveryEvent } from "@datastorified/analytics";
 
 const curatedTrending = ["EV vs Petrol", "Should I buy a house?", "Should I switch jobs?", "FD vs SIP", "Rent vs Buy"];
 const quickQueries = ["Emergency Fund", "Term Insurance", "Phone Comparison", "Job Switch"];
@@ -52,11 +53,22 @@ export function ExploreDiscovery() {
           description="Browse the decision library like a discovery feed and jump into the right workflow faster."
         />
         <div className="sticky top-2 z-10 -mx-4 px-4 sm:static sm:mx-0 sm:px-0">
-          <DecisionSearch placeholder="Search any decision…" />
+          <DecisionSearch placeholder="Search any decision…" sourceSection="explore_search" />
         </div>
         <div className="flex gap-2 overflow-x-auto pb-1">
           {categories.map((category) => (
-            <Chip key={category.id} onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="whitespace-nowrap">
+            <Chip
+              key={category.id}
+              onClick={() => {
+                trackDiscoveryEvent("category_clicked", {
+                  category: category.label,
+                  source_section: "explore_category_chip",
+                  device_type: typeof window === "undefined" ? "unknown" : window.innerWidth < 768 ? "mobile" : "desktop",
+                });
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className="whitespace-nowrap"
+            >
               {category.label}
             </Chip>
           ))}
@@ -89,7 +101,7 @@ export function ExploreDiscovery() {
         <SectionHeader eyebrow="Recently added" title="Recently added" description="Freshly surfaced decisions from the registry." />
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {liveDecisions.slice(-6).map((decision) => (
-            <DecisionFeedCard key={decision.id} decision={decision} />
+            <DecisionFeedCard key={decision.id} decision={decision} sourceSection="recently_added" />
           ))}
         </div>
       </section>
@@ -121,13 +133,13 @@ function RailSection({ title, eyebrow, items }: { title: string; eyebrow: string
     <section className="space-y-4">
       <SectionHeader eyebrow={eyebrow} title={title} description="Fast, swipeable cards on mobile and a wider grid on desktop." />
       <div className="flex gap-4 overflow-x-auto pb-1 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:overflow-visible">
-        {items.map((decision) => <DecisionFeedCard key={decision.id} decision={decision} />)}
+        {items.map((decision) => <DecisionFeedCard key={decision.id} decision={decision} sourceSection={title.toLowerCase().replace(/\s+/g, "_")} />)}
       </div>
     </section>
   );
 }
 
-function DecisionFeedCard({ decision }: { decision: DiscoveryDecision }) {
+function DecisionFeedCard({ decision, sourceSection }: { decision: DiscoveryDecision; sourceSection: string }) {
   const href = getDecisionRoute(decision.slug);
   return (
     <Card className="flex min-w-72 flex-1 flex-col gap-4 p-5">
@@ -147,7 +159,23 @@ function DecisionFeedCard({ decision }: { decision: DiscoveryDecision }) {
       <div className="mt-auto flex items-center justify-between gap-3">
         <span className="text-xs font-semibold uppercase tracking-[.14em] text-primary">{decision.shortTitle}</span>
         {href ? (
-          <Link href={href}>
+          <Link
+            href={href}
+            onClick={() => {
+              trackDiscoveryEvent("decision_card_clicked", {
+                decision_slug: decision.slug,
+                category: decision.category,
+                source_section: sourceSection,
+                device_type: typeof window === "undefined" ? "unknown" : window.innerWidth < 768 ? "mobile" : "desktop",
+              });
+              trackDiscoveryEvent("decision_started", {
+                decision_slug: decision.slug,
+                category: decision.category,
+                source_section: sourceSection,
+                device_type: typeof window === "undefined" ? "unknown" : window.innerWidth < 768 ? "mobile" : "desktop",
+              });
+            }}
+          >
             <Button variant="secondary">Start <ArrowRight size={16} /></Button>
           </Link>
         ) : (
@@ -167,7 +195,17 @@ function CategoryTile({ label, description, href }: { label: string; description
       </div>
       <h3 className="mt-4 text-xl font-bold">{label}</h3>
       <p className="mt-2 text-sm leading-6 text-muted">{description}</p>
-      <Link href={href} className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-primary">
+      <Link
+        href={href}
+        className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-primary"
+        onClick={() => {
+          trackDiscoveryEvent("category_clicked", {
+            category: label,
+            source_section: "explore_category_tile",
+            device_type: typeof window === "undefined" ? "unknown" : window.innerWidth < 768 ? "mobile" : "desktop",
+          });
+        }}
+      >
         Explore {label} <ArrowRight size={16} />
       </Link>
     </Card>
@@ -191,7 +229,20 @@ function ComingSoonCard({ decision, onRefresh }: { decision: DiscoveryDecision; 
         <Badge className="border-border bg-soft text-muted">{decision.tags[0] ?? "Decision"}</Badge>
       </div>
       <div className="mt-auto flex flex-wrap gap-2">
-        <Button variant="secondary" disabled>Start</Button>
+        <Button
+          variant="secondary"
+          disabled
+          onClick={() => {
+            trackDiscoveryEvent("decision_suggested", {
+              decision_slug: decision.slug,
+              category: decision.category,
+              source_section: "explore_coming_soon",
+              device_type: typeof window === "undefined" ? "unknown" : window.innerWidth < 768 ? "mobile" : "desktop",
+            });
+          }}
+        >
+          Start
+        </Button>
         <Button variant="ghost" onClick={onRefresh}>
           <BellRing size={16} />
           Notify me

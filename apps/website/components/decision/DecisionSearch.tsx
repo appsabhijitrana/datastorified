@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Clock3, Search, X } from "lucide-react";
+import { authClient } from "@datastorified/auth";
+import { trackDiscoveryEvent } from "@datastorified/analytics";
 import { Badge, Button, Card, Chip, EmptyState, SearchInput } from "@datastorified/ui/design-system";
 import { getDecisionRoute, getPopularDecisions, getTrendingDecisions, searchDecisions, type DiscoveryDecision } from "@datastorified/decision-os";
 import { storage } from "@datastorified/storage";
@@ -11,13 +13,15 @@ import { decisionRouteFromText } from "../../lib/decision-routing";
 
 const trendingQueries = ["FD vs SIP", "Should I buy a house?", "EV vs Petrol", "Change job", "Phone comparison", "Emergency fund", "Term insurance"];
 
-export function DecisionSearch({ large = false, initialValue = "", placeholder = "Search any decision…", ariaLabel = "Search any decision…" }: { large?: boolean; initialValue?: string; placeholder?: string; ariaLabel?: string }) {
+export function DecisionSearch({ large = false, initialValue = "", placeholder = "Search any decision…", ariaLabel = "Search any decision…", sourceSection = "search" }: { large?: boolean; initialValue?: string; placeholder?: string; ariaLabel?: string; sourceSection?: string }) {
   const router = useRouter();
+  const { data: session } = authClient.useSession();
   const [query, setQuery] = useState(initialValue);
   const [isOpen, setIsOpen] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [recentDecisionSuggestions, setRecentDecisionSuggestions] = useState<string[]>([]);
+  const deviceType = typeof window === "undefined" ? "unknown" : window.innerWidth < 768 ? "mobile" : "desktop";
 
   useEffect(() => {
     setIsClient(true);
@@ -32,7 +36,10 @@ export function DecisionSearch({ large = false, initialValue = "", placeholder =
     return [...getTrendingDecisions().slice(0, 3), ...getPopularDecisions().slice(0, 3)].filter((decision, index, items) => items.findIndex((item) => item.id === decision.id) === index).slice(0, 6);
   }, [normalizedQuery, results]);
 
-  const open = () => setIsOpen(true);
+  const open = () => {
+    setIsOpen(true);
+    trackDiscoveryEvent("decision_search_opened", { source_section: sourceSection, is_logged_in: Boolean(session?.user), device_type: deviceType });
+  };
   const close = () => setIsOpen(false);
 
   const runSearch = (value: string) => {
@@ -40,7 +47,9 @@ export function DecisionSearch({ large = false, initialValue = "", placeholder =
     if (!next) return;
     storage.addSearch(next);
     setRecentSearches(storage.getSearches());
-    const route = decisionRouteFromText(next) ?? getDecisionRoute(searchDecisions(next)[0]?.slug ?? "");
+    const searchResults = searchDecisions(next);
+    const route = decisionRouteFromText(next) ?? getDecisionRoute(searchResults[0]?.slug ?? "");
+    trackDiscoveryEvent("decision_search_submitted", { source_section: sourceSection, search_result_count: searchResults.length, is_logged_in: Boolean(session?.user), device_type: deviceType });
     if (route) {
       router.push(route);
       close();
@@ -53,6 +62,7 @@ export function DecisionSearch({ large = false, initialValue = "", placeholder =
     if (!normalizedQuery) return;
     storage.addDecisionSuggestion(normalizedQuery);
     setRecentDecisionSuggestions(storage.getDecisionSuggestions());
+    trackDiscoveryEvent("decision_suggested", { source_section: sourceSection, is_logged_in: Boolean(session?.user), device_type: deviceType });
   };
 
   return (
@@ -106,14 +116,14 @@ export function DecisionSearch({ large = false, initialValue = "", placeholder =
                 <div className="space-y-3">
                   <p className="text-sm font-semibold text-muted">Recent searches</p>
                   <div className="flex flex-wrap gap-2">
-                    {recentSearches.length ? recentSearches.map((item) => <Chip key={item} onClick={() => setQuery(item)}>{item}</Chip>) : <span className="text-sm text-muted">No recent searches yet.</span>}
+                    {recentSearches.length ? recentSearches.map((item) => <Chip key={item} onClick={() => { setQuery(item); runSearch(item); }}>{item}</Chip>) : <span className="text-sm text-muted">No recent searches yet.</span>}
                   </div>
                 </div>
 
                 <div className="space-y-3">
                   <p className="text-sm font-semibold text-muted">Trending searches</p>
                   <div className="flex flex-wrap gap-2">
-                    {trendingQueries.map((item) => <Chip key={item} onClick={() => setQuery(item)}>{item}</Chip>)}
+                    {trendingQueries.map((item) => <Chip key={item} onClick={() => { setQuery(item); runSearch(item); }}>{item}</Chip>)}
                   </div>
                 </div>
 
@@ -121,18 +131,25 @@ export function DecisionSearch({ large = false, initialValue = "", placeholder =
                   <div className="space-y-3">
                     <p className="text-sm font-semibold text-muted">Suggested decisions you saved</p>
                     <div className="flex flex-wrap gap-2">
-                      {recentDecisionSuggestions.map((item) => <Chip key={item} onClick={() => setQuery(item)}>{item}</Chip>)}
+                      {recentDecisionSuggestions.map((item) => <Chip key={item} onClick={() => { setQuery(item); runSearch(item); }}>{item}</Chip>)}
                     </div>
                   </div>
                 )}
 
                 {normalizedQuery ? (
-                  <SearchResults query={query} results={results} onSuggest={handleSuggest} />
+                  <SearchResults
+                    query={query}
+                    results={results}
+                    onSuggest={handleSuggest}
+                    sourceSection={sourceSection}
+                    isLoggedIn={Boolean(session?.user)}
+                    deviceType={deviceType}
+                  />
                 ) : (
                   <div className="space-y-3">
                     <p className="text-sm font-semibold text-muted">Suggested decisions</p>
                     <div className="grid gap-3 sm:grid-cols-2">
-                      {suggestedDecisions.map((decision) => <DecisionSearchCard key={decision.id} decision={decision} />)}
+                      {suggestedDecisions.map((decision) => <DecisionSearchCard key={decision.id} decision={decision} sourceSection={sourceSection} isLoggedIn={Boolean(session?.user)} deviceType={deviceType} />)}
                     </div>
                   </div>
                 )}
@@ -146,7 +163,21 @@ export function DecisionSearch({ large = false, initialValue = "", placeholder =
   );
 }
 
-function SearchResults({ query, results, onSuggest }: { query: string; results: DiscoveryDecision[]; onSuggest: () => void }) {
+function SearchResults({
+  query,
+  results,
+  onSuggest,
+  sourceSection,
+  isLoggedIn,
+  deviceType,
+}: {
+  query: string;
+  results: DiscoveryDecision[];
+  onSuggest: () => void;
+  sourceSection: string;
+  isLoggedIn: boolean;
+  deviceType: string;
+}) {
   if (results.length === 0) {
     return (
       <Card className="border-dashed border-primary/20 bg-soft/40 p-5">
@@ -163,13 +194,13 @@ function SearchResults({ query, results, onSuggest }: { query: string; results: 
     <div className="space-y-3">
       <p className="text-sm font-semibold text-muted">Results for “{query}”</p>
       <div className="grid gap-3 sm:grid-cols-2">
-        {results.map((decision) => <DecisionSearchCard key={decision.id} decision={decision} />)}
+        {results.map((decision) => <DecisionSearchCard key={decision.id} decision={decision} sourceSection={sourceSection} isLoggedIn={isLoggedIn} deviceType={deviceType} />)}
       </div>
     </div>
   );
 }
 
-function DecisionSearchCard({ decision }: { decision: DiscoveryDecision }) {
+function DecisionSearchCard({ decision, sourceSection, isLoggedIn, deviceType }: { decision: DiscoveryDecision; sourceSection: string; isLoggedIn: boolean; deviceType: string }) {
   const href = getDecisionRoute(decision.slug);
   if (!href) {
     return (
@@ -199,7 +230,7 @@ function DecisionSearchCard({ decision }: { decision: DiscoveryDecision }) {
       <p className="text-sm leading-6 text-muted">{decision.description}</p>
       <div className="mt-auto flex items-center justify-between gap-3">
         <span className="text-xs font-semibold uppercase tracking-[.14em] text-primary">{decision.shortTitle}</span>
-        <a href={href} className="inline-flex">
+        <a href={href} className="inline-flex" onClick={() => trackDiscoveryEvent("decision_search_result_clicked", { decision_slug: decision.slug, category: decision.category, source_section: sourceSection, is_logged_in: isLoggedIn, device_type: deviceType })}>
           <Button variant="secondary">Start <ArrowRight size={16} /></Button>
         </a>
       </div>
