@@ -10,6 +10,7 @@ import { getDecisionAdapters } from "@datastorified/decision-os/adapters";
 import { authClient, GoogleSignInButton, LegalAcceptanceGate } from "@datastorified/auth";
 import { HybridDecisionRepository } from "@datastorified/decision-repository";
 import type { DecisionRepositoryDecision } from "@datastorified/decision-repository";
+import { DecisionRetentionLoop } from "./DecisionRetentionLoop";
 
 export function DecisionSavedPage() {
   const router = useRouter();
@@ -183,6 +184,12 @@ export function DecisionSavedPage() {
               </div>
             )}
           </section>
+
+          {lastWorkflow?.slug && (
+            <section className="mt-12">
+              <DecisionRetentionLoop slug={lastWorkflow.slug} />
+            </section>
+          )}
         </LegalAcceptanceGate>
       )}
     </main>

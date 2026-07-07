@@ -21,6 +21,7 @@ import { DecisionReportView } from "./DecisionReportView";
 import { DecisionRiskCard } from "./DecisionRiskCard";
 import { DecisionScenarioSimulator } from "./DecisionScenarioSimulator";
 import { DecisionScoreCard } from "./DecisionScoreCard";
+import { DecisionRetentionLoop } from "./DecisionRetentionLoop";
 import { PersonalizedRecommendations } from "../personalization/PersonalizedRecommendations";
 import { ImproveAnalysisCTA } from "../profile/ImproveAnalysisCTA";
 import { ProfileCompletenessCard } from "../profile/ProfileCompletenessCard";
@@ -195,6 +196,7 @@ export function DecisionResultPage({ id }: { id: string }) {
         <DecisionActionPlan items={report.actionPlan} />
       </section>
       <section className="mt-8 print:hidden"><PersonalizedRecommendations compact showProfile={false} /></section>
+      <section className="mt-8 print:hidden"><DecisionRetentionLoop slug={workflow.slug} /></section>
       <section className="mt-8 print:hidden"><DecisionScenarioSimulator workflow={workflow} answers={item.answers} baseReport={report} /></section>
       <section className="mt-8 print:hidden"><DecisionRelatedTools workflow={workflow} /></section>
       <Card className="mt-8 border-warning/20 bg-warning/[.06] p-5 text-sm leading-6 text-muted print:hidden">
