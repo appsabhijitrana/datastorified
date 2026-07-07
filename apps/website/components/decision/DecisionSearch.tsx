@@ -8,7 +8,7 @@ import { detectIntent, decisionPluginRegistry } from "@datastorified/decision-os
 import { decisionRouteFromText } from "../../lib/decision-routing";
 import { DecisionSuggestionCard } from "./DecisionSuggestionCard";
 
-export function DecisionSearch({ large = false, initialValue = "" }: { large?: boolean; initialValue?: string }) {
+export function DecisionSearch({ large = false, initialValue = "", placeholder = "Should I buy a house?", ariaLabel = "What decision are you trying to make today?" }: { large?: boolean; initialValue?: string; placeholder?: string; ariaLabel?: string }) {
   const router = useRouter();
   const [query, setQuery] = useState(initialValue);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -30,12 +30,12 @@ export function DecisionSearch({ large = false, initialValue = "" }: { large?: b
       <Card className={`flex min-w-0 items-center gap-2 border-primary/10 bg-white/95 p-2 shadow-lift backdrop-blur ${large ? "rounded-[28px] sm:p-3" : "rounded-2xl"}`}>
         <span className="ml-1 grid size-10 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary sm:ml-2"><Search size={20} /></span>
         <input
-          aria-label="What decision are you trying to make today?"
+          aria-label={ariaLabel}
           value={query}
           onChange={(event) => { setQuery(event.target.value); setShowSuggestions(true); }}
           onFocus={() => setShowSuggestions(true)}
           onKeyDown={(event) => event.key === "Enter" && submit()}
-          placeholder="Should I buy a house?"
+          placeholder={placeholder}
           className={`min-w-0 flex-1 bg-transparent px-1 font-medium outline-none placeholder:text-muted/60 ${large ? "min-h-14 text-base sm:text-lg" : "min-h-11"}`}
         />
         <Button onClick={submit} aria-label="Find my decision" className="shrink-0 rounded-2xl px-3 sm:px-5">
