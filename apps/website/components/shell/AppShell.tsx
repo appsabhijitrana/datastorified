@@ -10,6 +10,7 @@ import { cn } from "@datastorified/utils";
 
 type AppShellProps = {
   children: React.ReactNode;
+  showMobileNav?: boolean;
 };
 
 type NavItem = {
@@ -35,7 +36,7 @@ const desktopNav: NavItem[] = [
   { label: "Profile", href: "/profile", icon: UserRound },
 ];
 
-export function AppShell({ children }: AppShellProps) {
+export function AppShell({ children, showMobileNav = true }: AppShellProps) {
   const pathname = usePathname() ?? "/";
   const active = pathname === "/"
     ? "home"
@@ -90,7 +91,7 @@ export function AppShell({ children }: AppShellProps) {
       </div>
 
       <FloatingStartButton />
-      <MobileBottomNav active={active} />
+      {showMobileNav && <MobileBottomNav active={active} />}
     </div>
   );
 }

@@ -1,5 +1,5 @@
-import { ProfilePageContent } from "../../components/profile/ProfilePageContent";
 import { AppShell } from "../../components/shell/AppShell";
+import { ProfilePageContent } from "../../components/profile/ProfilePageContent";
 
 export const metadata = {
   title: "Profile | Decision OS",

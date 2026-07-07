@@ -24,5 +24,5 @@ export default async function DecisionWorkflowPage({ params }: { params: Promise
     { "@context": "https://schema.org", "@type": "WebApplication", name: workflow.title, description: workflow.description, url, applicationCategory: "DecisionSupportApplication", operatingSystem: "Any", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" } },
     breadcrumbSchema([{ name: "DataStorified", url: canonical("datastorified.com") }, { name: "Decision OS", url: canonical("datastorified.com", "/decision") }, { name: workflow.title, url }]),
   ];
-  return <AppShell><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(schemas) }} /><div className="mx-auto max-w-7xl px-0 pt-2 sm:pt-4"><Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Decision OS", href: "/decision" }, { label: workflow.title }]} /></div><DecisionFlow pluginId={plugin} slug={slug} /></AppShell>;
+  return <AppShell showMobileNav={false}><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(schemas) }} /><div className="mx-auto max-w-7xl px-0 pt-2 sm:pt-4"><Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Decision OS", href: "/decision" }, { label: workflow.title }]} /></div><DecisionFlow pluginId={plugin} slug={slug} /></AppShell>;
 }

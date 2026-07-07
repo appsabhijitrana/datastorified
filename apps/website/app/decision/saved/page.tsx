@@ -1,5 +1,5 @@
-import { DecisionSavedPage } from "../../../components/decision/DecisionSavedPage";
 import { AppShell } from "../../../components/shell/AppShell";
+import { DecisionSavedPage } from "../../../components/decision/DecisionSavedPage";
 
 export const metadata = {
   title: "Saved decisions | Decision OS",
