@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight, BellRing, Clock3, Sparkles } from "lucide-react";
 import {
   getAllDecisions,
+  getCategoryRoute,
   getDecisionCategories,
   getDecisionRoute,
   getLiveDecisions,
@@ -17,14 +18,13 @@ import { Badge, Button, Card, Chip, PageHeader, SectionHeader } from "@datastori
 import { storage } from "@datastorified/storage";
 import { DecisionSearch } from "../decision/DecisionSearch";
 
-const categoryLabels = getDecisionCategories().map((category) => category.label);
-
 const curatedTrending = ["EV vs Petrol", "Should I buy a house?", "Should I switch jobs?", "FD vs SIP", "Rent vs Buy"];
 const quickQueries = ["Emergency Fund", "Term Insurance", "Phone Comparison", "Job Switch"];
 
 export function ExploreDiscovery() {
   const allDecisions = useMemo(() => getAllDecisions(), []);
   const liveDecisions = useMemo(() => getLiveDecisions(), []);
+  const categories = useMemo(() => getDecisionCategories(), []);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [suggestedPriorities, setSuggestedPriorities] = useState<string[]>([]);
 
@@ -35,7 +35,9 @@ export function ExploreDiscovery() {
 
   const recommendedDecisions = useMemo(() => {
     const seeds = [...recentSearches, ...suggestedPriorities, "money", "career", "home"];
-    const picked = seeds.flatMap((query) => searchDecisions(query).slice(0, 2)).filter((decision, index, items) => items.findIndex((item) => item.id === decision.id) === index);
+    const picked = seeds
+      .flatMap((query) => searchDecisions(query).slice(0, 2))
+      .filter((decision, index, items) => items.findIndex((item) => item.id === decision.id) === index);
     return picked.slice(0, 6);
   }, [recentSearches, suggestedPriorities]);
 
@@ -52,9 +54,9 @@ export function ExploreDiscovery() {
           <DecisionSearch placeholder="Search any decision…" />
         </div>
         <div className="flex gap-2 overflow-x-auto pb-1">
-          {categoryLabels.map((category) => (
-            <Chip key={category} onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="whitespace-nowrap">
-              {category}
+          {categories.map((category) => (
+            <Chip key={category.id} onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="whitespace-nowrap">
+              {category.label}
             </Chip>
           ))}
         </div>
@@ -67,18 +69,13 @@ export function ExploreDiscovery() {
       <section className="space-y-4">
         <SectionHeader eyebrow="Categories" title="Categories" description="Start with a large category tile when you are not sure what to search." />
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {getDecisionCategories().map((category) => (
-            <Card key={category.id} className="min-h-36 overflow-hidden p-5">
-              <div className="flex items-start justify-between gap-3">
-                <Badge>{category.label}</Badge>
-                <span className="text-xs font-semibold text-muted">{category.description}</span>
-              </div>
-              <h3 className="mt-4 text-xl font-bold">{category.label}</h3>
-              <p className="mt-2 text-sm leading-6 text-muted">{category.description}</p>
-              <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-primary">
-                Explore {category.label} <ArrowRight size={16} />
-              </button>
-            </Card>
+          {categories.map((category) => (
+            <CategoryTile
+              key={category.id}
+              label={category.label}
+              description={category.description}
+              href={getCategoryRoute(category.id) ?? `/category/${category.id}`}
+            />
           ))}
         </div>
       </section>
@@ -154,6 +151,22 @@ function DecisionFeedCard({ decision }: { decision: DiscoveryDecision }) {
           <Button variant="secondary" disabled>Coming soon</Button>
         )}
       </div>
+    </Card>
+  );
+}
+
+function CategoryTile({ label, description, href }: { label: string; description: string; href: string }) {
+  return (
+    <Card className="min-h-36 overflow-hidden p-5">
+      <div className="flex items-start justify-between gap-3">
+        <Badge>{label}</Badge>
+        <span className="text-xs font-semibold text-muted">{description}</span>
+      </div>
+      <h3 className="mt-4 text-xl font-bold">{label}</h3>
+      <p className="mt-2 text-sm leading-6 text-muted">{description}</p>
+      <Link href={href} className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-primary">
+        Explore {label} <ArrowRight size={16} />
+      </Link>
     </Card>
   );
 }

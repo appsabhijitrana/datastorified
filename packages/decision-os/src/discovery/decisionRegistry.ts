@@ -298,6 +298,11 @@ export function getDecisionCategories(): DecisionCategoryEntry[] {
   return categories;
 }
 
+export function getDecisionCategoryBySlug(slug: string): DecisionCategoryEntry | undefined {
+  const normalized = normalize(slug);
+  return categories.find((category) => normalize(category.id) === normalized || normalize(category.label) === normalized || category.aliases.some((alias) => normalize(alias) === normalized));
+}
+
 export function getAllDecisions(): DiscoveryDecision[] {
   return [...decisions];
 }
@@ -320,7 +325,12 @@ export function getQuickDecisions(): DiscoveryDecision[] {
 
 export function getDecisionsByCategory(category: string): DiscoveryDecision[] {
   const normalizedCategory = normalize(category);
-  return getLiveDecisions().filter((decision) => normalize(decision.category) === normalizedCategory || normalize(decision.subcategory ?? "") === normalizedCategory || normalize(decision.tags.join(" ")).includes(normalizedCategory));
+  const matchedCategory = getDecisionCategoryBySlug(category);
+  const aliases = matchedCategory ? [matchedCategory.label, matchedCategory.id, ...matchedCategory.aliases] : [category];
+  return getLiveDecisions().filter((decision) => {
+    const haystack = normalize([decision.category, decision.subcategory ?? "", decision.tags.join(" "), decision.searchKeywords.join(" "), decision.aliases.join(" ")].join(" "));
+    return aliases.some((item) => haystack.includes(normalize(item))) || haystack.includes(normalizedCategory);
+  });
 }
 
 export function getRelatedDecisions(slug: string): DiscoveryDecision[] {
@@ -372,6 +382,10 @@ export function resolveDecisionRoute(input: string): string | undefined {
   if (exact?.slug) return getDecisionRoute(exact.slug);
   const direct = searchDecisions(input)[0];
   return direct?.slug ? getDecisionRoute(direct.slug) : undefined;
+}
+
+export function getCategoryRoute(slug: string): string | undefined {
+  return getDecisionCategoryBySlug(slug) ? `/category/${slug}` : undefined;
 }
 
 export function getDiscoveryWorkflowCount(): number {
