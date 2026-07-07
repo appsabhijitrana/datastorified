@@ -58,14 +58,35 @@ const loadWorkspaceEnv = () => {
 loadWorkspaceEnv();
 
 const secret = process.env.BETTER_AUTH_SECRET ?? "datastorified-development-secret-key-change-me";
-const baseURL = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
+const normalizeOrigin = (value: string | undefined) => {
+  if (!value) return undefined;
+  try {
+    return new URL(value).origin;
+  } catch {
+    return undefined;
+  }
+};
+const previewOrigin = normalizeOrigin(process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined);
+const configuredOrigin = normalizeOrigin(process.env.NEXT_PUBLIC_SITE_URL) ?? normalizeOrigin(process.env.BETTER_AUTH_URL);
+const baseURL = configuredOrigin ?? previewOrigin ?? "http://localhost:3000";
 const googleClientId = process.env.GOOGLE_CLIENT_ID;
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+const trustedOrigins = [...new Set([
+  baseURL,
+  previewOrigin,
+  normalizeOrigin(process.env.NEXT_PUBLIC_SITE_URL),
+  normalizeOrigin(process.env.BETTER_AUTH_URL),
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  "https://datastorified.com",
+  "https://www.datastorified.com",
+])].filter((origin): origin is string => Boolean(origin));
 
 export const auth = betterAuth({
   baseURL,
   secret,
   database: prismaAdapter(prisma, { provider: "postgresql" }),
+  trustedOrigins,
   socialProviders: googleClientId && googleClientSecret ? {
     google: {
       clientId: googleClientId,
