@@ -4,7 +4,9 @@ import { ArrowRight, Sparkles } from "lucide-react";
 import { Button, Card } from "@datastorified/ui";
 import type { ProfileAnalysis } from "@datastorified/profile";
 
-export function ProfileCompletenessCard({ analysis }: { analysis: ProfileAnalysis }) {
+type ProfileCompletenessAnalysis = Pick<ProfileAnalysis, "label" | "description" | "nextBestField" | "percentage"> & Partial<Pick<ProfileAnalysis, "level">>;
+
+export function ProfileCompletenessCard({ analysis }: { analysis: ProfileCompletenessAnalysis }) {
   const tone = analysis.level === "advanced" ? "text-success" : analysis.level === "better" ? "text-primary" : "text-muted";
   return (
     <Card className="min-w-0 p-5">

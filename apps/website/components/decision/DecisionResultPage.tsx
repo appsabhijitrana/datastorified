@@ -2,30 +2,15 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { BookmarkPlus, Copy, Printer, Share2, Trash2 } from "lucide-react";
-import { Badge, Button, Card } from "@datastorified/ui";
 import { buildDecisionReport, decisionPluginRegistry } from "@datastorified/decision-os";
 import { DecisionOrchestrator, type DecisionOrchestratorRepositoryDecision } from "@datastorified/decision-os/core/orchestrator";
-import { buildProfileAwareRecommendation, getProfileAnalysis, type DecisionProfileEnvelope } from "@datastorified/profile";
+import { getProfileAnalysis, type DecisionProfileEnvelope } from "@datastorified/profile";
 import { getDecisionAdapters } from "@datastorified/decision-os/adapters";
 import { authClient } from "@datastorified/auth";
 import { HybridDecisionRepository } from "@datastorified/decision-repository";
 import type { DecisionRepositoryDecision } from "@datastorified/decision-repository";
-import { DecisionAccuracyBadge } from "./DecisionAccuracyBadge";
-import { DecisionActionPlan } from "./DecisionActionPlan";
-import { DecisionEmptyState } from "./DecisionEmptyState";
-import { DecisionFactorCard } from "./DecisionFactorCard";
-import { DecisionRecommendation } from "./DecisionRecommendation";
-import { DecisionRelatedTools } from "./DecisionRelatedTools";
-import { DecisionReportView } from "./DecisionReportView";
-import { DecisionRiskCard } from "./DecisionRiskCard";
-import { DecisionScenarioSimulator } from "./DecisionScenarioSimulator";
-import { DecisionScoreCard } from "./DecisionScoreCard";
-import { DecisionRetentionLoop } from "./DecisionRetentionLoop";
-import { PersonalizedRecommendations } from "../personalization/PersonalizedRecommendations";
-import { ImproveAnalysisCTA } from "../profile/ImproveAnalysisCTA";
-import { ProfileCompletenessCard } from "../profile/ProfileCompletenessCard";
-import { DecisionConfidenceCard, MissingSignalList, getDecisionConfidence } from "./DecisionConfidence";
+import { ResultRenderer } from "./ResultRenderer";
+import { ResultEmptyState, ResultErrorState } from "./ResultStates";
 
 export function DecisionResultPage({ id }: { id: string }) {
   const router = useRouter();
@@ -38,7 +23,6 @@ export function DecisionResultPage({ id }: { id: string }) {
   const [copied, setCopied] = useState(false);
   const [profile, setProfile] = useState<DecisionProfileEnvelope | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
-  const [actionState, setActionState] = useState<"idle" | "saving" | "deleting" | "error">("idle");
 
   useEffect(() => {
     setItem(undefined);
@@ -65,22 +49,6 @@ export function DecisionResultPage({ id }: { id: string }) {
     [item, workflow],
   );
   const profileAnalysis = useMemo(() => getProfileAnalysis(profile?.profile), [profile]);
-  const profileRecommendation = useMemo(
-    () => (report?.recommendation ? buildProfileAwareRecommendation(report.recommendation, profile) : undefined),
-    [profile, report?.recommendation],
-  );
-  const confidence = useMemo(
-    () =>
-      report
-        ? getDecisionConfidence({
-            answerProgress: { answered: Object.keys(item?.answers ?? {}).length, total: workflow?.questions.length ?? 0, requiredAnswered: Object.keys(item?.answers ?? {}).length, requiredTotal: workflow?.questions.length ?? 0 },
-            profileAnalysis,
-            decisionSignals: report.score.factors.length,
-            assumptions: [],
-          })
-        : undefined,
-    [item?.answers, profileAnalysis, report, workflow?.questions.length],
-  );
 
   if (item === undefined) {
     return (
@@ -93,7 +61,7 @@ export function DecisionResultPage({ id }: { id: string }) {
   if (fetchError) {
     return (
       <main className="px-4 py-24">
-        <DecisionEmptyState
+        <ResultErrorState
           title="Could not load this result"
           description={fetchError}
           actionLabel="Open saved decisions"
@@ -106,7 +74,7 @@ export function DecisionResultPage({ id }: { id: string }) {
   if (!item || !workflow || !report) {
     return (
       <main className="px-4 py-24">
-        <DecisionEmptyState />
+        <ResultEmptyState />
       </main>
     );
   }
@@ -122,7 +90,6 @@ export function DecisionResultPage({ id }: { id: string }) {
     else await copy();
   };
   const saveLocally = async () => {
-    setActionState("saving");
     try {
       await orchestrator.saveDecisionRecord({
         ...item,
@@ -138,93 +105,33 @@ export function DecisionResultPage({ id }: { id: string }) {
         assumptions: item.assumptions,
       } as DecisionOrchestratorRepositoryDecision);
       setSaved(true);
-      setActionState("idle");
     } catch {
-      setActionState("error");
+      // Keep the current result visible; local save may be unavailable.
     }
   };
   const deleteSaved = async () => {
-    setActionState("deleting");
     try {
       await orchestrator.deleteDecision(item.id);
       setSaved(false);
-      setActionState("idle");
     } catch {
-      setActionState("error");
+      // Keep the current result visible; deletion failed locally.
     }
   };
 
   return (
-    <main className="mx-auto max-w-7xl overflow-x-hidden px-4 py-8 sm:px-6 sm:py-12">
-      <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge>{workflow.category ?? workflow.pluginId} result</Badge>
-            <DecisionAccuracyBadge analysis={profileAnalysis} />
-          </div>
-          <h1 className="mt-4 text-balance text-3xl font-bold tracking-[-.035em] sm:text-5xl">{workflow.title}</h1>
-          <p className="mt-2 text-sm text-muted">Created {new Date(item.createdAt).toLocaleString("en-IN")}</p>
-        </div>
-        <div className="flex flex-wrap gap-2 print:hidden">
-          <Button variant="secondary" onClick={copy}><Copy size={16} />{copied ? "Copied" : "Copy summary"}</Button>
-          <Button variant="secondary" onClick={share}><Share2 size={16} />Share</Button>
-          <Button variant="secondary" onClick={() => window.print()}><Printer size={16} />Print</Button>
-        </div>
-      </div>
-      <div className="mt-6 flex flex-wrap gap-2 print:hidden">
-        {saved ? (
-          <Button variant="secondary" onClick={deleteSaved} disabled={actionState === "deleting"}><Trash2 size={16} /> {actionState === "deleting" ? "Removing…" : "Remove saved copy"}</Button>
-        ) : (
-          <Button variant="secondary" onClick={saveLocally} disabled={actionState === "saving"}><BookmarkPlus size={16} /> {actionState === "saving" ? "Saving…" : "Save locally"}</Button>
-        )}
-      </div>
-      {actionState === "error" && (
-        <p className="mt-3 text-sm font-semibold text-danger" role="alert">Could not update saved copy. Please try again.</p>
-      )}
-      <div className="mt-8 hidden print:block"><DecisionReportView report={report} workflow={workflow} /></div>
-      <div className="mt-8 grid min-w-0 gap-6 lg:grid-cols-[360px_minmax(0,1fr)] print:hidden">
-        <DecisionScoreCard score={report.score} />
-        {profileRecommendation && (
-          <DecisionRecommendation recommendation={profileRecommendation.recommendation} analysis={profileRecommendation.analysis} note={profileRecommendation.analysisNote} />
-        )}
-      </div>
-      {confidence && (
-        <section className="mt-8 grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)] print:hidden">
-          <DecisionConfidenceCard confidence={confidence} title="Result confidence" subtitle="This is the confidence of the completed decision, not a guarantee." />
-          <MissingSignalList signals={confidence.missingSignals} />
-        </section>
-      )}
-      <section className="mt-8 grid min-w-0 gap-6 lg:grid-cols-[360px_minmax(0,1fr)] print:hidden">
-        <ProfileCompletenessCard analysis={profileAnalysis} />
-        <ImproveAnalysisCTA />
-      </section>
-      <section className="mt-8 print:hidden">
-        <h2 className="text-2xl font-bold">Why this score</h2>
-        <p className="mt-2 text-sm text-muted">Each factor combines your answers with the workflow’s published rules and weights.</p>
-        <div className="mt-4 grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {report.score.factors.map((factor) => <DecisionFactorCard key={factor.factorId} factor={factor} />)}
-        </div>
-      </section>
-      <section className="mt-8 grid min-w-0 gap-6 lg:grid-cols-2 print:hidden">
-        <div className="min-w-0">
-          <h2 className="mb-4 text-2xl font-bold">Risk checks</h2>
-          <div className="space-y-3">
-            {report.risks.length ? report.risks.map((risk) => <DecisionRiskCard key={`${risk.id}:${risk.sourceRuleId}`} risk={risk} />) : <DecisionRiskCard />}
-          </div>
-        </div>
-        <DecisionActionPlan items={report.actionPlan} />
-      </section>
-      <section className="mt-8 print:hidden"><PersonalizedRecommendations compact showProfile={false} /></section>
-      <section className="mt-8 print:hidden"><DecisionRetentionLoop slug={workflow.slug} /></section>
-      <section className="mt-8 print:hidden"><DecisionScenarioSimulator workflow={workflow} answers={item.answers} baseReport={report} /></section>
-      <section className="mt-8 print:hidden"><DecisionRelatedTools workflow={workflow} /></section>
-      <Card className="mt-8 border-warning/20 bg-warning/[.06] p-5 text-sm leading-6 text-muted print:hidden">
-        <strong className="text-ink">Important:</strong> This is a structured educational aid, not financial, investment, legal, career, or other professional advice. Verify current rates, terms, laws, and material assumptions independently.
-      </Card>
-      <div className="mt-8 flex justify-center gap-3 print:hidden">
-        <Button variant="ghost" onClick={() => router.push(`/decision/${workflow.pluginId}/${workflow.slug}`)}>Revisit answers</Button>
-        <Button variant="ghost" onClick={() => router.push("/decision/saved")}>Open saved decisions</Button>
-      </div>
-    </main>
+    <ResultRenderer
+      workflow={workflow}
+      report={report}
+      answers={item.answers}
+      saved={saved}
+      copied={copied}
+      profileAnalysis={profileAnalysis}
+      onCopy={copy}
+      onShare={share}
+      onPrint={() => window.print()}
+      onRevisit={() => router.push(`/decision/${workflow.pluginId}/${workflow.slug}`)}
+      onSave={saved ? deleteSaved : saveLocally}
+      config={{ workflowId: workflow.id, disclaimerType: "none" }}
+    />
   );
 }
