@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, ShieldCheck, Save } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronRight, ShieldCheck, Save } from "lucide-react";
 import { Badge, Button, Card } from "@datastorified/ui";
 import {
   buildDecisionFacts,
@@ -195,9 +195,11 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
     }
   };
 
-  const mobileQuestion = currentQuestion ?? visibleQuestions[0];
-  const mobileQuestionIndex = visibleQuestions.findIndex((question) => question.id === mobileQuestion?.id);
-  const canGoBack = mobileQuestionIndex > 0;
+  const activeQuestion = currentQuestion ?? visibleQuestions[0];
+  const activeQuestionIndex = visibleQuestions.findIndex((question) => question.id === activeQuestion?.id);
+  const canGoBack = activeQuestionIndex > 0;
+  const canGoNext = activeQuestionIndex >= 0 && activeQuestionIndex < visibleQuestions.length - 1;
+  const questionTotal = visibleQuestions.length;
 
   return (
     <>
@@ -212,33 +214,32 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
         <h1 className="mt-4 max-w-4xl text-balance text-3xl font-bold tracking-[-.035em] sm:text-5xl">{workflow.title}</h1>
         <p className="mt-3 max-w-3xl text-base leading-7 text-muted sm:text-lg">{workflow.description}</p>
         <div className="mt-6 max-w-3xl">
-          <DecisionProgress value={state.progress} current={mobileQuestionIndex + 1} total={visibleQuestions.length} />
+          <DecisionProgress value={state.progress} current={activeQuestionIndex + 1} total={questionTotal} />
         </div>
 
         <div className="mt-8 grid min-w-0 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div className="min-w-0">
-            <div className="md:hidden">
-              {mobileQuestion && (
+            {activeQuestion && (
+              <Card className="min-w-0 rounded-[2rem] p-4 sm:p-6 lg:p-8">
+                <div className="mb-5 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[.14em] text-primary">{activeQuestion.required === false ? "Optional" : "Required"}</p>
+                    <h2 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">{activeQuestion.prompt}</h2>
+                  </div>
+                  <div className="hidden rounded-full border border-border bg-soft/40 px-3 py-2 text-xs font-semibold text-muted md:inline-flex">
+                    {activeQuestionIndex + 1} of {questionTotal}
+                  </div>
+                </div>
                 <DecisionQuestion
-                  question={mobileQuestion}
-                  value={state.session.answers[mobileQuestion.id]}
-                  onChange={(value) => update(mobileQuestion.id, value)}
-                  error={validationErrors[mobileQuestion.id]}
+                  question={activeQuestion}
+                  value={state.session.answers[activeQuestion.id]}
+                  onChange={(value) => update(activeQuestion.id, value)}
+                  error={validationErrors[activeQuestion.id]}
+                  helperOverride={activeQuestion.helperText}
+                  whyWeAsk={getWhyWeAsk(activeQuestion)}
                 />
-              )}
-            </div>
-
-            <div className="hidden min-w-0 gap-4 md:grid md:grid-cols-2">
-              {visibleQuestions.map((question) => (
-                <DecisionQuestion
-                  key={question.id}
-                  question={question}
-                  value={state.session.answers[question.id]}
-                  onChange={(value) => update(question.id, value)}
-                  error={validationErrors[question.id]}
-                />
-              ))}
-            </div>
+              </Card>
+            )}
 
             <Card className="mt-5 flex min-w-0 flex-col gap-4 bg-gradient-to-br from-primary/[.04] to-accent/[.06] p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
               <div className="flex min-w-0 gap-3">
@@ -254,15 +255,13 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
                 <Button variant="ghost" onClick={saveDraftNow} disabled={autosaveState === "saving"}><Save size={16} /> Save draft</Button>
                 <Button variant="secondary" onClick={reset} disabled={completing}>Reset</Button>
                 {session?.user ? null : <GoogleSignInButton className="rounded-xl border border-border bg-white px-4 py-2.5 text-sm font-semibold text-ink shadow-soft">Sign in with Google</GoogleSignInButton>}
-                {canGoBack && (
-                  <Button variant="secondary" className="md:hidden" onClick={back} disabled={completing}><ArrowLeft size={16} /> Back</Button>
-                )}
-                {mobileQuestion && mobileQuestionIndex < visibleQuestions.length - 1 ? (
-                  <Button className="ml-auto md:hidden" onClick={next} disabled={completing}>Next <ArrowRight size={16} /></Button>
+                {canGoBack && <Button variant="secondary" className="min-h-11 md:hidden" onClick={back} disabled={completing}><ArrowLeft size={16} /> Back</Button>}
+                {canGoNext ? (
+                  <Button className="ml-auto min-h-11 md:hidden" onClick={next} disabled={completing}>Next <ArrowRight size={16} /></Button>
                 ) : (
-                  <Button className="ml-auto md:hidden" onClick={complete} disabled={completing}>{completing ? "Saving result…" : "View result"} <ArrowRight size={16} /></Button>
+                  <Button className="ml-auto min-h-11 md:hidden" onClick={complete} disabled={completing}>{completing ? "Saving result…" : "View result"} <ArrowRight size={16} /></Button>
                 )}
-                <Button className="ml-auto hidden md:inline-flex" onClick={complete} disabled={completing}>{completing ? "Saving result…" : "View recommendation"} <ArrowRight size={16} /></Button>
+                <Button className="ml-auto hidden min-h-11 md:inline-flex" onClick={complete} disabled={completing}>{completing ? "Saving result…" : "View recommendation"} <ArrowRight size={16} /></Button>
               </div>
             </Card>
 
@@ -299,6 +298,12 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
           </div>
 
           <aside className="min-w-0 space-y-4 lg:sticky lg:top-24">
+            <Card className="p-5">
+              <p className="text-xs font-bold uppercase tracking-[.14em] text-primary">Journey</p>
+              <p className="mt-2 text-lg font-bold">{activeQuestionIndex + 1} of {questionTotal}</p>
+              <p className="mt-1 text-sm leading-6 text-muted">{activeQuestion?.required === false ? "This step is optional." : "This step is required to continue."}</p>
+              {activeQuestion?.required === false && <Button variant="secondary" className="mt-4 min-h-11" onClick={next}>Skip</Button>}
+            </Card>
             <DecisionScoreCard score={score} />
             <DecisionRecommendation recommendation={recommendation} analysis={profileAnalysis} note={autosaveState === "saved" ? "Draft saved locally." : autosaveState === "saving" ? "Saving draft…" : autosaveState === "error" ? "Draft save failed. You can still continue." : undefined} />
             <Card className="p-5">
@@ -314,7 +319,27 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
             </Card>
           </aside>
         </div>
+
+        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] md:hidden">
+          <div className="pointer-events-auto mx-auto flex max-w-4xl items-center gap-2 rounded-[1.5rem] border border-border bg-white/95 p-3 shadow-2xl backdrop-blur">
+            {canGoBack ? <Button variant="secondary" className="min-h-11 flex-1" onClick={back} disabled={completing}><ArrowLeft size={16} /> Back</Button> : <Button variant="secondary" className="min-h-11 flex-1" disabled>Back</Button>}
+            {canGoNext ? (
+              <Button className="min-h-11 flex-1" onClick={next} disabled={completing}>Next <ChevronRight size={16} /></Button>
+            ) : (
+              <Button className="min-h-11 flex-1" onClick={complete} disabled={completing}>{completing ? "Saving…" : "View Result"} <ChevronRight size={16} /></Button>
+            )}
+          </div>
+        </div>
       </main>
     </>
   );
+}
+
+function getWhyWeAsk(question: { prompt: string; helperText?: string; type: string; required?: boolean }): string {
+  const prompt = question.prompt.toLowerCase();
+  if (prompt.includes("income") || prompt.includes("salary")) return "This helps calibrate affordability and trade-offs.";
+  if (prompt.includes("risk")) return "This helps tune the recommendation to your comfort level.";
+  if (prompt.includes("time")) return "This helps match the decision to your horizon.";
+  if (question.type === "boolean") return "A simple yes/no helps the engine narrow the options quickly.";
+  return "This helps the engine compare the trade-offs that matter most for this decision.";
 }

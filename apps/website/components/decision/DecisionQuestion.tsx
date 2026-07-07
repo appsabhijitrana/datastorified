@@ -17,11 +17,15 @@ export function DecisionQuestion({
   value,
   onChange,
   error,
+  helperOverride,
+  whyWeAsk,
 }: {
   question: Question;
   value: DecisionValue | undefined;
   onChange: (value: DecisionValue) => void;
   error?: string;
+  helperOverride?: string;
+  whyWeAsk?: string;
 }) {
   const numeric = ["currency", "percentage", "number", "duration", "slider"].includes(question.type);
 
@@ -40,7 +44,7 @@ export function DecisionQuestion({
           compact
           id={question.id}
           label={question.prompt}
-          description={question.helperText}
+          description={helperOverride ?? question.helperText}
           mode={mode}
           value={typeof value === "number" ? value : null}
           min={question.validation?.min}
@@ -75,7 +79,8 @@ export function DecisionQuestion({
       <Card className="min-w-0 p-5 sm:p-6">
         <fieldset>
           <legend className="font-bold">{groupLabel}</legend>
-          {question.helperText && <p className="mt-1 text-sm leading-6 text-muted">{question.helperText}</p>}
+          {(helperOverride ?? question.helperText) && <p className="mt-1 text-sm leading-6 text-muted">{helperOverride ?? question.helperText}</p>}
+          {whyWeAsk && <p className="mt-3 rounded-2xl border border-border bg-soft/40 px-4 py-3 text-sm leading-6 text-muted"><span className="font-semibold text-ink">Why we ask this:</span> {whyWeAsk}</p>}
           <div className="mt-4 grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-3" role="group" aria-label={groupLabel}>
             {options.map((option) => (
               <button
@@ -104,7 +109,8 @@ export function DecisionQuestion({
       <label htmlFor={question.id} className="font-bold">
         {question.prompt}
       </label>
-      {question.helperText && <p className="mt-1 text-sm leading-6 text-muted">{question.helperText}</p>}
+      {(helperOverride ?? question.helperText) && <p className="mt-1 text-sm leading-6 text-muted">{helperOverride ?? question.helperText}</p>}
+      {whyWeAsk && <p className="mt-3 rounded-2xl border border-border bg-soft/40 px-4 py-3 text-sm leading-6 text-muted"><span className="font-semibold text-ink">Why we ask this:</span> {whyWeAsk}</p>}
       <textarea
         id={question.id}
         value={typeof value === "string" ? value : ""}
