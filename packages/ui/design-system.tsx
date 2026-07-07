@@ -11,7 +11,7 @@ export function Button({ className, variant = "primary", ...props }: React.Butto
   return (
     <button
       className={cn(
-        "inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50",
+        "inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50",
         variant === "primary" && "bg-gradient-to-br from-primary to-accent text-white shadow-glow hover:-translate-y-0.5",
         variant === "secondary" && "border border-border bg-white text-ink shadow-soft hover:border-primary/30",
         variant === "ghost" && "text-muted hover:bg-soft hover:text-ink",
@@ -35,7 +35,7 @@ export function Chip({ className, selected, ...props }: React.ButtonHTMLAttribut
   return (
     <button
       className={cn(
-        "inline-flex min-h-11 items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition",
+        "inline-flex min-h-11 items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20",
         selected ? "border-primary/20 bg-primary/8 text-primary shadow-sm" : "border-border bg-white text-ink hover:border-primary/20",
         className,
       )}
@@ -48,7 +48,7 @@ export function SearchInput({ className, ...props }: React.InputHTMLAttributes<H
   return (
     <label className={cn("flex min-h-12 items-center gap-3 rounded-2xl border border-border bg-white px-4 shadow-soft transition focus-within:border-primary/40 focus-within:shadow-glow", className)}>
       <Search className="shrink-0 text-muted" size={18} />
-      <input className="min-w-0 flex-1 bg-transparent py-3 text-base outline-none placeholder:text-muted/70" {...props} />
+      <input className="min-w-0 flex-1 bg-transparent py-3 text-base outline-none placeholder:text-muted/70 focus-visible:outline-none" {...props} />
       {props.value ? <X className="shrink-0 text-muted" size={18} /> : null}
     </label>
   );

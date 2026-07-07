@@ -124,7 +124,7 @@ export function DecisionHubHome() {
             const workflow = decisionPluginRegistry.detectWorkflowFromText(item.query) ?? decisionPluginRegistry.searchWorkflows(item.query, 1)[0];
             const route = decisionRouteFromText(item.query) ?? "/decision";
             return (
-              <Card key={item.title} className="p-5">
+            <Card key={item.title} className="p-5">
                 <div className="flex items-start justify-between gap-3">
                   <Badge>{workflow?.category ?? "Decision"}</Badge>
                   <span className="text-xs font-semibold text-muted">{item.factors} factors</span>

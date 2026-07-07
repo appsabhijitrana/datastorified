@@ -85,7 +85,7 @@ export function AppShell({ children, showMobileNav = true }: AppShellProps) {
         <div className="flex min-h-dvh min-w-0 flex-1 flex-col">
           <TopHeader />
           <main className="min-w-0 flex-1 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-4 md:pb-10 md:pt-6">
-            <div className="mx-auto min-w-0 max-w-7xl px-4 sm:px-6">{children}</div>
+            <div className="mx-auto min-w-0 max-w-6xl px-4 sm:px-6 lg:px-8">{children}</div>
           </main>
         </div>
       </div>
@@ -145,7 +145,7 @@ function FloatingStartButton() {
 function MobileBottomNav({ active }: { active: string }) {
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-white/95 px-2 pb-[max(.65rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl lg:hidden">
-      <div className="mx-auto grid max-w-md grid-cols-5 gap-1">
+        <div className="mx-auto grid max-w-md grid-cols-5 gap-0.5 px-1">
         {mobileNav.map((item) => {
           const Icon = item.icon;
           const isActive =
