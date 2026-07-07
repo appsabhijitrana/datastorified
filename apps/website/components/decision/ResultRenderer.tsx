@@ -2,9 +2,7 @@
 
 import Link from "next/link";
 import { Copy, Printer, Share2, BookmarkPlus, Trash2 } from "lucide-react";
-import { Badge, Button, Card } from "@datastorified/ui";
-import { DecisionScoreCard } from "./DecisionScoreCard";
-import { DecisionRecommendation } from "./DecisionRecommendation";
+import { Button, Card } from "@datastorified/ui";
 import { DecisionActionPlan } from "./DecisionActionPlan";
 import { DecisionScenarioSimulator } from "./DecisionScenarioSimulator";
 import { DecisionRetentionLoop } from "./DecisionRetentionLoop";
@@ -17,6 +15,7 @@ import { DecisionConfidenceCard, MissingSignalList, getDecisionConfidence } from
 import { ResultSectionLayout } from "./ResultSectionLayout";
 import { adaptResultData, getResultAnswers, safeCopyForType } from "./ResultDataAdapter";
 import type { ResultDataAdapterInput } from "./resultTypes";
+import { ConfidenceBadge, DecisionSummary, ProfileCompletenessBadge, RiskBadge } from "./DecisionSummary";
 
 export function ResultRenderer(input: ResultDataAdapterInput) {
   const data = adaptResultData(input);
@@ -30,44 +29,32 @@ export function ResultRenderer(input: ResultDataAdapterInput) {
 
   return (
     <main className="mx-auto max-w-7xl overflow-x-hidden px-4 py-8 sm:px-6 sm:py-12">
-      <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge>{data.workflow.category ?? data.workflow.pluginId} result</Badge>
-            {data.profileAnalysis ? <Badge className="border-success/15 bg-success/10 text-success">{data.profileAnalysis.label}</Badge> : null}
+      <ResultSectionLayout
+        title="Decision summary"
+        kicker={data.workflow.category ?? "Result overview"}
+        description="A premium snapshot of the decision outcome with clear, educational language."
+        aside={
+          <div className="flex flex-wrap justify-start gap-2 lg:justify-end print:hidden">
+            <Button variant="secondary" onClick={data.onCopy}><Copy size={16} />{data.copied ? "Copied" : "Copy summary"}</Button>
+            <Button variant="secondary" onClick={data.onShare}><Share2 size={16} />Share</Button>
+            <Button variant="secondary" onClick={data.onPrint}><Printer size={16} />Print</Button>
+            <Button variant="secondary" onClick={() => data.onSave?.()}>{data.saved ? <><Trash2 size={16} /> Remove saved copy</> : <><BookmarkPlus size={16} /> Save locally</>}</Button>
           </div>
-          <h1 className="mt-4 text-balance text-3xl font-bold tracking-[-.035em] sm:text-5xl">{data.workflow.title}</h1>
-          <p className="mt-2 text-sm text-muted">Created {new Date(data.report.generatedAt).toLocaleString("en-IN")}</p>
-        </div>
-        <div className="flex flex-wrap gap-2 print:hidden">
-          <Button variant="secondary" onClick={data.onCopy}><Copy size={16} />{data.copied ? "Copied" : "Copy summary"}</Button>
-          <Button variant="secondary" onClick={data.onShare}><Share2 size={16} />Share</Button>
-          <Button variant="secondary" onClick={data.onPrint}><Printer size={16} />Print</Button>
-        </div>
-      </div>
-
-      <div className="mt-6 flex flex-wrap gap-2 print:hidden">
-        {data.saved ? (
-          <Button variant="secondary" onClick={() => data.onSave?.()}><Trash2 size={16} /> Remove saved copy</Button>
-        ) : (
-          <Button variant="secondary" onClick={() => data.onSave?.()}><BookmarkPlus size={16} /> Save locally</Button>
-        )}
-      </div>
-
-      <ResultSectionLayout title="Summary" kicker="Result overview" description="A concise summary of the current result with clear next steps.">
-        <div className="grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
-          <DecisionScoreCard score={data.report.score} />
-          <Card className="p-5 sm:p-6">
-            <p className="text-xs font-bold uppercase tracking-[.14em] text-primary">Summary</p>
-            <p className="mt-3 whitespace-pre-line text-sm leading-7 text-muted">{data.safeSummary}</p>
-            <div className="mt-5">
-              {data.report.recommendation ? (
-                <DecisionRecommendation recommendation={data.report.recommendation} analysis={data.profileAnalysis} />
-              ) : (
-                <p className="text-sm leading-6 text-muted">A recommendation is not available for this result yet.</p>
-              )}
-            </div>
-          </Card>
+        }
+      >
+        <DecisionSummary
+          workflowTitle={data.workflow.title}
+          category={data.workflow.category}
+          report={data.report}
+          profileAnalysis={data.profileAnalysis}
+          completedAt={data.report.generatedAt}
+          bestMatchLabel={data.report.recommendation?.title ?? "the strongest option"}
+          reviewSuggestion="Review the score breakdown, then revisit any factors that feel uncertain before you act."
+        />
+        <div className="mt-4 flex flex-wrap gap-2">
+          <ConfidenceBadge value={confidence.score} />
+          <RiskBadge value={confidence.score >= 65 ? "Low" : confidence.score >= 40 ? "Medium" : "High"} />
+          <ProfileCompletenessBadge value={data.profileAnalysis ? Math.round(data.profileAnalysis.percentage) : 0} />
         </div>
       </ResultSectionLayout>
 
