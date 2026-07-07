@@ -22,6 +22,7 @@ import { DecisionProgress } from "./DecisionProgress";
 import { DecisionQuestion } from "./DecisionQuestion";
 import { DecisionScoreCard } from "./DecisionScoreCard";
 import { LiveDecisionMeter } from "./LiveDecisionMeter";
+import { AutosaveIndicator, DraftSavedToast } from "./TrustIndicators";
 import { DecisionOSStatusService } from "../../lib/decision-os-status/service";
 import { DecisionOSMaintenanceBanner } from "./DecisionOSMaintenanceBanner";
 import { DecisionOSScheduledMaintenanceBanner } from "./DecisionOSScheduledMaintenanceBanner";
@@ -45,6 +46,7 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
   const [completing, setCompleting] = useState(false);
   const [completeError, setCompleteError] = useState<string | null>(null);
   const [profile, setProfile] = useState<DecisionProfileEnvelope | null>(null);
+  const [toastOpen, setToastOpen] = useState(false);
 
   useEffect(() => {
     if (!workflow || workflow.pluginId !== pluginId) return;
@@ -75,7 +77,11 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
       if (!state) return;
       setAutosaveState("saving");
       void orchestrator.saveDraft(state.session)
-        .then(() => setAutosaveState("saved"))
+        .then(() => {
+          setAutosaveState("saved");
+          setToastOpen(true);
+          window.setTimeout(() => setToastOpen(false), 1800);
+        })
         .catch(() => setAutosaveState("error"));
     }, 500);
     return () => window.clearTimeout(timer);
@@ -148,6 +154,8 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
     try {
       await orchestrator.saveDraft(state.session);
       setAutosaveState("saved");
+      setToastOpen(true);
+      window.setTimeout(() => setToastOpen(false), 1800);
     } catch {
       setAutosaveState("error");
     }
@@ -217,6 +225,14 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
 
         <div className="mt-8 grid min-w-0 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div className="min-w-0">
+            <div className="mb-4 flex flex-wrap items-center gap-2 lg:hidden">
+              <AutosaveIndicator
+                status={autosaveState}
+                updatedAt={state.session.updatedAt}
+                syncState={session?.user ? "pending" : "idle"}
+                onRetry={saveDraftNow}
+              />
+            </div>
             <div className="mb-4 lg:hidden">
               <LiveDecisionMeter
                 preview={preview}
@@ -267,7 +283,7 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
                 ) : (
                   <Button className="ml-auto min-h-11 md:hidden" onClick={complete} disabled={completing}>{completing ? "Saving result…" : "View result"} <ArrowRight size={16} /></Button>
                 )}
-                <Button className="ml-auto hidden min-h-11 md:inline-flex" onClick={complete} disabled={completing}>{completing ? "Saving result…" : "View recommendation"} <ArrowRight size={16} /></Button>
+                <Button className="ml-auto hidden min-h-11 md:inline-flex" onClick={complete} disabled={completing}>{completing ? "Saving result…" : "View result"} <ArrowRight size={16} /></Button>
               </div>
             </Card>
 
@@ -304,6 +320,7 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
           </div>
 
           <aside className="min-w-0 space-y-4 lg:sticky lg:top-24">
+            <AutosaveIndicator status={autosaveState} updatedAt={state.session.updatedAt} syncState={session?.user ? "pending" : "idle"} onRetry={saveDraftNow} />
             <LiveDecisionMeter
               preview={preview}
               answerProgress={{ answered: visibleQuestions.filter((question) => isAnsweredValue(state.session.answers[question.id])).length, total: visibleQuestions.length }}
@@ -340,6 +357,7 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
             )}
           </div>
         </div>
+        <DraftSavedToast open={toastOpen} message={session?.user ? "Draft saved locally. Sync pending." : "Draft saved locally."} />
       </main>
     </>
   );

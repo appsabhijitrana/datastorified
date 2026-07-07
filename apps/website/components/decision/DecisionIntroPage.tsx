@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, Bookmark, CheckCircle2, ShieldAlert, Sparkles } from "lucide-react";
 import { authClient } from "@datastorified/auth";
 import { Badge, Button, Card } from "@datastorified/ui";
+import { DecisionTimelineMini } from "./TrustIndicators";
 export type DecisionIntroWorkflow = {
   pluginId: string;
   slug: string;
@@ -116,6 +117,13 @@ export function DecisionIntroPage({ workflow }: { workflow: DecisionIntroWorkflo
             <p className="mt-3 text-sm leading-6 text-muted">You can keep using the app anonymously. Google sign-in is optional here.</p>
           )}
         </Card>
+
+        <DecisionTimelineMini
+          events={[
+            { label: "Started" },
+            { label: "Draft saved" },
+          ]}
+        />
       </div>
     </main>
   );

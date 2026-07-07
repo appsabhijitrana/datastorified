@@ -11,6 +11,7 @@ import { authClient, GoogleSignInButton, LegalAcceptanceGate } from "@datastorif
 import { HybridDecisionRepository } from "@datastorified/decision-repository";
 import type { DecisionRepositoryDecision } from "@datastorified/decision-repository";
 import { DecisionRetentionLoop } from "./DecisionRetentionLoop";
+import { DecisionTimelineMini, ResumeDecisionBanner } from "./TrustIndicators";
 
 export function DecisionSavedPage() {
   const router = useRouter();
@@ -63,6 +64,13 @@ export function DecisionSavedPage() {
     lastWorkflow?.pluginId && lastWorkflow.slug
       ? `/decision/${lastWorkflow.pluginId}/${lastWorkflow.slug}`
       : "/decision";
+  const timelineEvents = [
+    { label: "Started" as const, at: drafts[0]?.updatedAt },
+    { label: "Draft saved" as const, at: drafts[0]?.updatedAt },
+    { label: "Updated" as const, at: drafts[0]?.updatedAt },
+    { label: "Completed" as const, at: saved[0]?.updatedAt },
+    { label: "Synced" as const, at: session?.user ? saved[0]?.updatedAt : undefined },
+  ].filter((event) => event.at || event.label);
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
@@ -102,6 +110,15 @@ export function DecisionSavedPage() {
 
       {!loading && !error && (
         <LegalAcceptanceGate mode="account">
+          {lastWorkflow?.title && lastWorkflow?.pluginId && (
+            <div className="mt-8">
+              <ResumeDecisionBanner
+                title={lastWorkflow.title}
+                href={`/decision/${lastWorkflow.pluginId}/${lastWorkflow.slug}`}
+              />
+            </div>
+          )}
+
           {(profileLastOpenedWorkflow || lastOpenedWorkflow) && lastWorkflow && (
             <Card className="mt-8 border-primary/20 bg-primary/[.04] p-5">
               <div className="flex flex-wrap items-center gap-2">
@@ -147,6 +164,12 @@ export function DecisionSavedPage() {
                 })}
               </div>
             )}
+          </section>
+
+          <section className="mt-10">
+            <DecisionTimelineMini
+              events={timelineEvents}
+            />
           </section>
 
           <section className="mt-10">
