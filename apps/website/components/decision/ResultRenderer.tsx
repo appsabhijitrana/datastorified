@@ -7,11 +7,11 @@ import { DecisionActionPlan } from "./DecisionActionPlan";
 import { DecisionScenarioSimulator } from "./DecisionScenarioSimulator";
 import { DecisionRetentionLoop } from "./DecisionRetentionLoop";
 import { DecisionRelatedTools } from "./DecisionRelatedTools";
-import { DecisionFactorCard } from "./DecisionFactorCard";
 import { DecisionRiskCard } from "./DecisionRiskCard";
 import { ProfileCompletenessCard } from "../profile/ProfileCompletenessCard";
 import { PersonalizedRecommendations } from "../personalization/PersonalizedRecommendations";
 import { DecisionConfidenceCard, MissingSignalList, getDecisionConfidence } from "./DecisionConfidence";
+import { ScoreBreakdownSection } from "./ScoreBreakdownSection";
 import { ResultSectionLayout } from "./ResultSectionLayout";
 import { adaptResultData, getResultAnswers, safeCopyForType } from "./ResultDataAdapter";
 import type { ResultDataAdapterInput } from "./resultTypes";
@@ -65,11 +65,11 @@ export function ResultRenderer(input: ResultDataAdapterInput) {
         </div>
       </ResultSectionLayout>
 
-      <ResultSectionLayout title="Score breakdown" kicker="Why this score" description="Each factor combines answers with published rules and weights." className="mt-8">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {data.report.score.factors.map((factor) => <DecisionFactorCard key={factor.factorId} factor={factor} />)}
-        </div>
-      </ResultSectionLayout>
+      <ScoreBreakdownSection
+        factors={data.report.score.factors}
+        evidenceStrength={confidence.score}
+        updatedAt={data.report.generatedAt}
+      />
 
       <ResultSectionLayout title="Trade-offs" kicker="What to watch" description="Risk checks and trade-off context stay visible for review." className="mt-8">
         <div className="grid gap-6 lg:grid-cols-2">
