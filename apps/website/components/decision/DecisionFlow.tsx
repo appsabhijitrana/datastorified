@@ -23,6 +23,7 @@ import { DecisionQuestion } from "./DecisionQuestion";
 import { DecisionScoreCard } from "./DecisionScoreCard";
 import { LiveDecisionMeter } from "./LiveDecisionMeter";
 import { AutosaveIndicator, DraftSavedToast } from "./TrustIndicators";
+import { DecisionFocusLayout, SaveAndExitAction } from "./DecisionFocusLayout";
 import { DecisionOSStatusService } from "../../lib/decision-os-status/service";
 import { DecisionOSMaintenanceBanner } from "./DecisionOSMaintenanceBanner";
 import { DecisionOSScheduledMaintenanceBanner } from "./DecisionOSScheduledMaintenanceBanner";
@@ -47,6 +48,9 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
   const [completeError, setCompleteError] = useState<string | null>(null);
   const [profile, setProfile] = useState<DecisionProfileEnvelope | null>(null);
   const [toastOpen, setToastOpen] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [exitOpen, setExitOpen] = useState(false);
+  const introHref = `/decision/${pluginId}/${slug}`;
 
   useEffect(() => {
     if (!workflow || workflow.pluginId !== pluginId) return;
@@ -60,6 +64,7 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
         if (!cancelled) {
           setState(nextState);
           setValidationErrors({});
+          setDirty(false);
         }
       } catch (err) {
         if (!cancelled) {
@@ -79,6 +84,7 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
       void orchestrator.saveDraft(state.session)
         .then(() => {
           setAutosaveState("saved");
+          setDirty(false);
           setToastOpen(true);
           window.setTimeout(() => setToastOpen(false), 1800);
         })
@@ -147,6 +153,7 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
     setState(nextState);
     setValidationErrors((current) => ({ ...current, [questionId]: "" }));
     setAutosaveState("idle");
+    setDirty(true);
   };
 
   const saveDraftNow = async () => {
@@ -154,6 +161,7 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
     try {
       await orchestrator.saveDraft(state.session);
       setAutosaveState("saved");
+      setDirty(false);
       setToastOpen(true);
       window.setTimeout(() => setToastOpen(false), 1800);
     } catch {
@@ -181,6 +189,7 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
     setState(orchestrator.startDecision(workflow.slug));
     setValidationErrors({});
     setCompleteError(null);
+    setDirty(false);
     await orchestrator.clearDraft(workflow.id);
   };
 
@@ -194,6 +203,7 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
       const result = orchestrator.completeDecision(state.session.id);
       const saved = await orchestrator.saveResult(result);
       await orchestrator.clearDraft(workflow.id);
+      setDirty(false);
       router.push(`/decision/result/${saved.id}`);
     } catch (err) {
       setCompleteError(err instanceof Error ? err.message : "Could not save your result. Please try again.");
@@ -206,12 +216,37 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
   const canGoBack = activeQuestionIndex > 0;
   const canGoNext = activeQuestionIndex >= 0 && activeQuestionIndex < visibleQuestions.length - 1;
   const questionTotal = visibleQuestions.length;
+  const requestExit = () => {
+    if (!dirty) {
+      router.push(introHref);
+      return;
+    }
+    setExitOpen(true);
+  };
+  const exitWithoutSaving = () => {
+    setExitOpen(false);
+    router.push(introHref);
+  };
+  const saveAndExit = async () => {
+    await saveDraftNow();
+    setExitOpen(false);
+    router.push(introHref);
+  };
 
   return (
     <>
       {maintenanceState === 'maintenance_banner' && <DecisionOSMaintenanceBanner message={maintenanceMessage || "We are currently performing maintenance. Some features may be temporarily unavailable."} />}
       {maintenanceState === 'scheduled_maintenance' && <DecisionOSScheduledMaintenanceBanner message={maintenanceMessage || "Scheduled maintenance is in progress. The platform will be back to full functionality soon."} />}
       <main className="mx-auto max-w-7xl overflow-x-hidden px-4 py-8 sm:px-6 sm:py-12">
+        <DecisionFocusLayout
+          title={workflow.title}
+          dirty={dirty}
+          exitOpen={exitOpen}
+          onBack={requestExit}
+          onSaveAndExit={saveAndExit}
+          onExitWithoutSaving={exitWithoutSaving}
+          onContinue={() => setExitOpen(false)}
+        >
         <div className="flex max-w-4xl flex-wrap items-center gap-2">
           <Badge>{workflow.category ?? workflow.pluginId}</Badge>
           <DecisionAccuracyBadge analysis={profileAnalysis} />
@@ -276,6 +311,7 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
               <div className="flex w-full flex-wrap gap-2 sm:w-auto">
                 <Button variant="ghost" onClick={saveDraftNow} disabled={autosaveState === "saving"}><Save size={16} /> Save draft</Button>
                 <Button variant="secondary" onClick={reset} disabled={completing}>Reset</Button>
+                <SaveAndExitAction onClick={saveAndExit} disabled={autosaveState === "saving"} />
                 {session?.user ? null : <GoogleSignInButton className="rounded-xl border border-border bg-white px-4 py-2.5 text-sm font-semibold text-ink shadow-soft">Sign in with Google</GoogleSignInButton>}
                 {canGoBack && <Button variant="secondary" className="min-h-11 md:hidden" onClick={back} disabled={completing}><ArrowLeft size={16} /> Back</Button>}
                 {canGoNext ? (
@@ -358,6 +394,7 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
           </div>
         </div>
         <DraftSavedToast open={toastOpen} message={session?.user ? "Draft saved locally. Sync pending." : "Draft saved locally."} />
+        </DecisionFocusLayout>
       </main>
     </>
   );
