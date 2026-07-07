@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { Footer, Header } from "@datastorified/ui";
 import { DecisionResultPage } from "../../../../components/decision/DecisionResultPage";
+import { AppShell } from "../../../../components/shell/AppShell";
 
 export const metadata: Metadata = {
   title: "Private Decision Result | DataStorified",
@@ -17,5 +17,5 @@ export const metadata: Metadata = {
 
 export default async function ResultPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  return <><Header /><DecisionResultPage id={id} /><Footer /></>;
+  return <AppShell><DecisionResultPage id={id} /></AppShell>;
 }

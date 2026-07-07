@@ -1,5 +1,5 @@
-import { Footer, Header } from "@datastorified/ui";
 import { ProfilePageContent } from "../../components/profile/ProfilePageContent";
+import { AppShell } from "../../components/shell/AppShell";
 
 export const metadata = {
   title: "Profile | Decision OS",
@@ -11,11 +11,5 @@ export const metadata = {
 };
 
 export default function ProfileRoute() {
-  return (
-    <>
-      <Header />
-      <ProfilePageContent />
-      <Footer />
-    </>
-  );
+  return <AppShell><ProfilePageContent /></AppShell>;
 }

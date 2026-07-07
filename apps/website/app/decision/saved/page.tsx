@@ -1,5 +1,5 @@
-import { Footer, Header } from "@datastorified/ui";
 import { DecisionSavedPage } from "../../../components/decision/DecisionSavedPage";
+import { AppShell } from "../../../components/shell/AppShell";
 
 export const metadata = {
   title: "Saved decisions | Decision OS",
@@ -11,11 +11,5 @@ export const metadata = {
 };
 
 export default function DecisionSavedRoute() {
-  return (
-    <>
-      <Header />
-      <DecisionSavedPage />
-      <Footer />
-    </>
-  );
+  return <AppShell><DecisionSavedPage /></AppShell>;
 }
