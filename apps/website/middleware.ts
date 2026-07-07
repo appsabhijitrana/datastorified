@@ -1,20 +1,16 @@
-import { NextResponse, type NextRequest } from "next/server";
-import { StatusService } from "./lib/status/service";
+import { NextRequest, NextResponse } from "next/server";
+import { decisionPluginRegistry } from "@datastorified/decision-os";
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  if (pathname.startsWith("/_next") || pathname.startsWith("/api") || pathname.startsWith("/favicon") || pathname.startsWith("/brand") || pathname.startsWith("/manifest") || pathname.startsWith("/robots") || pathname.startsWith("/sitemap") || pathname === "/maintenance" || pathname === "/admin" || pathname.startsWith("/admin/")) {
-    return NextResponse.next();
-  }
-
-  if (!StatusService.shouldBlockPublicPath(pathname)) return NextResponse.next();
-
-  const url = request.nextUrl.clone();
-  url.pathname = "/maintenance";
-  url.search = "";
-  return NextResponse.redirect(url);
+  const match = pathname.match(/^\/decision\/([^/]+)\/start$/u);
+  if (!match) return NextResponse.next();
+  const slug = decodeURIComponent(match[1]);
+  const workflow = decisionPluginRegistry.getWorkflowBySlug(slug);
+  if (!workflow) return NextResponse.redirect(new URL("/decision", request.url));
+  return NextResponse.redirect(new URL(`/decision/${workflow.pluginId}/${workflow.slug}`, request.url));
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)"],
+  matcher: ["/decision/:path*/start"],
 };
