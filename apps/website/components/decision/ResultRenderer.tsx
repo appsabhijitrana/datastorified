@@ -3,15 +3,14 @@
 import Link from "next/link";
 import { Copy, Printer, Share2, BookmarkPlus, Trash2 } from "lucide-react";
 import { Button, Card } from "@datastorified/ui";
-import { DecisionActionPlan } from "./DecisionActionPlan";
 import { DecisionScenarioSimulator } from "./DecisionScenarioSimulator";
 import { DecisionRetentionLoop } from "./DecisionRetentionLoop";
 import { DecisionRelatedTools } from "./DecisionRelatedTools";
-import { DecisionRiskCard } from "./DecisionRiskCard";
 import { ProfileCompletenessCard } from "../profile/ProfileCompletenessCard";
 import { PersonalizedRecommendations } from "../personalization/PersonalizedRecommendations";
 import { DecisionConfidenceCard, MissingSignalList, getDecisionConfidence } from "./DecisionConfidence";
 import { ScoreBreakdownSection } from "./ScoreBreakdownSection";
+import { TradeoffAnalysisSection } from "./TradeoffAnalysisSection";
 import { ResultSectionLayout } from "./ResultSectionLayout";
 import { adaptResultData, getResultAnswers, safeCopyForType } from "./ResultDataAdapter";
 import type { ResultDataAdapterInput } from "./resultTypes";
@@ -71,16 +70,12 @@ export function ResultRenderer(input: ResultDataAdapterInput) {
         updatedAt={data.report.generatedAt}
       />
 
-      <ResultSectionLayout title="Trade-offs" kicker="What to watch" description="Risk checks and trade-off context stay visible for review." className="mt-8">
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div className="min-w-0">
-            <div className="space-y-3">
-              {data.report.risks.length ? data.report.risks.map((risk) => <DecisionRiskCard key={`${risk.id}:${risk.sourceRuleId}`} risk={risk} />) : <DecisionRiskCard />}
-            </div>
-          </div>
-          <DecisionActionPlan items={data.report.actionPlan} />
-        </div>
-      </ResultSectionLayout>
+      <TradeoffAnalysisSection
+        report={data.report}
+        recommendation={data.report.recommendation}
+        workflowTitle={data.workflow.title}
+        category={data.workflow.category}
+      />
 
       <ResultSectionLayout title="Scenario simulator" kicker="What if?" description="Adjust sensitive variables and compare the before/after result." className="mt-8">
         <DecisionScenarioSimulator workflow={data.workflow} answers={answers} baseReport={data.report} />
