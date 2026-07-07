@@ -20,7 +20,7 @@ export function DecisionSearch({ large = false, initialValue = "" }: { large?: b
   }, [intent, query]);
 
   const submit = () => {
-    const route = decisionRouteFromText(query);
+    const route = decisionRouteFromText(query) ?? (suggestions[0] ? `/decision/${suggestions[0].pluginId}/${suggestions[0].slug}` : undefined);
     if (route) router.push(route);
     else setShowSuggestions(true);
   };
@@ -38,10 +38,16 @@ export function DecisionSearch({ large = false, initialValue = "" }: { large?: b
           placeholder="Should I buy a house?"
           className={`min-w-0 flex-1 bg-transparent px-1 font-medium outline-none placeholder:text-muted/60 ${large ? "min-h-14 text-base sm:text-lg" : "min-h-11"}`}
         />
-        <Button onClick={submit} className="shrink-0 rounded-2xl px-3 sm:px-5">
-          <span className="hidden sm:inline">Find my decision</span><Sparkles className="sm:hidden" size={17} /><ArrowRight size={16} />
+        <Button onClick={submit} aria-label="Find my decision" className="shrink-0 rounded-2xl px-3 sm:px-5">
+          <span className="hidden sm:inline">Find my decision</span><Sparkles className="sm:hidden" size={17} aria-hidden="true" /><ArrowRight size={16} aria-hidden="true" />
         </Button>
       </Card>
+      {showSuggestions && query.trim().length >= 2 && suggestions.length === 0 && (
+        <Card className="mt-5 p-5" role="status">
+          <p className="font-semibold">No matching decision flows</p>
+          <p className="mt-1 text-sm leading-6 text-muted">Try a phrase like &ldquo;buy a house&rdquo; or browse the categories below.</p>
+        </Card>
+      )}
       {showSuggestions && query.trim().length >= 2 && suggestions.length > 0 && (
         <div className="mt-5">
           <p className="mb-3 text-sm font-semibold text-muted">Best matching decision flows</p>

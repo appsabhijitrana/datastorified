@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "incremental": false,
+    "plugins": [],
+    "baseUrl": ".",
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*.ts"]
+}
+

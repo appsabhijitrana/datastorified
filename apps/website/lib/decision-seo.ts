@@ -76,18 +76,18 @@ export const decisionSeoById: Record<string, DecisionSeo> = {
     summary: "This EV-versus-petrol decision tool tests whether an electric car fits your driving pattern—not an idealised average. It compares the EV price premium with monthly kilometres, real-world efficiency, petrol and electricity prices, home-charging access, and expected ownership period.",
     outcome: "The analysis estimates whether energy savings can recover the upfront premium and highlights charging or low-usage risks that a simple fuel-cost comparison can miss.",
   },
-  "sip-vs-fd": {
-    title: "SIP vs FD in India: Which Is Better for You?",
-    description: "Compare SIP vs FD for your goal using investment horizon, risk tolerance, emergency savings, inflation, expected SIP returns, and fixed-deposit rates.",
-    primaryKeyword: "SIP vs FD in India",
+  "fd-vs-sip": {
+    title: "FD vs SIP in India: Which Is Better for You?",
+    description: "Compare FD vs SIP for your goal using investment horizon, risk tolerance, emergency savings, inflation, expected return, and tax fit.",
+    primaryKeyword: "FD vs SIP in India",
     longTailKeywords: [
-      "which is better SIP or fixed deposit for me",
-      "SIP vs FD for a five year investment",
+      "which is better FD or SIP for me",
+      "FD vs SIP for a five year investment",
       "mutual fund SIP or FD for low risk investors",
-      "SIP vs FD returns after inflation in India",
+      "FD vs SIP returns after inflation in India",
       "should I invest in SIP without an emergency fund",
     ],
-    summary: "Use this SIP-versus-FD guide to match the investment—not just the projected return—to your goal. It considers time horizon, tolerance for market falls, emergency-fund coverage, inflation, a conservative SIP assumption, and the offered fixed-deposit rate.",
+    summary: "Use this FD-versus-SIP guide to match the investment—not just the projected return—to your goal. It considers time horizon, tolerance for market falls, emergency-fund coverage, inflation, expected return, and tax fit.",
     outcome: "The result explains whether growth, stability, or a blended allocation better fits your inputs. Projections are scenarios, not guaranteed returns or personalised investment advice.",
   },
   "loan-prepayment": {
@@ -133,6 +133,13 @@ export const decisionSeoById: Record<string, DecisionSeo> = {
     outcome: "You receive a balanced score, the strongest reasons to move or stay, and a diligence checklist for the offer, manager, role scope, probation, and notice terms.",
   },
 };
+
+Object.defineProperty(decisionSeoById, "sip-vs-fd", {
+  value: decisionSeoById["fd-vs-sip"],
+  enumerable: false,
+  configurable: true,
+  writable: true,
+});
 
 export function decisionSeo(id: string): DecisionSeo | undefined {
   return decisionSeoById[id];

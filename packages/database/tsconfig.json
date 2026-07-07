@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "incremental": false,
+    "plugins": [],
+    "baseUrl": "."
+  },
+  "include": ["src/**/*.ts", "prisma/**/*.ts"]
+}
