@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Search, Sparkles } from "lucide-react";
 import { Button, Card } from "@datastorified/ui";
-import { detectIntent, decisionPluginRegistry } from "@datastorified/decision-os";
+import { searchDecisions } from "@datastorified/decision-os";
 import { decisionRouteFromText } from "../../lib/decision-routing";
 import { DecisionSuggestionCard } from "./DecisionSuggestionCard";
 
@@ -12,15 +12,13 @@ export function DecisionSearch({ large = false, initialValue = "", placeholder =
   const router = useRouter();
   const [query, setQuery] = useState(initialValue);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const intent = useMemo(() => query.trim().length >= 2 ? detectIntent(query, decisionPluginRegistry.listWorkflows(), 3) : undefined, [query]);
   const suggestions = useMemo(() => {
     if (!query.trim()) return [];
-    const matches = decisionPluginRegistry.searchWorkflows(query, 3);
-    return matches.length ? matches : (intent?.matches ?? []).map((match) => decisionPluginRegistry.getWorkflow(match.workflowId)).filter(Boolean);
-  }, [intent, query]);
+    return searchDecisions(query).slice(0, 3);
+  }, [query]);
 
   const submit = () => {
-    const route = decisionRouteFromText(query) ?? (suggestions[0] ? `/decision/${suggestions[0].pluginId}/${suggestions[0].slug}` : undefined);
+    const route = decisionRouteFromText(query) ?? getDecisionRouteFromSuggestion(suggestions[0]);
     if (route) router.push(route);
     else setShowSuggestions(true);
   };
@@ -52,14 +50,18 @@ export function DecisionSearch({ large = false, initialValue = "", placeholder =
         <div className="mt-5">
           <p className="mb-3 text-sm font-semibold text-muted">Best matching decision flows</p>
           <div className="grid min-w-0 gap-3 sm:grid-cols-3">
-            {suggestions.map((workflow) => {
-              if (!workflow) return null;
-              const confidence = intent?.matches.find((match) => match.workflowId === workflow.id)?.confidence;
-              return <DecisionSuggestionCard key={workflow.id} workflow={workflow} confidence={confidence} />;
+            {suggestions.map((decision) => {
+              if (!decision.slug) return null;
+              return <DecisionSuggestionCard key={decision.id} decision={decision} />;
             })}
           </div>
         </div>
       )}
     </div>
   );
+}
+
+function getDecisionRouteFromSuggestion(decision?: { slug?: string }) {
+  if (!decision?.slug) return undefined;
+  return decisionRouteFromText(decision.slug);
 }

@@ -7,3 +7,4 @@ export * from "./storage/localDecisionStorage";
 export * from "./utils/ids";
 export * from "./utils/format";
 export * from "./utils/math";
+export * from "./discovery/decisionRegistry";

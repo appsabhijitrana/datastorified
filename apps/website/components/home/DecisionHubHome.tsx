@@ -6,7 +6,7 @@ import { ArrowRight, Clock3 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { authClient, GoogleSignInButton } from "@datastorified/auth";
 import { Badge, Button, Card, Chip, EmptyState, PageHeader, ProgressBar, ProfileNudgeCard, ScoreRing, SectionHeader, StatusBadge } from "@datastorified/ui/design-system";
-import { decisionPluginRegistry, type DecisionMemoryDraft, type StoredDecision } from "@datastorified/decision-os";
+import { decisionPluginRegistry, getDecisionRoute, getLiveDecisions, getPopularDecisions, type DecisionMemoryDraft, type StoredDecision } from "@datastorified/decision-os";
 import { DecisionOrchestrator } from "@datastorified/decision-os/core/orchestrator";
 import { getDecisionAdapters } from "@datastorified/decision-os/adapters";
 import { getProfileAnalysis } from "@datastorified/profile";
@@ -24,27 +24,13 @@ const quickChips = [
   "Emergency Fund",
 ];
 
-const featured = [
-  { title: "FD vs SIP", query: "fd vs sip", time: "3 min", factors: 5 },
-  { title: "Rent vs Buy", query: "rent vs buy", time: "5 min", factors: 7 },
-  { title: "EV vs Petrol", query: "ev vs petrol", time: "4 min", factors: 6 },
-  { title: "Term Insurance Need", query: "term insurance need", time: "4 min", factors: 6 },
-  { title: "Job Switch", query: "job switch", time: "3 min", factors: 5 },
-  { title: "Phone Comparison", query: "phone comparison", time: "2 min", factors: 4 },
-];
-
-const trending = [
-  { title: "Popular this week", body: "FD vs SIP and Rent vs Buy are seeing the strongest traffic." },
-  { title: "High intent", body: "Users are comparing commitment-heavy decisions before they act." },
-  { title: "Quick decision", body: "Phone comparison and emergency fund checks are finished fastest." },
-];
-
 export function DecisionHubHome() {
   const router = useRouter();
   const { data: session } = authClient.useSession();
   const repository = useMemo(() => new HybridDecisionRepository({ authenticated: Boolean(session?.user) }), [session?.user]);
   const orchestrator = useMemo(() => new DecisionOrchestrator({ repository }), [repository]);
   const adapters = getDecisionAdapters();
+  const liveDecisions = useMemo(() => getLiveDecisions(), []);
   const [drafts, setDrafts] = useState<DecisionMemoryDraft[]>([]);
   const [recent, setRecent] = useState<StoredDecision[]>([]);
   const [profileScore, setProfileScore] = useState(0);
@@ -88,7 +74,10 @@ export function DecisionHubHome() {
         <DecisionSearch large placeholder="Search any decision…" ariaLabel="Search any decision…" />
         <div className="flex gap-2 overflow-x-auto pb-1">
           {quickChips.map((chip) => (
-            <Chip key={chip} className="whitespace-nowrap" onClick={() => router.push(decisionRouteFromText(chip) ?? "/decision")}>{chip}</Chip>
+            <Chip key={chip} className="whitespace-nowrap" onClick={() => {
+              const route = decisionRouteFromText(chip);
+              if (route) router.push(route);
+            }}>{chip}</Chip>
           ))}
         </div>
       </section>
@@ -120,22 +109,22 @@ export function DecisionHubHome() {
       <section className="space-y-4">
         <SectionHeader eyebrow="Popular decisions" title="Popular decisions" description="Fast, high-intent decisions people open most often." />
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {featured.map((item) => {
-            const workflow = decisionPluginRegistry.detectWorkflowFromText(item.query) ?? decisionPluginRegistry.searchWorkflows(item.query, 1)[0];
-            const route = decisionRouteFromText(item.query) ?? "/decision";
+          {getPopularDecisions().slice(0, 6).map((decision) => {
+            const route = getDecisionRoute(decision.slug);
+            if (!route) return null;
             return (
-            <Card key={item.title} className="p-5">
+            <Card key={decision.id} className="p-5">
                 <div className="flex items-start justify-between gap-3">
-                  <Badge>{workflow?.category ?? "Decision"}</Badge>
-                  <span className="text-xs font-semibold text-muted">{item.factors} factors</span>
+                  <Badge>{decision.category}</Badge>
+                  <span className="text-xs font-semibold text-muted">{decision.factorCount} factors</span>
                 </div>
-                <h3 className="mt-3 text-lg font-bold">{workflow?.title ?? item.title}</h3>
+                <h3 className="mt-3 text-lg font-bold">{decision.title}</h3>
                 <div className="mt-3 flex items-center gap-4 text-sm text-muted">
-                  <span className="inline-flex items-center gap-1"><Clock3 size={14} /> {item.time}</span>
-                  <span>{item.factors} factor checks</span>
+                  <span className="inline-flex items-center gap-1"><Clock3 size={14} /> {decision.estimatedTime}</span>
+                  <span>{decision.factorCount} factor checks</span>
                 </div>
                 <div className="mt-4 flex items-center justify-between gap-3">
-                  <span className="text-sm font-semibold text-muted">Category: {workflow?.category ?? "Decision"}</span>
+                  <span className="text-sm font-semibold text-muted">Category: {decision.category}</span>
                   <Link href={route}>
                     <Button variant="secondary">Start <ArrowRight size={16} /></Button>
                   </Link>
@@ -149,10 +138,10 @@ export function DecisionHubHome() {
       <section className="space-y-4">
         <SectionHeader eyebrow="Trending in India" title="Trending in India" description="Quick signals from the current decision mix." />
         <div className="flex gap-4 overflow-x-auto pb-1">
-          {trending.map((item) => (
-            <Card key={item.title} className="min-w-64 flex-1 p-5">
-              <Badge>{item.title}</Badge>
-              <p className="mt-3 text-sm leading-6 text-muted">{item.body}</p>
+          {liveDecisions.filter((decision) => decision.isTrending).slice(0, 3).map((decision) => (
+            <Card key={decision.id} className="min-w-64 flex-1 p-5">
+              <Badge>{decision.shortTitle}</Badge>
+              <p className="mt-3 text-sm leading-6 text-muted">{decision.description}</p>
             </Card>
           ))}
         </div>
