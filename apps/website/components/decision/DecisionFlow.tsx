@@ -20,8 +20,8 @@ import { getDecisionAdapters } from "@datastorified/decision-os/adapters";
 import { DecisionAccuracyBadge } from "./DecisionAccuracyBadge";
 import { DecisionProgress } from "./DecisionProgress";
 import { DecisionQuestion } from "./DecisionQuestion";
-import { DecisionRecommendation } from "./DecisionRecommendation";
 import { DecisionScoreCard } from "./DecisionScoreCard";
+import { LiveDecisionMeter } from "./LiveDecisionMeter";
 import { DecisionOSStatusService } from "../../lib/decision-os-status/service";
 import { DecisionOSMaintenanceBanner } from "./DecisionOSMaintenanceBanner";
 import { DecisionOSScheduledMaintenanceBanner } from "./DecisionOSScheduledMaintenanceBanner";
@@ -136,8 +136,6 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
   const profileAnalysis = getProfileAnalysis(profile?.profile);
   const preview = state.preview;
   const score = preview.report.score;
-  const recommendation = preview.recommendation;
-
   const update = (questionId: string, value: DecisionValue) => {
     const nextState = orchestrator.setAnswer(state.session.id, questionId, value, { advance: false });
     setState(nextState);
@@ -219,6 +217,14 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
 
         <div className="mt-8 grid min-w-0 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div className="min-w-0">
+            <div className="mb-4 lg:hidden">
+              <LiveDecisionMeter
+                preview={preview}
+                answerProgress={{ answered: visibleQuestions.filter((question) => isAnsweredValue(state.session.answers[question.id])).length, total: visibleQuestions.length }}
+                profileAnalysis={profileAnalysis}
+                collapsedByDefault={(typeof window !== "undefined" && window.innerHeight < 760) || false}
+              />
+            </div>
             {activeQuestion && (
               <Card className="min-w-0 rounded-[2rem] p-4 sm:p-6 lg:p-8">
                 <div className="mb-5 flex items-center justify-between gap-3">
@@ -298,6 +304,11 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
           </div>
 
           <aside className="min-w-0 space-y-4 lg:sticky lg:top-24">
+            <LiveDecisionMeter
+              preview={preview}
+              answerProgress={{ answered: visibleQuestions.filter((question) => isAnsweredValue(state.session.answers[question.id])).length, total: visibleQuestions.length }}
+              profileAnalysis={profileAnalysis}
+            />
             <Card className="p-5">
               <p className="text-xs font-bold uppercase tracking-[.14em] text-primary">Journey</p>
               <p className="mt-2 text-lg font-bold">{activeQuestionIndex + 1} of {questionTotal}</p>
@@ -305,7 +316,6 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
               {activeQuestion?.required === false && <Button variant="secondary" className="mt-4 min-h-11" onClick={next}>Skip</Button>}
             </Card>
             <DecisionScoreCard score={score} />
-            <DecisionRecommendation recommendation={recommendation} analysis={profileAnalysis} note={autosaveState === "saved" ? "Draft saved locally." : autosaveState === "saving" ? "Saving draft…" : autosaveState === "error" ? "Draft save failed. You can still continue." : undefined} />
             <Card className="p-5">
               <p className="text-sm font-bold">Live decision signals</p>
               <div className="mt-3 space-y-2">
@@ -342,4 +352,8 @@ function getWhyWeAsk(question: { prompt: string; helperText?: string; type: stri
   if (prompt.includes("time")) return "This helps match the decision to your horizon.";
   if (question.type === "boolean") return "A simple yes/no helps the engine narrow the options quickly.";
   return "This helps the engine compare the trade-offs that matter most for this decision.";
+}
+
+function isAnsweredValue(value: DecisionValue | undefined): boolean {
+  return value !== undefined && value !== null && value !== "" && (!Array.isArray(value) || value.length > 0);
 }
