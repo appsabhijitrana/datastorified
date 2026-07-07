@@ -32,7 +32,7 @@ export function DecisionFocusLayout({
         </Button>
         <Button variant="secondary" className="min-h-11 px-3 text-sm font-semibold" onClick={onSaveAndExit}>
           <Save size={16} />
-          Save
+          Save & exit
         </Button>
       </div>
 

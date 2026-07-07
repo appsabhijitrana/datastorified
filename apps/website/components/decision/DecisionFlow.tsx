@@ -156,7 +156,7 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
     setDirty(true);
   };
 
-  const saveDraftNow = async () => {
+  const saveDraftNow = async (): Promise<boolean> => {
     setAutosaveState("saving");
     try {
       await orchestrator.saveDraft(state.session);
@@ -164,8 +164,10 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
       setDirty(false);
       setToastOpen(true);
       window.setTimeout(() => setToastOpen(false), 1800);
+      return true;
     } catch {
       setAutosaveState("error");
+      return false;
     }
   };
 
@@ -228,9 +230,11 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
     router.push(introHref);
   };
   const saveAndExit = async () => {
-    await saveDraftNow();
-    setExitOpen(false);
-    router.push(introHref);
+    const saved = await saveDraftNow();
+    if (saved) {
+      setExitOpen(false);
+      router.push(introHref);
+    }
   };
 
   return (
