@@ -79,7 +79,7 @@ export function DecisionResultPage({ id }: { id: string }) {
     );
   }
 
-  const summary = `${workflow.title}\nScore: ${Math.round(report.score.value)}/100 — ${report.score.label ?? "Decision profile"}\nRecommendation: ${report.recommendation?.title ?? "Review the result"}\n${report.recommendation?.summary ?? ""}\nNext: ${report.actionPlan[0] ?? "Review assumptions"}`;
+  const summary = `${workflow.title}\nScore: ${Math.round(report.score.value)}/100 — ${report.score.label ?? "Decision profile"}\nDecision outcome: ${report.recommendation?.title ?? "Review the result"}\n${report.recommendation?.summary ?? ""}\nNext: ${report.actionPlan[0] ?? "Review assumptions"}`;
   const copy = async () => {
     await navigator.clipboard.writeText(summary);
     setCopied(true);
