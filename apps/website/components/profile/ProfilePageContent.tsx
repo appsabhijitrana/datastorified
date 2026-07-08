@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, PencilLine, RefreshCcw, Shield, Trash2 } from "lucide-react";
 import { authClient, GoogleSignInButton } from "@datastorified/auth";
 import { Badge, Button, Card } from "@datastorified/ui";
+import { localDecisionStorage } from "@datastorified/decision-os";
 import { getDecisionAdapters } from "@datastorified/decision-os/adapters";
 import { removeLocalProfileField, saveLocalProfile } from "@datastorified/profile";
 import { getProfileAnalysis, type DecisionProfile } from "@datastorified/profile";
@@ -138,6 +139,40 @@ export function ProfilePageContent() {
             </div>
           )}
         </Card>
+      </div>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <PrivacyControlPanel
+          profile={profile}
+          analysis={analysis}
+          syncStatus={syncStatus}
+          legalStatus={legalStatus}
+          onClearLocalProfile={async () => {
+            const confirmed = window.confirm("Clear your local personalization data from this device?");
+            if (!confirmed) return;
+            saveLocalProfile({});
+            const envelope = await adapters.profile.getProfile();
+            setProfile(envelope.profile ?? null);
+          }}
+          onClearLocalDecisionHistory={() => {
+            const confirmed = window.confirm("Clear your local decision history from this device?");
+            if (!confirmed) return;
+            localDecisionStorage.clearHistory();
+          }}
+          onExportMyData={() => {
+            const payload = buildExportPayload(profile, analysis, syncStatus, legalStatus);
+            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+            const anchor = document.createElement("a");
+            anchor.href = url;
+            anchor.download = "datastorified-my-data.json";
+            document.body.appendChild(anchor);
+            anchor.click();
+            anchor.remove();
+            window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+          }}
+        />
+        <SyncStatusCard syncStatus={syncStatus} canSync={Boolean(session?.user)} />
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-[1.1fr_.9fr]">
@@ -339,4 +374,129 @@ function castFieldValue(field: keyof DecisionProfile, value: string) {
   }
   if (field === "goals") return value.split(",").map((item) => item.trim()).filter(Boolean);
   return value.trim();
+}
+
+function PrivacyControlPanel({
+  profile,
+  analysis,
+  syncStatus,
+  legalStatus,
+  onClearLocalProfile,
+  onClearLocalDecisionHistory,
+  onExportMyData,
+}: {
+  profile: DecisionProfile | null;
+  analysis: ReturnType<typeof getProfileAnalysis>;
+  syncStatus: string;
+  legalStatus: string;
+  onClearLocalProfile: () => void;
+  onClearLocalDecisionHistory: () => void;
+  onExportMyData: () => void;
+}) {
+  return (
+    <Card className="p-5">
+      <p className="text-xs font-bold uppercase tracking-[.14em] text-primary">Privacy controls</p>
+      <h2 className="mt-2 text-xl font-bold">Control personalization data</h2>
+      <p className="mt-2 text-sm leading-6 text-muted">You decide what stays on this device and what can sync after Google sign-in.</p>
+      <div className="mt-4">
+        <PersonalizationDataSummary profile={profile} analysis={analysis} syncStatus={syncStatus} legalStatus={legalStatus} />
+      </div>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <ExportMyDataAction onExport={onExportMyData} />
+        <RemoveProfileFieldAction label="Clear local profile" onRemove={onClearLocalProfile} />
+        <ClearLocalDecisionHistoryAction onClear={onClearLocalDecisionHistory} />
+      </div>
+    </Card>
+  );
+}
+
+function SyncStatusCard({ syncStatus, canSync }: { syncStatus: string; canSync: boolean }) {
+  return (
+    <Card className="p-5">
+      <p className="text-xs font-bold uppercase tracking-[.14em] text-primary">Sync status</p>
+      <h2 className="mt-2 text-xl font-bold">{canSync ? "Sync is available" : "Local-first mode"}</h2>
+      <p className="mt-2 text-sm leading-6 text-muted">{syncStatus}</p>
+      <div className="mt-4 rounded-2xl border border-border bg-soft/20 p-4 text-sm leading-6 text-muted">
+        Google sign-in only helps save and sync benefits. Anonymous usage stays available.
+      </div>
+    </Card>
+  );
+}
+
+function buildPersonalizationSummary(profile: DecisionProfile | null, analysis: ReturnType<typeof getProfileAnalysis>) {
+  const fields = analysis.filledFields.slice(0, 4).map((field) => field.replace(/([A-Z])/g, " $1").toLowerCase());
+  const safeFields = fields.length ? fields.join(", ") : "no profile fields yet";
+  const syncLabel = profile?.source === "cloud" ? "synced profile" : "local profile";
+  return `${syncLabel} using ${safeFields}.`;
+}
+
+function PersonalizationDataSummary({
+  profile,
+  analysis,
+  syncStatus,
+  legalStatus,
+}: {
+  profile: DecisionProfile | null;
+  analysis: ReturnType<typeof getProfileAnalysis>;
+  syncStatus: string;
+  legalStatus: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-border bg-soft/20 p-4 text-sm leading-6 text-muted">
+      <p className="font-semibold text-ink">Used for personalization</p>
+      <p className="mt-1">Local data includes drafts, saved decisions, search history, and the profile fields you added.</p>
+      <p className="mt-1">Google sign-in can sync profile and saved decisions later.</p>
+      <p className="mt-1">Personalization uses only the fields listed below, not raw answers in the UI.</p>
+      <p className="mt-1">{buildPersonalizationSummary(profile, analysis)}</p>
+      <p className="mt-2">{syncStatus}</p>
+      <p className="mt-1">{legalStatus}</p>
+    </div>
+  );
+}
+
+function RemoveProfileFieldAction({ label, onRemove }: { label: string; onRemove: () => void }) {
+  return <Button variant="ghost" onClick={onRemove}>{label}</Button>;
+}
+
+function ClearLocalDecisionHistoryAction({ onClear }: { onClear: () => void }) {
+  return <Button variant="ghost" onClick={onClear}>Clear local decision history</Button>;
+}
+
+function ExportMyDataAction({ onExport }: { onExport: () => void }) {
+  return <Button variant="secondary" onClick={onExport}>Export my data</Button>;
+}
+
+function buildExportPayload(profile: DecisionProfile | null, analysis: ReturnType<typeof getProfileAnalysis>, syncStatus: string, legalStatus: string) {
+  return {
+    exportedAt: new Date().toISOString(),
+    syncStatus,
+    legalStatus,
+    profile: profile
+      ? {
+          source: profile.source ?? "local",
+          updatedAt: profile.updatedAt ?? null,
+          fields: {
+            ageRange: profile.ageRange ?? null,
+            city: profile.city ?? null,
+            incomeRange: profile.incomeRange ?? null,
+            riskComfort: profile.riskComfort ?? null,
+            dependents: profile.dependents ?? null,
+            careerStage: profile.careerStage ?? null,
+            goals: profile.goals ?? [],
+            homeOwnership: profile.homeOwnership ?? null,
+            investmentExperience: profile.investmentExperience ?? null,
+          },
+        }
+      : null,
+    profileAnalysis: {
+      score: analysis.score,
+      percentage: analysis.percentage,
+      level: analysis.level,
+      label: analysis.label,
+      description: analysis.description,
+      filledFields: analysis.filledFields,
+      missingFields: analysis.missingFields,
+    },
+    note: "This export intentionally excludes raw answers and sensitive decision inputs.",
+  };
 }
