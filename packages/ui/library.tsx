@@ -3,8 +3,9 @@
 import * as React from "react";
 import Link from "next/link";
 import { ArrowRight, BarChart3, Compass, Home, Layers3, Search, Sparkles, TrendingUp, UserRound } from "lucide-react";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { cn } from "@datastorified/utils";
-import { Badge, Button, Card, Skeleton } from "./design-system";
+import { Badge, Button, Card, ProgressBar, Skeleton } from "./design-system";
 
 type NavItem = {
   label: string;
@@ -209,16 +210,23 @@ export function ChartCard({ title, children }: { title: string; children: React.
   );
 }
 
-export function ProgressRing({ value, label, size = 96 }: { value: number; label?: string; size?: number }) {
+export function ProgressRing({ value, label, size = 96, tone = "primary" }: { value: number; label?: string; size?: number; tone?: "primary" | "accent" | "success" | "warning" | "danger" }) {
   const safe = Math.max(0, Math.min(100, value));
   const radius = 40;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (safe / 100) * circumference;
+  const ringClass = {
+    primary: "stroke-primary",
+    accent: "stroke-accent",
+    success: "stroke-emerald-500",
+    warning: "stroke-amber-500",
+    danger: "stroke-danger",
+  }[tone];
   return (
-    <div className="relative grid place-items-center" style={{ width: size, height: size }}>
+    <div className="relative grid place-items-center transition-transform duration-300 hover:-translate-y-0.5" style={{ width: size, height: size }}>
       <svg viewBox="0 0 100 100" className="size-full -rotate-90">
         <circle cx="50" cy="50" r={radius} className="stroke-border/40" strokeWidth="10" fill="none" />
-        <circle cx="50" cy="50" r={radius} className="stroke-primary" strokeWidth="10" fill="none" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={offset} />
+        <circle cx="50" cy="50" r={radius} className={ringClass} strokeWidth="10" fill="none" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={offset} />
       </svg>
       <div className="absolute text-center">
         <div className="text-2xl font-bold">{safe}</div>
@@ -260,6 +268,147 @@ export function ComparisonBar({ leftLabel, rightLabel, leftValue, rightValue }: 
         <span className="bg-soft/20" style={{ width: `${100 - leftPercent}%` }} />
       </div>
     </div>
+  );
+}
+
+export function ConfidenceMeter({ value, label = "Confidence", hint }: { value: number; label?: string; hint?: string }) {
+  return (
+    <Card className="p-5">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[.14em] text-primary">{label}</p>
+          <p className="mt-2 text-3xl font-bold">{Math.round(value)}%</p>
+          {hint ? <p className="mt-2 text-sm leading-6 text-muted">{hint}</p> : null}
+        </div>
+        <ProgressRing value={value} size={96} tone="accent" />
+      </div>
+      <ProgressBar className="mt-4" value={value} />
+    </Card>
+  );
+}
+
+export function RiskMeter({ value, label = "Risk", hint }: { value: number; label?: string; hint?: string }) {
+  const percent = Math.max(0, Math.min(100, value));
+  const tone = percent >= 70 ? "danger" : percent >= 40 ? "warning" : "success";
+  return (
+    <Card className="p-5">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[.14em] text-primary">{label}</p>
+          <p className="mt-2 text-3xl font-bold">{Math.round(percent)}%</p>
+          {hint ? <p className="mt-2 text-sm leading-6 text-muted">{hint}</p> : null}
+        </div>
+        <ProgressRing value={percent} size={96} tone={tone} />
+      </div>
+      <ProgressBar className="mt-4" value={percent} />
+    </Card>
+  );
+}
+
+export function ScenarioProjectionChart({ data, title = "Scenario projection", description }: { data: Array<{ label: string; value: number }>; title?: string; description?: string }) {
+  const safeData = data.length ? data : [{ label: "Now", value: 0 }];
+  return (
+    <Card className="p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-muted">{title}</p>
+          {description ? <p className="mt-1 text-sm leading-6 text-muted">{description}</p> : null}
+        </div>
+      </div>
+      <div className="mt-4 h-56 w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={safeData}>
+            <defs>
+              <linearGradient id="scenarioFill" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stopColor="rgb(37 99 235)" stopOpacity={0.35} />
+                <stop offset="100%" stopColor="rgb(37 99 235)" stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid stroke="rgba(148,163,184,.18)" vertical={false} />
+            <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fill: "rgb(100 116 139)", fontSize: 12 }} />
+            <YAxis tickLine={false} axisLine={false} tick={{ fill: "rgb(100 116 139)", fontSize: 12 }} />
+            <Tooltip cursor={{ stroke: "rgba(37,99,235,.2)" }} />
+            <Area type="monotone" dataKey="value" stroke="rgb(37 99 235)" strokeWidth={3} fill="url(#scenarioFill)" />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </Card>
+  );
+}
+
+export function KPITrendIndicator({ label, value, delta, tone = "primary" }: { label: string; value: string; delta: string; tone?: "primary" | "success" | "warning" | "danger" }) {
+  const toneClass = {
+    primary: "text-primary bg-primary/10",
+    success: "text-success bg-success/10",
+    warning: "text-amber-700 bg-amber-500/10",
+    danger: "text-danger bg-danger/10",
+  }[tone];
+  return (
+    <Card className="p-4">
+      <p className="text-sm font-semibold text-muted">{label}</p>
+      <div className="mt-3 flex items-end justify-between gap-3">
+        <p className="text-2xl font-bold">{value}</p>
+        <span className={cn("rounded-full px-2.5 py-1 text-xs font-bold", toneClass)}>{delta}</span>
+      </div>
+    </Card>
+  );
+}
+
+export function FactorScoreBar({ label, value, hint, tone = "primary" }: { label: string; value: number; hint?: string; tone?: "primary" | "accent" | "success" | "warning" | "danger" }) {
+  const percent = Math.max(0, Math.min(100, value));
+  const barClass = {
+    primary: "from-primary to-accent",
+    accent: "from-accent to-violet-500",
+    success: "from-success to-emerald-500",
+    warning: "from-amber-500 to-amber-400",
+    danger: "from-danger to-rose-500",
+  }[tone];
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between gap-3 text-sm">
+        <span className="font-semibold text-ink">{label}</span>
+        <span className="text-muted">{Math.round(percent)}%</span>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-soft">
+        <div className={cn("h-full rounded-full bg-gradient-to-r transition-[width] duration-500", barClass)} style={{ width: `${percent}%` }} />
+      </div>
+      {hint ? <p className="text-xs leading-5 text-muted">{hint}</p> : null}
+    </div>
+  );
+}
+
+export function BarComparisonChart({ title, leftLabel, rightLabel, leftValue, rightValue }: { title?: string; leftLabel: string; rightLabel: string; leftValue: number; rightValue: number }) {
+  const total = Math.max(leftValue + rightValue, 1);
+  const data = [
+    { label: leftLabel, value: leftValue, fill: "rgb(37 99 235)" },
+    { label: rightLabel, value: rightValue, fill: "rgb(124 58 237)" },
+  ];
+  return (
+    <Card className="p-5">
+      {title ? <p className="text-sm font-semibold text-muted">{title}</p> : null}
+      <div className="mt-4 h-56 w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data} layout="vertical" barSize={32}>
+            <CartesianGrid stroke="rgba(148,163,184,.18)" horizontal={false} />
+            <XAxis type="number" hide domain={[0, total]} />
+            <YAxis type="category" dataKey="label" width={90} tickLine={false} axisLine={false} tick={{ fill: "rgb(100 116 139)", fontSize: 12 }} />
+            <Tooltip />
+            <Bar dataKey="value" radius={[0, 999, 999, 0]}>
+              {data.map((entry) => (
+                <Cell key={entry.label} fill={entry.fill} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </Card>
+  );
+}
+
+export function useMockTrendData(base = 30, count = 6) {
+  return React.useMemo(
+    () => Array.from({ length: count }, (_, index) => ({ label: `W${index + 1}`, value: Math.max(8, base + Math.round(Math.sin(index * 1.2) * 12) + index * 4) })),
+    [base, count],
   );
 }
 

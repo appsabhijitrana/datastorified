@@ -103,10 +103,10 @@ export function Skeleton({ className }: { className?: string }) {
   return <div className={cn("animate-pulse rounded-2xl bg-soft", className)} />;
 }
 
-export function ProgressBar({ value, max = 100, label }: { value: number; max?: number; label?: string }) {
+export function ProgressBar({ value, max = 100, label, className }: { value: number; max?: number; label?: string; className?: string }) {
   const percent = Math.max(0, Math.min(100, (value / max) * 100));
   return (
-    <div className="space-y-2">
+    <div className={cn("space-y-2", className)}>
       {label ? <div className="flex items-center justify-between text-sm font-medium text-muted"><span>{label}</span><span>{Math.round(percent)}%</span></div> : null}
       <div className="h-2 overflow-hidden rounded-full bg-soft">
         <div className="h-full rounded-full bg-gradient-to-r from-primary via-blue-600 to-accent" style={{ width: `${percent}%` }} />
