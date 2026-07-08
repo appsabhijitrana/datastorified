@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Button, Card } from "@datastorified/ui";
 import { DecisionScenarioSimulator } from "./DecisionScenarioSimulator";
-import { DecisionRetentionLoop } from "./DecisionRetentionLoop";
+import { RelatedDecisionJourney } from "./DecisionRetentionLoop";
 import { DecisionRelatedTools } from "./DecisionRelatedTools";
 import { ActionPlanSection } from "./DecisionActionPlan";
 import { ProfileCompletenessCard } from "../profile/ProfileCompletenessCard";
@@ -125,7 +125,7 @@ export function ResultRenderer(input: ResultDataAdapterInput) {
       </ResultSectionLayout>
 
       <section className="mt-8 print:hidden">
-        <DecisionRetentionLoop slug={data.workflow.slug} />
+        <RelatedDecisionJourney slug={data.workflow.slug} />
       </section>
 
       <section className="mt-8 print:hidden">

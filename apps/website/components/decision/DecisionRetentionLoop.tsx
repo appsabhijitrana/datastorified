@@ -16,7 +16,7 @@ import {
 } from "@datastorified/decision-os";
 import { Badge, Button, Card, SectionHeader } from "@datastorified/ui/design-system";
 
-export function DecisionRetentionLoop({ slug }: { slug: string }) {
+export function RelatedDecisionJourney({ slug }: { slug: string }) {
   const { data: session } = authClient.useSession();
   const deviceType = typeof window === "undefined" ? "unknown" : window.innerWidth < 768 ? "mobile" : "desktop";
   const current = getDecisionBySlug(slug);
@@ -40,15 +40,17 @@ export function DecisionRetentionLoop({ slug }: { slug: string }) {
         </div>
       </div>
 
-      <RetentionRail title="Related to this decision" eyebrow="Retention" items={related.length ? related : fallbackByCategory(current?.category, slug)} isLoggedIn={Boolean(session?.user)} deviceType={deviceType} />
-      <RetentionRail title="People also compare" eyebrow="Retention" items={comparisons} />
-      <RetentionRail title="Quick next decisions" eyebrow="Retention" items={quick} />
-      <RetentionRail title="Trending now" eyebrow="Retention" items={trending} />
+      <RelatedDecisionCard title="Related to this decision" eyebrow="Related" items={related.length ? related : fallbackByCategory(current?.category, slug)} isLoggedIn={Boolean(session?.user)} deviceType={deviceType} />
+      <RelatedDecisionCard title="People also compare" eyebrow="Compare" items={comparisons} />
+      <QuickNextDecisionRail title="Quick 2-minute decisions" eyebrow="Quick" items={quick} />
+      <RelatedDecisionCard title="Trending now" eyebrow="Trending" items={trending} />
     </section>
   );
 }
 
-function RetentionRail({ title, eyebrow, items, isLoggedIn, deviceType }: { title: string; eyebrow: string; items: DiscoveryDecision[]; isLoggedIn?: boolean; deviceType?: string }) {
+export const DecisionRetentionLoop = RelatedDecisionJourney;
+
+export function RelatedDecisionCard({ title, eyebrow, items, isLoggedIn, deviceType }: { title: string; eyebrow: string; items: DiscoveryDecision[]; isLoggedIn?: boolean; deviceType?: string }) {
   if (!items.length) return null;
   return (
     <section className="space-y-4">
@@ -105,7 +107,11 @@ function RetentionRail({ title, eyebrow, items, isLoggedIn, deviceType }: { titl
   );
 }
 
-function ReasonBadge({ decision }: { decision: DiscoveryDecision }) {
+export function QuickNextDecisionRail({ title, eyebrow, items, isLoggedIn, deviceType }: { title: string; eyebrow: string; items: DiscoveryDecision[]; isLoggedIn?: boolean; deviceType?: string }) {
+  return <RelatedDecisionCard title={title} eyebrow={eyebrow} items={items} isLoggedIn={isLoggedIn} deviceType={deviceType} />;
+}
+
+export function ReasonBadge({ decision }: { decision: DiscoveryDecision }) {
   if (decision.isQuickDecision) return <Badge className="border-border bg-soft text-muted">Quick next</Badge>;
   if (decision.isTrending) return <Badge className="border-emerald-500/15 bg-emerald-500/10 text-emerald-700">Trending</Badge>;
   if (decision.isPopular) return <Badge className="border-primary/15 bg-primary/5 text-primary">Popular</Badge>;
