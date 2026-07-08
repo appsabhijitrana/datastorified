@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { ArrowRight, BarChart3, Search, Sparkles, X } from "lucide-react";
 import Link from "next/link";
+import { ArrowRight, BarChart3, Search, Sparkles, X } from "lucide-react";
 import { cn } from "@datastorified/utils";
 
 type Variant = "primary" | "secondary" | "ghost" | "danger";
@@ -11,11 +11,11 @@ export function Button({ className, variant = "primary", ...props }: React.Butto
   return (
     <button
       className={cn(
-        "inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50",
-        variant === "primary" && "bg-gradient-to-br from-primary to-accent text-white shadow-glow hover:-translate-y-0.5",
-        variant === "secondary" && "border border-border bg-white text-ink shadow-soft hover:border-primary/30",
+        "inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50",
+        variant === "primary" && "bg-gradient-to-br from-primary via-blue-600 to-accent text-white shadow-glow hover:-translate-y-0.5 hover:shadow-lift",
+        variant === "secondary" && "border border-border/80 bg-white text-ink shadow-soft hover:border-primary/30 hover:shadow-lift",
         variant === "ghost" && "text-muted hover:bg-soft hover:text-ink",
-        variant === "danger" && "bg-danger text-white",
+        variant === "danger" && "bg-danger text-white shadow-soft",
         className,
       )}
       {...props}
@@ -24,7 +24,7 @@ export function Button({ className, variant = "primary", ...props }: React.Butto
 }
 
 export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("rounded-[1.5rem] border border-border/80 bg-white shadow-soft", className)} {...props} />;
+  return <div className={cn("rounded-[1.75rem] border border-border/80 bg-white shadow-soft", className)} {...props} />;
 }
 
 export function Badge({ className, ...props }: React.HTMLAttributes<HTMLSpanElement>) {
@@ -36,7 +36,7 @@ export function Chip({ className, selected, ...props }: React.ButtonHTMLAttribut
     <button
       className={cn(
         "inline-flex min-h-11 items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20",
-        selected ? "border-primary/20 bg-primary/8 text-primary shadow-sm" : "border-border bg-white text-ink hover:border-primary/20",
+        selected ? "border-primary/20 bg-primary/10 text-primary shadow-sm" : "border-border bg-white text-ink hover:border-primary/20 hover:shadow-soft",
         className,
       )}
       {...props}
@@ -46,7 +46,7 @@ export function Chip({ className, selected, ...props }: React.ButtonHTMLAttribut
 
 export function SearchInput({ className, ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
-    <label className={cn("flex min-h-12 items-center gap-3 rounded-2xl border border-border bg-white px-4 shadow-soft transition focus-within:border-primary/40 focus-within:shadow-glow", className)}>
+    <label className={cn("flex min-h-12 items-center gap-3 rounded-[1.5rem] border border-border/80 bg-white px-4 shadow-soft transition focus-within:border-primary/40 focus-within:shadow-glow", className)}>
       <Search className="shrink-0 text-muted" size={18} />
       <input className="min-w-0 flex-1 bg-transparent py-3 text-base outline-none placeholder:text-muted/70 focus-visible:outline-none" {...props} />
       {props.value ? <X className="shrink-0 text-muted" size={18} /> : null}
@@ -62,9 +62,7 @@ export function BottomSheet({ open, title, children, onClose }: { open: boolean;
         <div className="mx-auto max-w-2xl">
           <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-soft" />
           <div className="flex items-start justify-between gap-3">
-            <div>
-              {title ? <h2 className="text-lg font-bold">{title}</h2> : null}
-            </div>
+            <div>{title ? <h2 className="text-lg font-bold">{title}</h2> : null}</div>
             <Button variant="ghost" onClick={onClose} aria-label="Close dialog">Close</Button>
           </div>
           <div className="mt-4">{children}</div>
@@ -77,7 +75,7 @@ export function BottomSheet({ open, title, children, onClose }: { open: boolean;
 export function Dialog({ open, title, children, onClose }: { open: boolean; title?: string; children: React.ReactNode; onClose: () => void }) {
   return open ? (
     <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 grid place-items-center bg-ink/35 p-4">
-      <div className="w-full max-w-lg rounded-[1.5rem] border border-border bg-white p-5 shadow-lift">
+      <div className="w-full max-w-lg rounded-[1.75rem] border border-border bg-white p-5 shadow-lift">
         <div className="flex items-start justify-between gap-3">
           <div>{title ? <h2 className="text-xl font-bold">{title}</h2> : null}</div>
           <button className="min-h-11 rounded-xl px-3 text-sm font-semibold text-muted hover:bg-soft" onClick={onClose}>Close</button>
@@ -111,7 +109,7 @@ export function ProgressBar({ value, max = 100, label }: { value: number; max?: 
     <div className="space-y-2">
       {label ? <div className="flex items-center justify-between text-sm font-medium text-muted"><span>{label}</span><span>{Math.round(percent)}%</span></div> : null}
       <div className="h-2 overflow-hidden rounded-full bg-soft">
-        <div className="h-full rounded-full bg-gradient-to-r from-primary to-accent" style={{ width: `${percent}%` }} />
+        <div className="h-full rounded-full bg-gradient-to-r from-primary via-blue-600 to-accent" style={{ width: `${percent}%` }} />
       </div>
     </div>
   );

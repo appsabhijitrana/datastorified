@@ -1,4 +1,58 @@
 @tailwind base;@tailwind components;@tailwind utilities;
-@layer base{*{@apply border-border}html{scroll-behavior:smooth}body{@apply bg-canvas text-ink antialiased}::selection{@apply bg-primary/20}button,a{-webkit-tap-highlight-color:transparent}}
-@layer utilities{.text-balance{text-wrap:balance}.hero-grid{background-image:radial-gradient(circle at 1px 1px,rgba(37,99,235,.10) 1px,transparent 0);background-size:28px 28px}.glass{background:rgba(255,255,255,.72);backdrop-filter:blur(18px)}}
+@layer base{
+  :root{
+    --ds-canvas: 250 251 252;
+    --ds-surface: 255 255 255;
+    --ds-surface-soft: 246 248 251;
+    --ds-surface-glass: 255 255 255 / 0.72;
+    --ds-text: 15 23 42;
+    --ds-muted: 100 116 139;
+    --ds-border: 229 231 235;
+    --ds-primary: 37 99 235;
+    --ds-primary-strong: 29 78 216;
+    --ds-accent: 124 58 237;
+    --ds-success: 16 185 129;
+    --ds-warning: 245 158 11;
+    --ds-danger: 239 68 68;
+    --ds-shadow-soft: 0 8px 30px rgba(15, 23, 42, .06);
+    --ds-shadow-lift: 0 18px 45px rgba(15, 23, 42, .10);
+    --ds-shadow-glow: 0 14px 40px rgba(37, 99, 235, .18);
+    --ds-radius-lg: 1.5rem;
+    --ds-radius-xl: 1.75rem;
+    --ds-radius-2xl: 2rem;
+    --ds-radius-pill: 9999px;
+  }
+  *{@apply border-border}
+  html{scroll-behavior:smooth}
+  body{@apply bg-canvas text-ink antialiased}
+  ::selection{@apply bg-primary/20}
+  button,a{-webkit-tap-highlight-color:transparent}
+}
+@layer components{
+  .ds-surface{@apply border border-border/80 bg-white shadow-soft}
+  .ds-panel{@apply rounded-[var(--ds-radius-2xl)] border border-border/80 bg-white shadow-soft}
+  .ds-glass{@apply border border-white/60 bg-white/75 shadow-soft backdrop-blur-xl}
+  .ds-muted-panel{@apply border border-border bg-soft/30}
+  .ds-gradient-panel{background-image:linear-gradient(135deg,rgba(37,99,235,.08),rgba(124,58,237,.08));}
+  .ds-card-title{@apply text-lg font-semibold tracking-tight text-ink}
+  .ds-icon-wrap{@apply grid size-11 place-items-center rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 text-primary}
+  .ds-icon-muted{@apply text-muted}
+  .ds-pill{@apply inline-flex min-h-8 items-center rounded-full border border-primary/10 bg-primary/5 px-3 text-xs font-semibold text-primary}
+  .ds-input{@apply min-h-12 w-full rounded-2xl border border-border bg-white px-4 text-base text-ink shadow-soft outline-none transition placeholder:text-muted/70 focus:border-primary/40 focus:ring-4 focus:ring-primary/10}
+  .ds-button{@apply inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50}
+}
+@layer utilities{
+  .text-balance{text-wrap:balance}
+  .hero-grid{background-image:radial-gradient(circle at 1px 1px,rgba(37,99,235,.10) 1px,transparent 0);background-size:28px 28px}
+  .hero-grid-violet{background-image:radial-gradient(circle at 1px 1px,rgba(124,58,237,.10) 1px,transparent 0);background-size:28px 28px}
+  .glass{background:rgba(255,255,255,.72);backdrop-filter:blur(18px)}
+  .panel-border{border-color:rgb(var(--ds-border))}
+  .shadow-soft{box-shadow:var(--ds-shadow-soft)}
+  .shadow-lift{box-shadow:var(--ds-shadow-lift)}
+  .shadow-glow{box-shadow:var(--ds-shadow-glow)}
+  .radius-lg{border-radius:var(--ds-radius-lg)}
+  .radius-xl{border-radius:var(--ds-radius-xl)}
+  .radius-2xl{border-radius:var(--ds-radius-2xl)}
+  .radius-pill{border-radius:var(--ds-radius-pill)}
+}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
