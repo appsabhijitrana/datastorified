@@ -7,6 +7,7 @@ import { ProgressBar } from "@datastorified/ui/design-system";
 import type { DecisionOrchestratorPreview } from "@datastorified/decision-os/core/orchestrator";
 import type { ProfileAnalysis } from "@datastorified/profile";
 import { getDecisionConfidence, MissingSignalList } from "./DecisionConfidence";
+import { ProgressiveProfileNudge } from "../profile/ProgressiveProfileNudge";
 
 type LiveDecisionMeterProps = {
   preview: DecisionOrchestratorPreview;
@@ -87,6 +88,11 @@ export function LiveDecisionMeter({ preview, answerProgress, profileAnalysis, co
               <p className="mt-1">Next best field: <span className="text-primary">{profileAnalysis.nextBestField.label}</span>.</p>
             </div>
           )}
+          <ProgressiveProfileNudge
+            context="money"
+            title="Add one detail to improve future decision confidence."
+            description={profileHint ? `Next best field: ${profileHint}. This stays optional and local first.` : "This stays optional and local first."}
+          />
         </div>
       )}
     </Card>

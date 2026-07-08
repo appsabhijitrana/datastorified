@@ -6,7 +6,8 @@ import { authClient, GoogleSignInButton, LegalAcceptanceGate } from "@datastorif
 import { ProfileCompletenessCard } from "./ProfileCompletenessCard";
 import { ImproveAnalysisCTA } from "./ImproveAnalysisCTA";
 import { getProfileAnalysis } from "@datastorified/profile";
-import { ConfidenceImprovementNudge, DecisionConfidenceCard, getDecisionConfidence } from "../decision/DecisionConfidence";
+import { DecisionConfidenceCard, getDecisionConfidence } from "../decision/DecisionConfidence";
+import { ProgressiveProfileNudge } from "./ProgressiveProfileNudge";
 
 export function ProfilePageContent() {
   const { data: session } = authClient.useSession();
@@ -54,12 +55,13 @@ export function ProfilePageContent() {
         </div>
         <div className="mt-4 grid gap-4 lg:grid-cols-[1.2fr_.8fr]">
           <DecisionConfidenceCard confidence={confidence} />
-          <ConfidenceImprovementNudge
+          <ProgressiveProfileNudge
+            context="home"
+            profile={session?.user ? { source: "cloud" } : undefined}
             title="Add your city to improve home and cost-of-living decisions."
             description="This helps location-sensitive decisions stay more accurate. You can skip and continue anonymously."
-            actionLabel="Add city"
-            onAction={() => window.location.assign("/profile")}
             onSkip={() => window.location.assign("/decision")}
+            onSaved={() => window.location.assign("/profile")}
           />
         </div>
       </LegalAcceptanceGate>

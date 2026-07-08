@@ -8,7 +8,6 @@ import { RelatedDecisionJourney } from "./DecisionRetentionLoop";
 import { DecisionRelatedTools } from "./DecisionRelatedTools";
 import { ActionPlanSection } from "./DecisionActionPlan";
 import { ProfileCompletenessCard } from "../profile/ProfileCompletenessCard";
-import { PersonalizedRecommendations } from "../personalization/PersonalizedRecommendations";
 import { DecisionConfidenceCard, MissingSignalList, getDecisionConfidence } from "./DecisionConfidence";
 import { ScoreBreakdownSection } from "./ScoreBreakdownSection";
 import { TradeoffAnalysisSection } from "./TradeoffAnalysisSection";
@@ -18,6 +17,7 @@ import { adaptResultData, getResultAnswers, safeCopyForType } from "./ResultData
 import type { ResultDataAdapterInput } from "./resultTypes";
 import { ConfidenceBadge, DecisionSummary, ProfileCompletenessBadge, RiskBadge } from "./DecisionSummary";
 import { CopySummaryButton, ExportReportButton, PrintReportButton, SaveReportButton, ShareReportSheet } from "./DecisionReportActions";
+import { ProgressiveProfileNudge } from "../profile/ProgressiveProfileNudge";
 
 export function ResultRenderer(input: ResultDataAdapterInput) {
   const data = adaptResultData(input);
@@ -119,7 +119,12 @@ export function ResultRenderer(input: ResultDataAdapterInput) {
 
       <ResultSectionLayout title="Personalized nudge" kicker="Next steps" description="Keep the decision moving without forcing extra onboarding." className="mt-8">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-          <PersonalizedRecommendations compact showProfile={false} />
+          <ProgressiveProfileNudge
+            context={data.workflow.category?.toLowerCase()}
+            profile={data.profileAnalysis ? { source: "local" } : undefined}
+            title="Add one detail to improve future decision confidence."
+            description="This stays optional. You can skip and keep using the report."
+          />
           {data.profileAnalysis ? <ProfileCompletenessCard analysis={data.profileAnalysis} /> : <Card className="p-5"><p className="text-sm leading-6 text-muted">Anonymous usage is still supported. Sign in later to improve future decision previews.</p></Card>}
         </div>
       </ResultSectionLayout>

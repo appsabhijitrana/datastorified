@@ -6,7 +6,8 @@ import { ArrowRight, Bookmark, CheckCircle2, ShieldAlert, Sparkles } from "lucid
 import { authClient } from "@datastorified/auth";
 import { Badge, Button, Card } from "@datastorified/ui";
 import { DecisionTimelineMini } from "./TrustIndicators";
-import { ConfidenceImprovementNudge, getDecisionConfidence } from "./DecisionConfidence";
+import { getDecisionConfidence } from "./DecisionConfidence";
+import { ProgressiveProfileNudge } from "../profile/ProgressiveProfileNudge";
 export type DecisionIntroWorkflow = {
   pluginId: string;
   slug: string;
@@ -111,12 +112,13 @@ export function DecisionIntroPage({ workflow }: { workflow: DecisionIntroWorkflo
           </Card>
         )}
 
-        <ConfidenceImprovementNudge
+        <ProgressiveProfileNudge
+          context={workflow.category?.toLowerCase()}
+          profile={session?.user ? { source: "cloud" } : undefined}
           title={workflow.disclaimerType === "finance" ? "Add your risk comfort to improve money decision confidence." : workflow.disclaimerType === "health" ? "Add one detail to improve health decision confidence." : "Add one detail to improve future decision confidence."}
           description={session?.user ? "This stays optional. We only use it to sharpen the preview confidence, not to force onboarding." : "You can keep going anonymously and skip this anytime."}
-          actionLabel="Add one detail"
-          onAction={() => router.push("/profile")}
           onSkip={() => router.push(startHref)}
+          onSaved={() => router.push("/profile")}
         />
 
         <Card className="border-primary/15 bg-primary/[.04] p-5 sm:p-6">

@@ -6,7 +6,7 @@ import { ArrowRight, Clock3 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { authClient, GoogleSignInButton } from "@datastorified/auth";
 import { trackDiscoveryEvent } from "@datastorified/analytics";
-import { Badge, Button, Card, Chip, EmptyState, PageHeader, ProgressBar, ProfileNudgeCard, ScoreRing, SectionHeader, StatusBadge } from "@datastorified/ui/design-system";
+import { Badge, Button, Card, Chip, EmptyState, PageHeader, ProgressBar, ScoreRing, SectionHeader, StatusBadge } from "@datastorified/ui/design-system";
 import { decisionPluginRegistry, getDecisionRoute, getLiveDecisions, getPopularDecisions, type DecisionMemoryDraft, type StoredDecision } from "@datastorified/decision-os";
 import { DecisionOrchestrator } from "@datastorified/decision-os/core/orchestrator";
 import { getDecisionAdapters } from "@datastorified/decision-os/adapters";
@@ -16,6 +16,7 @@ import { DecisionAccuracyBadge } from "../decision/DecisionAccuracyBadge";
 import { HybridDecisionRepository } from "@datastorified/decision-repository";
 import { decisionRouteFromText } from "../../lib/decision-routing";
 import { RecommendedDecisionRail } from "../recommendations/RecommendationFeed";
+import { ProgressiveProfileNudge } from "../profile/ProgressiveProfileNudge";
 
 const quickChips = [
   "FD vs SIP",
@@ -204,11 +205,12 @@ export function DecisionHubHome() {
           )}
         </Card>
 
-        <ProfileNudgeCard
+        <ProgressiveProfileNudge
+          context="money"
           title="Add one detail to improve future decision confidence."
           description={nextField ? `Next best field: ${nextField}. We only need one detail to make future guidance more precise.` : "We only need one detail to make future guidance more precise."}
-          actionLabel="Improve accuracy"
-          onAction={() => router.push("/profile")}
+          onSkip={() => router.push("/decision")}
+          onSaved={() => router.push("/profile")}
         />
       </section>
     </div>
