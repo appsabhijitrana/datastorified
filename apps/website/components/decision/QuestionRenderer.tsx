@@ -1,6 +1,7 @@
 "use client";
 
 import type { DecisionQuestion as Question, DecisionScalar, DecisionValue } from "@datastorified/decision-os";
+import { Banknote, CalendarClock, CheckCircle2, CircleHelp, Clock3, Gauge, HeartPulse, Lightbulb, MapPin, MoveRight, Sparkles, Wallet } from "lucide-react";
 import { Badge, Card } from "@datastorified/ui";
 import { SmartNumberInput } from "@datastorified/ui/smart-number-input";
 
@@ -61,28 +62,38 @@ function OptionGrid({
   onChange: (value: DecisionValue) => void;
   disabled?: boolean;
   columns?: string;
-}) {
-  return (
-    <div className={`grid gap-2 ${columns}`}>
-      {options.map((option) => {
-        const selected = Object.is(value, option.value);
-        return (
-          <button
-            key={String(option.value)}
-            type="button"
-            disabled={disabled}
-            aria-pressed={selected}
-            onClick={() => onChange(option.value)}
-            className={`min-h-11 rounded-2xl border px-4 py-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 ${
-              selected ? "border-primary bg-primary/5 text-primary shadow-sm" : "border-border bg-white text-muted hover:border-primary/30 hover:text-ink"
+  }) {
+    return (
+      <div className={`grid gap-2 ${columns}`}>
+        {options.map((option) => {
+          const selected = Object.is(value, option.value);
+          const Icon = getOptionIcon(option.label, option.value, selected);
+          return (
+            <button
+              key={String(option.value)}
+              type="button"
+              disabled={disabled}
+              aria-pressed={selected}
+              onClick={() => onChange(option.value)}
+              className={`group flex min-h-16 items-center gap-3 rounded-[1.25rem] border px-4 py-3 text-left text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 ${
+              selected ? "border-primary/25 bg-primary/5 text-primary shadow-soft" : "border-border bg-white text-ink hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-soft"
             } ${disabled ? "cursor-not-allowed opacity-60" : ""}`}
-          >
-            {option.label}
-          </button>
-        );
-      })}
-    </div>
-  );
+            >
+              <span className={`grid size-10 shrink-0 place-items-center rounded-2xl transition ${selected ? "bg-primary text-white shadow-glow" : "bg-soft text-muted group-hover:bg-primary/10 group-hover:text-primary"}`}>
+                <Icon size={16} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate">{option.label}</span>
+                <span className="mt-1 block text-xs font-medium text-muted">{selected ? "Selected" : "Tap to choose"}</span>
+              </span>
+              <span className={`grid size-7 shrink-0 place-items-center rounded-full border transition ${selected ? "border-primary bg-primary text-white" : "border-border bg-white text-transparent group-hover:border-primary/30 group-hover:text-primary"}`}>
+                <CheckCircle2 size={14} />
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    );
 }
 
 export function RadioQuestion({ question, value, onChange, error, disabled, helperOverride, whyWeAsk }: BaseProps) {
@@ -281,6 +292,21 @@ export function QuestionRenderer(props: BaseProps) {
 function normalizeOptions(question: Question): Array<{ label: string; value: OptionValue }> {
   if (question.type === "boolean") return [{ label: "Yes", value: true }, { label: "No", value: false }];
   return (question.options ?? []).map((option) => ({ label: option.label, value: option.value as OptionValue }));
+}
+
+function getOptionIcon(label: string, value: OptionValue, selected: boolean) {
+  const normalized = `${label} ${String(value)}`.toLowerCase();
+  if (normalized.includes("yes") || normalized.includes("true")) return CheckCircle2;
+  if (normalized.includes("no") || normalized.includes("false")) return CircleHelp;
+  if (normalized.includes("income") || normalized.includes("money") || normalized.includes("salary") || normalized.includes("budget")) return Banknote;
+  if (normalized.includes("time") || normalized.includes("month") || normalized.includes("year") || normalized.includes("short")) return CalendarClock;
+  if (normalized.includes("risk") || normalized.includes("safety")) return HeartPulse;
+  if (normalized.includes("speed") || normalized.includes("fast") || normalized.includes("quick")) return Clock3;
+  if (normalized.includes("score") || normalized.includes("confidence")) return Gauge;
+  if (normalized.includes("idea") || normalized.includes("option") || normalized.includes("compare")) return Sparkles;
+  if (normalized.includes("location") || normalized.includes("city") || normalized.includes("home")) return MapPin;
+  if (normalized.includes("invest") || normalized.includes("savings") || normalized.includes("sip")) return Wallet;
+  return selected ? MoveRight : Lightbulb;
 }
 
 function NumericQuestion({ question, value, onChange, error, disabled, helperOverride, whyWeAsk, mode, showRange = false }: BaseProps & { mode: "currency" | "decimal"; showRange?: boolean }) {
