@@ -6,6 +6,7 @@
   "exports": {
     ".": "./index.ts",
     "./design-system": "./design-system.tsx",
+    "./library": "./library.tsx",
     "./smart-number": "./smart-number.ts",
     "./smart-number-input": "./smart-number-input.tsx",
     "./platform-client": "./platform-client.tsx",
