@@ -6,6 +6,7 @@ import { Button, Card } from "@datastorified/ui";
 import { DecisionScenarioSimulator } from "./DecisionScenarioSimulator";
 import { DecisionRetentionLoop } from "./DecisionRetentionLoop";
 import { DecisionRelatedTools } from "./DecisionRelatedTools";
+import { ActionPlanSection } from "./DecisionActionPlan";
 import { ProfileCompletenessCard } from "../profile/ProfileCompletenessCard";
 import { PersonalizedRecommendations } from "../personalization/PersonalizedRecommendations";
 import { DecisionConfidenceCard, MissingSignalList, getDecisionConfidence } from "./DecisionConfidence";
@@ -80,6 +81,13 @@ export function ResultRenderer(input: ResultDataAdapterInput) {
       <ResultSectionLayout title="Scenario simulator" kicker="What if?" description="Adjust sensitive variables and compare the before/after result." className="mt-8">
         <DecisionScenarioSimulator workflow={data.workflow} answers={answers} baseReport={data.report} />
       </ResultSectionLayout>
+
+      <ActionPlanSection
+        workflow={data.workflow}
+        report={data.report}
+        disclaimerType={data.config.disclaimerType}
+        onSaveChecklist={() => data.onSave?.()}
+      />
 
       <ResultSectionLayout title="Review reminder" kicker="Next steps" description="Keep the decision moving without forcing extra onboarding." className="mt-8">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
