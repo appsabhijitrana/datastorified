@@ -1,7 +1,7 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { Copy, Printer, Share2, BookmarkPlus, Trash2 } from "lucide-react";
 import { Button, Card } from "@datastorified/ui";
 import { DecisionScenarioSimulator } from "./DecisionScenarioSimulator";
 import { DecisionRetentionLoop } from "./DecisionRetentionLoop";
@@ -16,16 +16,19 @@ import { ResultSectionLayout } from "./ResultSectionLayout";
 import { adaptResultData, getResultAnswers, safeCopyForType } from "./ResultDataAdapter";
 import type { ResultDataAdapterInput } from "./resultTypes";
 import { ConfidenceBadge, DecisionSummary, ProfileCompletenessBadge, RiskBadge } from "./DecisionSummary";
+import { CopySummaryButton, ExportReportButton, PrintReportButton, SaveReportButton, ShareReportSheet } from "./DecisionReportActions";
 
 export function ResultRenderer(input: ResultDataAdapterInput) {
   const data = adaptResultData(input);
   const answers = getResultAnswers(data.report, data.answers);
+  const [shareOpen, setShareOpen] = useState(false);
   const confidence = getDecisionConfidence({
     answerProgress: { answered: Object.keys(answers).length, total: data.workflow.questions.length, requiredAnswered: Object.keys(answers).length, requiredTotal: data.workflow.questions.length },
     profileAnalysis: data.profileAnalysis,
     decisionSignals: data.report.score.factors.length,
     assumptions: [],
   });
+  const summary = data.safeSummary;
 
   return (
     <main className="mx-auto max-w-7xl overflow-x-hidden px-4 py-8 sm:px-6 sm:py-12">
@@ -35,10 +38,11 @@ export function ResultRenderer(input: ResultDataAdapterInput) {
         description="A premium snapshot of the decision outcome with clear, educational language."
         aside={
           <div className="flex flex-wrap justify-start gap-2 lg:justify-end print:hidden">
-            <Button variant="secondary" onClick={data.onCopy}><Copy size={16} />{data.copied ? "Copied" : "Copy summary"}</Button>
-            <Button variant="secondary" onClick={data.onShare}><Share2 size={16} />Share</Button>
-            <Button variant="secondary" onClick={data.onPrint}><Printer size={16} />Print</Button>
-            <Button variant="secondary" onClick={() => data.onSave?.()}>{data.saved ? <><Trash2 size={16} /> Remove saved copy</> : <><BookmarkPlus size={16} /> Save locally</>}</Button>
+            <CopySummaryButton summary={summary} onCopy={data.onCopy} />
+            <Button variant="secondary" onClick={() => setShareOpen(true)}>Share</Button>
+            <PrintReportButton onPrint={data.onPrint ?? (() => window.print())} />
+            <SaveReportButton saved={Boolean(data.saved)} onToggleSave={() => data.onSave?.()} />
+            <ExportReportButton report={data.report} workflow={data.workflow} summary={summary} disclaimerType={data.config.disclaimerType ?? "none"} />
           </div>
         }
       >
@@ -114,6 +118,40 @@ export function ResultRenderer(input: ResultDataAdapterInput) {
           <Button variant="ghost">Open saved decisions</Button>
         </Link>
       </div>
+
+      <ShareReportSheet
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        workflow={data.workflow}
+        report={data.report}
+        summary={summary}
+        disclaimerType={data.config.disclaimerType ?? "none"}
+        onCopySummary={() => { if (data.onCopy) void data.onCopy(); }}
+        onCopyLink={async () => {
+          await navigator.clipboard.writeText(window.location.href);
+        }}
+        onPrint={data.onPrint ?? (() => window.print())}
+        onExport={() => {
+          const blob = new Blob([buildPrintableHtml(data.workflow.title, summary, data.report, data.config.disclaimerType ?? "none")], { type: "text/html;charset=utf-8" });
+          const url = URL.createObjectURL(blob);
+          const anchor = document.createElement("a");
+          anchor.href = url;
+          anchor.download = `${data.workflow.slug}-report.html`;
+          document.body.appendChild(anchor);
+          anchor.click();
+          anchor.remove();
+          window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }}
+      />
     </main>
   );
+}
+
+function buildPrintableHtml(title: string, summary: string, report: { generatedAt: string; score: { value: number; label?: string }; recommendation?: { title: string; summary: string }; actionPlan: string[]; }, disclaimerType: "none" | "finance" | "insurance" | "legal" | "health") {
+  const disclaimer = safeCopyForType(disclaimerType);
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${escapeHtml(title)} Report</title><style>body{font-family:Inter,system-ui,sans-serif;margin:40px;color:#0f172a}h1,h2{margin:0 0 12px}.meta,.muted{color:#64748b}.card{border:1px solid #e2e8f0;border-radius:18px;padding:16px;margin:16px 0}ul{margin:12px 0 0 20px}li{margin:8px 0;line-height:1.5}@media print{body{margin:20px}}</style></head><body><h1>${escapeHtml(title)}</h1><p class="meta">Generated ${new Date(report.generatedAt).toLocaleString("en-IN")}</p><div class="card"><h2>Summary</h2><p>${escapeHtml(summary).replace(/\n/g, "<br/>")}</p></div><div class="card"><h2>Score</h2><p><strong>${Math.round(report.score.value)}/100</strong> ${escapeHtml(report.score.label ?? "Decision profile")}</p></div><div class="card"><h2>Trade-offs</h2><ul>${(report.recommendation?.summary ? [report.recommendation.summary] : []).concat(report.actionPlan.slice(0, 3)).map((item) => `<li>${escapeHtml(item)}</li>`).join("") || "<li>Trade-off detail is limited for this workflow.</li>"}</ul></div><div class="card"><h2>Action checklist</h2><ul>${report.actionPlan.map((item) => `<li>${escapeHtml(item)}</li>`).join("") || "<li>Review assumptions before acting.</li>"}</ul></div><div class="card"><h2>Disclaimer</h2><p class="muted">${escapeHtml(disclaimer)}</p></div></body></html>`;
+}
+
+function escapeHtml(value: string) {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
