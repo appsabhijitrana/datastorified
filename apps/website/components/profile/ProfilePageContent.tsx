@@ -241,10 +241,10 @@ export function ProfilePageContent() {
           </p>
         </Card>
         <Card className="p-5">
-          <p className="text-xs font-bold uppercase tracking-[.14em] text-primary">Privacy controls</p>
+          <p className="text-xs font-bold uppercase tracking-[.14em] text-primary">Profile data management</p>
           <div className="mt-3 space-y-2 text-sm leading-6 text-muted">
-            <p>• Remove any field individually.</p>
-            <p>• Clear local profile data anytime.</p>
+            <p>• Each field can be edited or removed in the list above.</p>
+            <p>• Changes stay local first unless you sign in for sync later.</p>
             <p>• Google login only helps sync and save benefits.</p>
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
