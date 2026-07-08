@@ -1,5 +1,10 @@
-import { redirect } from "next/navigation";
+import { AppShell } from "../../components/shell/AppShell";
+import { DecisionLibrary } from "../../components/decision/DecisionLibrary";
 
 export default function MyDecisionsPage() {
-  redirect("/decision/saved");
+  return (
+    <AppShell>
+      <DecisionLibrary />
+    </AppShell>
+  );
 }
