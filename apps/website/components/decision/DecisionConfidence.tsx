@@ -4,52 +4,12 @@ import { CircleAlert, ShieldCheck, Sparkles, UserRound } from "lucide-react";
 import { Card, Button } from "@datastorified/ui";
 import type { ProfileAnalysis } from "@datastorified/profile";
 import { ProgressBar } from "@datastorified/ui/design-system";
+import { calculateDecisionConfidence, type DecisionConfidenceCalculatorInput, MissingSignalList as EngineMissingSignalList, ProfileCompletionScore, ProfileCompletenessRing, ConfidenceImpactPreview } from "./ProfileConfidenceEngine";
 
-type ConfidenceContext = {
-  answerProgress: { answered: number; total: number; requiredAnswered?: number; requiredTotal?: number };
-  profileAnalysis?: Pick<ProfileAnalysis, "label" | "description" | "nextBestField" | "percentage">;
-  decisionSignals?: number;
-  assumptions?: string[];
-};
+type ConfidenceContext = DecisionConfidenceCalculatorInput;
 
 export function getDecisionConfidence(context: ConfidenceContext) {
-  const answerCompletion = context.answerProgress.total > 0 ? (context.answerProgress.answered / context.answerProgress.total) * 100 : 0;
-  const requiredCompletion = context.answerProgress.requiredTotal && context.answerProgress.requiredTotal > 0
-    ? (context.answerProgress.requiredAnswered ?? 0) / context.answerProgress.requiredTotal * 100
-    : answerCompletion;
-  const profileCompleteness = context.profileAnalysis?.percentage ?? 0;
-  const signals = Math.min(100, Math.max(0, (context.decisionSignals ?? 0) * 18));
-  const assumptionsPenalty = Math.min(12, (context.assumptions?.length ?? 0) * 3);
-
-  const score = Math.round(
-    clamp(
-      (answerCompletion * 0.34) +
-        (requiredCompletion * 0.28) +
-        (profileCompleteness * 0.2) +
-        (signals * 0.18) -
-        assumptionsPenalty,
-      0,
-      100,
-    ),
-  );
-
-  const missingSignals = [
-    context.answerProgress.requiredAnswered !== undefined && context.answerProgress.requiredTotal !== undefined && context.answerProgress.requiredAnswered < context.answerProgress.requiredTotal
-      ? "Finish required answers"
-      : null,
-    context.answerProgress.answered < context.answerProgress.total ? "Answer a few more questions" : null,
-    context.profileAnalysis?.nextBestField?.label ? `Add ${context.profileAnalysis.nextBestField.label.toLowerCase()}` : null,
-    (context.assumptions?.length ?? 0) > 0 ? "Review assumptions" : null,
-  ].filter(Boolean) as string[];
-
-  return {
-    score,
-    answerCompletion: Math.round(answerCompletion),
-    requiredCompletion: Math.round(requiredCompletion),
-    profileCompleteness: Math.round(profileCompleteness),
-    missingSignals,
-    profileHint: context.profileAnalysis?.nextBestField,
-  };
+  return calculateDecisionConfidence(context);
 }
 
 export function DecisionConfidenceCard({
@@ -66,7 +26,7 @@ export function DecisionConfidenceCard({
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs font-bold uppercase tracking-[.14em] text-primary">{title}</p>
-          <h3 className="mt-1 text-xl font-bold">{confidence.score}%</h3>
+          <h3 className="mt-1 text-xl font-bold">{confidence.currentConfidence}%</h3>
         </div>
         <span className="inline-flex items-center gap-1.5 rounded-full border border-success/15 bg-success/[.07] px-3 py-1.5 text-xs font-bold text-success">
           <ShieldCheck size={14} />
@@ -75,12 +35,12 @@ export function DecisionConfidenceCard({
       </div>
       <p className="mt-2 text-sm leading-6 text-muted">{subtitle}</p>
       <div className="mt-4">
-        <ProgressBar value={confidence.score} label="Confidence preview" />
+        <ProgressBar value={confidence.currentConfidence} label="Confidence preview" />
       </div>
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
-        <MiniStat label="Answers" value={`${confidence.answerCompletion}%`} />
+        <MiniStat label="Answers" value={`${confidence.currentConfidence}%`} />
         <MiniStat label="Profile" value={`${confidence.profileCompleteness}%`} />
-        <MiniStat label="Required" value={`${confidence.requiredCompletion}%`} />
+        <MiniStat label="Band" value={confidence.confidenceBand} />
       </div>
     </Card>
   );
@@ -91,6 +51,7 @@ export function ProfileCompletenessImpact({
 }: {
   analysis: Pick<ProfileAnalysis, "label" | "description" | "nextBestField" | "percentage">;
 }) {
+  const ring = ProfileCompletenessRing({ value: analysis.percentage });
   return (
     <Card className="p-5">
       <div className="flex items-start gap-3">
@@ -99,8 +60,9 @@ export function ProfileCompletenessImpact({
         </span>
         <div className="min-w-0">
           <p className="text-xs font-bold uppercase tracking-[.14em] text-primary">Profile completeness impact</p>
-          <h3 className="mt-1 text-lg font-bold">{Math.round(analysis.percentage)}% profile completeness</h3>
+          <h3 className="mt-1 text-lg font-bold">{ProfileCompletionScore({ value: analysis.percentage })} profile completeness</h3>
           <p className="mt-2 text-sm leading-6 text-muted">{analysis.description}</p>
+          <p className="mt-2 text-xs text-muted">Ring progress {ring.value}%.</p>
         </div>
       </div>
     </Card>
@@ -148,7 +110,7 @@ export function MissingSignalList({ signals }: { signals: string[] }) {
         <p className="text-sm font-bold uppercase tracking-[.14em] text-primary">Missing signals</p>
       </div>
       <ul className="mt-3 space-y-2">
-        {signals.length ? signals.map((signal) => <li key={signal} className="text-sm leading-6 text-muted">• {signal}</li>) : <li className="text-sm leading-6 text-muted">No major gaps right now.</li>}
+        {EngineMissingSignalList({ signals }).map((signal) => <li key={signal} className="text-sm leading-6 text-muted">• {signal}</li>)}
       </ul>
     </Card>
   );
@@ -166,14 +128,16 @@ export function DecisionConfidenceSummary({
       <DecisionConfidenceCard confidence={confidence} />
       <ProfileCompletenessImpact analysis={{
         label: "Decision confidence",
-        description: confidence.profileHint?.description ?? "Add one detail to improve future decision confidence.",
-        nextBestField: confidence.profileHint,
+        description: confidence.profileAnalysis?.description ?? "Add one detail to improve future decision confidence.",
+        nextBestField: confidence.profileAnalysis?.nextBestField,
         percentage: confidence.profileCompleteness,
       }} />
       {showMissingSignals && <MissingSignalList signals={confidence.missingSignals} />}
     </div>
   );
 }
+
+export { ProfileCompletionScore, ConfidenceImpactPreview, ProfileCompletenessRing };
 
 function MiniStat({ label, value }: { label: string; value: string }) {
   return (
@@ -182,8 +146,4 @@ function MiniStat({ label, value }: { label: string; value: string }) {
       <p className="mt-2 text-lg font-bold">{value}</p>
     </div>
   );
-}
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
 }

@@ -29,7 +29,7 @@ export function DecisionIntroPage({ workflow }: { workflow: DecisionIntroWorkflo
   const startHref = `/decision/${workflow.pluginId}/${workflow.slug}/start`;
   const confidence = getDecisionConfidence({
     answerProgress: { answered: 0, total: workflow.questionCount, requiredAnswered: 0, requiredTotal: workflow.questionCount },
-    profileAnalysis: session?.user ? { label: "Decision confidence", description: "Your saved profile can improve previews.", percentage: 0 } : undefined,
+    profileAnalysis: session?.user ? { description: "Your saved profile can improve previews.", percentage: 0 } : undefined,
     decisionSignals: Math.min(3, Math.ceil(workflow.factorCount / 4)),
     assumptions: workflow.disclaimerType === "finance" ? ["Rates and inflation may change"] : [],
   });
