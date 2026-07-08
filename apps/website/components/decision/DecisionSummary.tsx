@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { Clock3, Gauge, ShieldAlert, Sparkles, UserRound } from "lucide-react";
 import { Card } from "@datastorified/ui";
+import { ProgressRing } from "@datastorified/ui/library";
 import type { DecisionReport } from "@datastorified/decision-os";
 import type { ProfileAnalysis } from "@datastorified/profile";
 
@@ -38,6 +39,7 @@ export function DecisionSummary({
         confidence={confidence}
         risk={risk}
         profileCompleteness={profileAnalysis ? Math.round(profileAnalysis.percentage) : 0}
+        bestMatchLabel={bestMatchLabel}
       />
       <ResultMetadataCard
         completedAt={completedAt}
@@ -59,6 +61,7 @@ export function DecisionScoreHero({
   confidence,
   risk,
   profileCompleteness,
+  bestMatchLabel,
 }: {
   title: string;
   category?: string;
@@ -67,6 +70,7 @@ export function DecisionScoreHero({
   confidence: number;
   risk: string;
   profileCompleteness: number;
+  bestMatchLabel: string;
 }) {
   return (
     <Card className="overflow-hidden border-primary/15 bg-gradient-to-br from-primary/[.07] to-accent/[.08] p-5 sm:p-6">
@@ -74,8 +78,19 @@ export function DecisionScoreHero({
         {category ? <BadgePill label={category} tone="primary" /> : null}
         <BadgePill label="Best Match Based on Your Inputs" tone="success" />
       </div>
-      <h1 className="mt-4 text-balance text-3xl font-bold tracking-[-.04em] sm:text-5xl">{title}</h1>
-      <p className="mt-3 max-w-3xl text-sm leading-7 text-muted sm:text-base">{summaryCopy}</p>
+      <div className="mt-4 grid gap-5 xl:grid-cols-[minmax(0,1fr)_220px] xl:items-center">
+        <div>
+          <h1 className="text-balance text-3xl font-bold tracking-[-.04em] sm:text-5xl">{title}</h1>
+          <p className="mt-3 max-w-3xl text-sm leading-7 text-muted sm:text-base">{summaryCopy}</p>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <BadgePill label={`Recommended option: ${bestMatchLabel}`} tone="neutral" />
+            <BadgePill label={`Match label: ${risk} risk`} tone={risk === "High" ? "danger" : risk === "Medium" ? "warning" : "success"} />
+          </div>
+        </div>
+        <div className="grid place-items-center rounded-[1.75rem] border border-white/70 bg-white/85 p-4 shadow-soft">
+          <ProgressRing value={score} size={132} tone="accent" />
+        </div>
+      </div>
       <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricChip icon={<Gauge size={15} />} label="Suitability score" value={`${score}/100`} />
         <MetricChip icon={<Sparkles size={15} />} label="Decision confidence" value={`${confidence}%`} />
