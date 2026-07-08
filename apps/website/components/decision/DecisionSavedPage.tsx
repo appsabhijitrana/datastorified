@@ -11,6 +11,7 @@ import { authClient, GoogleSignInButton, LegalAcceptanceGate } from "@datastorif
 import { HybridDecisionRepository } from "@datastorified/decision-repository";
 import type { DecisionRepositoryDecision } from "@datastorified/decision-repository";
 import { DecisionRetentionLoop } from "./DecisionRetentionLoop";
+import { NeedsReviewStatus, ReviewTimelineBadge, getDecisionReviewReminder } from "./DecisionReviewReminder";
 import { DecisionTimelineMini, ResumeDecisionBanner } from "./TrustIndicators";
 
 export function DecisionSavedPage() {
@@ -187,6 +188,7 @@ export function DecisionSavedPage() {
               <div className="mt-5 grid gap-4 lg:grid-cols-2">
                 {saved.map((item) => {
                   const workflow = decisionPluginRegistry.getWorkflow(item.workflowId);
+                  const reminder = getDecisionReviewReminder(item.workflowId);
                   return (
                     <Card key={item.id} className="p-5">
                       <div className="flex items-start justify-between gap-3">
@@ -194,6 +196,10 @@ export function DecisionSavedPage() {
                           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">{savedBadge}</p>
                           <h3 className="mt-2 text-lg font-semibold">{workflow?.title ?? item.workflowId}</h3>
                           <p className="mt-2 text-sm text-muted">Updated {new Date(item.updatedAt).toLocaleString("en-IN")}</p>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            <NeedsReviewStatus nextReviewAt={reminder?.nextReviewAt} />
+                            <ReviewTimelineBadge nextReviewAt={reminder?.nextReviewAt} />
+                          </div>
                         </div>
                         <Button variant="ghost" aria-label={`Delete saved decision ${workflow?.title ?? item.workflowId}`} onClick={() => { void orchestrator.deleteDecision(item.id).then(refresh); }}><Trash2 size={16} /></Button>
                       </div>

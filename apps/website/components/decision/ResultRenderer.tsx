@@ -12,6 +12,7 @@ import { PersonalizedRecommendations } from "../personalization/PersonalizedReco
 import { DecisionConfidenceCard, MissingSignalList, getDecisionConfidence } from "./DecisionConfidence";
 import { ScoreBreakdownSection } from "./ScoreBreakdownSection";
 import { TradeoffAnalysisSection } from "./TradeoffAnalysisSection";
+import { ReviewReminderCard, SetReviewReminderSheet, useDecisionReviewReminder } from "./DecisionReviewReminder";
 import { ResultSectionLayout } from "./ResultSectionLayout";
 import { adaptResultData, getResultAnswers, safeCopyForType } from "./ResultDataAdapter";
 import type { ResultDataAdapterInput } from "./resultTypes";
@@ -22,6 +23,8 @@ export function ResultRenderer(input: ResultDataAdapterInput) {
   const data = adaptResultData(input);
   const answers = getResultAnswers(data.report, data.answers);
   const [shareOpen, setShareOpen] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const { reminder, refresh } = useDecisionReviewReminder(data.workflow.id);
   const confidence = getDecisionConfidence({
     answerProgress: { answered: Object.keys(answers).length, total: data.workflow.questions.length, requiredAnswered: Object.keys(answers).length, requiredTotal: data.workflow.questions.length },
     profileAnalysis: data.profileAnalysis,
@@ -93,7 +96,28 @@ export function ResultRenderer(input: ResultDataAdapterInput) {
         onSaveChecklist={() => data.onSave?.()}
       />
 
-      <ResultSectionLayout title="Review reminder" kicker="Next steps" description="Keep the decision moving without forcing extra onboarding." className="mt-8">
+      <ResultSectionLayout title="Review reminder" kicker="Return later" description="Set a reminder so assumptions can be rechecked when the context changes." className="mt-8">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <ReviewReminderCard
+            workflowId={data.workflow.id}
+            title={data.workflow.title}
+            nextReviewAt={reminder?.nextReviewAt}
+            reason={reminder?.reason}
+            onOpenSheet={() => setReviewOpen(true)}
+          />
+          <Card className="p-5">
+            <p className="text-xs font-bold uppercase tracking-[.14em] text-primary">Why review later?</p>
+            <div className="mt-3 space-y-3 text-sm leading-6 text-muted">
+              <p>Assumptions may change.</p>
+              <p>Profile changed.</p>
+              <p>Market or rate context changed.</p>
+              <p>Decision was saved as a draft.</p>
+            </div>
+          </Card>
+        </div>
+      </ResultSectionLayout>
+
+      <ResultSectionLayout title="Personalized nudge" kicker="Next steps" description="Keep the decision moving without forcing extra onboarding." className="mt-8">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
           <PersonalizedRecommendations compact showProfile={false} />
           {data.profileAnalysis ? <ProfileCompletenessCard analysis={data.profileAnalysis} /> : <Card className="p-5"><p className="text-sm leading-6 text-muted">Anonymous usage is still supported. Sign in later to improve future decision previews.</p></Card>}
@@ -142,6 +166,14 @@ export function ResultRenderer(input: ResultDataAdapterInput) {
           anchor.remove();
           window.setTimeout(() => URL.revokeObjectURL(url), 1000);
         }}
+      />
+
+      <SetReviewReminderSheet
+        open={reviewOpen}
+        onClose={() => setReviewOpen(false)}
+        workflowId={data.workflow.id}
+        title={data.workflow.title}
+        onSaved={() => refresh()}
       />
     </main>
   );
