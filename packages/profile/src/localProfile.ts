@@ -33,3 +33,15 @@ export function saveLocalProfile(profile: Partial<DecisionProfile>): boolean {
 export function saveLocalProfileEnvelope(envelope: DecisionProfileEnvelope): boolean {
   return localProfileStorage.saveEnvelope(envelope);
 }
+
+export function removeLocalProfileField(field: keyof DecisionProfile): boolean {
+  const current = localProfileStorage.getProfile().profile ?? {};
+  if (!(field in current)) return true;
+  const next = { ...current } as Partial<DecisionProfile>;
+  delete next[field];
+  return localProfileStorage.saveProfile(next);
+}
+
+export function clearLocalProfile(): boolean {
+  return localProfileStorage.clearProfile();
+}
