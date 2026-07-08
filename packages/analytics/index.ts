@@ -1,5 +1,13 @@
 export type AnalyticsValue = string | number | boolean | undefined;
 export type AnalyticsPayload = Record<string, AnalyticsValue>;
+export type PrivacySafeProfileAnalyticsPayload = {
+  profile_source?: "anonymous" | "local" | "cloud";
+  completeness_score?: number;
+  missing_fields_count?: number;
+  prompt_field?: string;
+  prompt_context?: string;
+  is_logged_in?: boolean;
+};
 type AnalyticsWindow = Window & {
   gtag?: (command: "event", name: string, payload: AnalyticsPayload) => void;
 };
@@ -30,6 +38,16 @@ export const trackDiscoveryEvent = (
     device_type?: string;
   } = {},
 ) => trackEvent(eventName, metadata);
+export function trackPrivacySafeProfileEvent(
+  name:
+    | "profile_prompt_seen"
+    | "profile_prompt_skipped"
+    | "profile_prompt_completed"
+    | "profile_progress_saved",
+  payload: PrivacySafeProfileAnalyticsPayload = {},
+) {
+  trackEvent(name, payload);
+}
 export const trackToolUsed = (slug: string) => trackEvent("tool_used", { slug });
 export const trackCalculatorUsed = (slug: string) => trackEvent("calculator_used", { slug });
 export const trackSearch = (query: string, surface: string) => trackEvent("search", { query, surface });

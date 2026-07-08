@@ -42,6 +42,90 @@ export type ProfileEmploymentType = (typeof profileEmploymentTypes)[number];
 export type ProfileRiskProfile = (typeof profileRiskProfiles)[number];
 export type ProfileInvestmentExperience = (typeof profileInvestmentExperience)[number];
 
+export const progressiveProfileFields = [
+  "ageRange",
+  "city",
+  "incomeRange",
+  "riskComfort",
+  "dependents",
+  "careerStage",
+  "goals",
+  "homeOwnership",
+  "investmentExperience",
+] as const;
+
+export type ProgressiveProfileField = (typeof progressiveProfileFields)[number];
+
+export type PersonalizationSignalType =
+  | "decision_started"
+  | "decision_completed"
+  | "decision_saved"
+  | "profile_prompt_seen"
+  | "profile_prompt_skipped"
+  | "profile_prompt_completed";
+
+export type ConfidenceImpact = {
+  field: ProgressiveProfileField;
+  label: string;
+  impact: number;
+  explanation: string;
+};
+
+export type ProgressiveRiskComfort = "low" | "moderate" | "balanced" | "growth" | "high";
+export type ProgressiveCareerStage = "student" | "early_career" | "mid_career" | "senior" | "business_owner" | "retired";
+export type ProgressiveHomeOwnership = "renting" | "owning" | "planning" | "prefer_not_to_say";
+
+export type UserPreference = {
+  field: ProgressiveProfileField;
+  value: string | number | boolean | string[] | null;
+  source: ProfileSource;
+  updatedAt: string;
+};
+
+export type ProfilePromptRule = {
+  id: string;
+  field: ProgressiveProfileField;
+  label: string;
+  benefit: string;
+  reason: string;
+  skipLabel: string;
+  priority: number;
+  contexts?: string[];
+};
+
+export type PersonalizationSignal = {
+  type: PersonalizationSignalType;
+  workflowId?: string;
+  decisionSlug?: string;
+  category?: string;
+  sourceSection?: string;
+  isLoggedIn?: boolean;
+  deviceType?: string;
+  createdAt: string;
+};
+
+export type PersonalizationDataModel = {
+  profile: ProgressiveProfileData;
+  preferences: UserPreference[];
+  signals: PersonalizationSignal[];
+  confidenceImpacts: ConfidenceImpact[];
+  promptRules: ProfilePromptRule[];
+};
+
+export type ProgressiveProfileData = {
+  ageRange?: ProfileAgeRange;
+  city?: string;
+  incomeRange?: string;
+  riskComfort?: ProgressiveRiskComfort;
+  dependents?: number;
+  careerStage?: ProgressiveCareerStage;
+  goals?: string[];
+  homeOwnership?: ProgressiveHomeOwnership;
+  investmentExperience?: ProfileInvestmentExperience;
+};
+
+export type ProgressiveProfileProfile = ProgressiveProfileData;
+
 export type ProfileSource = "anonymous" | "local" | "cloud";
 
 export type ProfileFieldName =
@@ -69,6 +153,10 @@ export type ProfileFieldName =
 export type DecisionProfile = {
   ageRange?: ProfileAgeRange;
   city?: string;
+  incomeRange?: string;
+  riskComfort?: ProgressiveRiskComfort;
+  careerStage?: ProgressiveCareerStage;
+  homeOwnership?: ProgressiveHomeOwnership;
   state?: string;
   country?: string;
   dependents?: number;
