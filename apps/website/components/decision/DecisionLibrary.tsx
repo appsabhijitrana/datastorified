@@ -12,6 +12,7 @@ import { getDecisionAdapters } from "@datastorified/decision-os/adapters";
 import { HybridDecisionRepository } from "@datastorified/decision-repository";
 import { getDecisionReviewReminder } from "./DecisionReviewReminder";
 import { DecisionRetentionLoop } from "./DecisionRetentionLoop";
+import { DecisionStreakCard, RetentionMilestones, WeeklyProgressCard, buildRetentionMilestones, buildRetentionSnapshot } from "../retention/RetentionHooks";
 
 type LibraryTab = "all" | "drafts" | "completed" | "saved" | "needs-review";
 
@@ -53,6 +54,14 @@ export function DecisionLibrary() {
     streak: calculateStreak(items),
   }), [items]);
   const filtered = useMemo(() => filterItems(items, activeTab), [activeTab, items]);
+  const retentionSnapshot = useMemo(() => buildRetentionSnapshot({
+    completedThisWeek: items.filter((item) => item.kind === "saved").length,
+    activeStreakDays: calculateStreak(items),
+    categoriesExplored: new Set(items.map((item) => item.category)).size,
+    profileImprovements: Math.max(0, items.filter((item) => item.kind === "saved").length - 1),
+    reviewedDecisions: items.filter((item) => item.needsReview).length,
+  }), [items]);
+  const milestones = useMemo(() => buildRetentionMilestones(retentionSnapshot), [retentionSnapshot]);
   const lastWorkflow = useMemo(() => {
     const workflowId = profileLastOpenedWorkflow ?? drafts[0]?.workflowId ?? saved[0]?.workflowId;
     if (!workflowId) return undefined;
@@ -100,6 +109,16 @@ export function DecisionLibrary() {
               needsReview={stats.needsReview}
               decisionStreak={stats.streak}
             />
+          </section>
+
+          <section className="mt-8 grid gap-4 lg:grid-cols-[1fr_.9fr]">
+            <DecisionStreakCard streakDays={retentionSnapshot.activeStreakDays} completedThisWeek={retentionSnapshot.completedThisWeek} />
+            <WeeklyProgressCard completedThisWeek={retentionSnapshot.completedThisWeek} reviewedDecisions={retentionSnapshot.reviewedDecisions} categoriesExplored={retentionSnapshot.categoriesExplored} />
+          </section>
+
+          <section className="mt-8 space-y-4">
+            <p className="text-xs font-bold uppercase tracking-[.14em] text-primary">Milestones</p>
+            <RetentionMilestones milestones={milestones} />
           </section>
 
           {lastWorkflow?.title && (

@@ -17,6 +17,7 @@ import { HybridDecisionRepository } from "@datastorified/decision-repository";
 import { decisionRouteFromText } from "../../lib/decision-routing";
 import { RecommendedDecisionRail } from "../recommendations/RecommendationFeed";
 import { ProgressiveProfileNudge } from "../profile/ProgressiveProfileNudge";
+import { DecisionStreakCard, RetentionMilestones, ReturnPromptCard, WeeklyProgressCard, buildRetentionMilestones, buildRetentionSnapshot } from "../retention/RetentionHooks";
 
 const quickChips = [
   "FD vs SIP",
@@ -62,6 +63,14 @@ export function DecisionHubHome() {
 
   const continueItems = drafts.length ? drafts : recent;
   const clarityScore = Math.max(0, Math.min(100, profileScore));
+  const retentionSnapshot = buildRetentionSnapshot({
+    completedThisWeek: recent.length,
+    activeStreakDays: Math.min(14, recent.length * 2),
+    categoriesExplored: new Set(recent.map((item) => decisionPluginRegistry.getWorkflow(item.workflowId)?.category ?? item.workflowId.split("-")[0])).size,
+    profileImprovements: Math.max(0, Math.round(profileCompletion / 20)),
+    reviewedDecisions: recent.length,
+  });
+  const milestones = buildRetentionMilestones(retentionSnapshot);
 
   return (
     <div className="space-y-8 pb-6">
@@ -112,6 +121,17 @@ export function DecisionHubHome() {
             <EmptyState title="Start your first decision. It takes less than 3 minutes." description="Your drafts and results will appear here once you start a flow." />
           </Card>
         )}
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-[1fr_.9fr]">
+        <DecisionStreakCard streakDays={retentionSnapshot.activeStreakDays} completedThisWeek={retentionSnapshot.completedThisWeek} />
+        <WeeklyProgressCard completedThisWeek={retentionSnapshot.completedThisWeek} reviewedDecisions={retentionSnapshot.reviewedDecisions} categoriesExplored={retentionSnapshot.categoriesExplored} />
+      </section>
+
+      <section className="space-y-4">
+        <SectionHeader eyebrow="Milestones" title="Milestones" description="Earned milestones appear when your activity reaches them." />
+        <RetentionMilestones milestones={milestones} />
+        {!milestones.length && <ReturnPromptCard title="Keep building your decision library" description="Finish a decision, review an old result, or explore a new category to unlock the first milestone." href="/explore" />}
       </section>
 
       <RecommendedDecisionRail drafts={drafts} recentDecisions={recent} onProfileNudge={() => router.push("/profile")} />

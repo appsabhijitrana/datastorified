@@ -11,6 +11,7 @@ import { getDecisionAdapters } from "@datastorified/decision-os/adapters";
 import { HybridDecisionRepository } from "@datastorified/decision-repository";
 import { getProfileAnalysis } from "@datastorified/profile";
 import { getDecisionReviewReminder } from "../decision/DecisionReviewReminder";
+import { DecisionStreakCard, RetentionMilestones, ReturnPromptCard, WeeklyProgressCard, buildRetentionMilestones, buildRetentionSnapshot } from "../retention/RetentionHooks";
 
 type InsightItem = {
   title: string;
@@ -54,6 +55,14 @@ export function InsightsDashboard() {
   const profileBoost = Math.min(12, Math.max(0, Math.round(profileAnalysis.percentage / 10)));
   const clarityScore = Math.min(100, Math.round((items.filter((item) => item.kind === "saved").length * 18) + profileAnalysis.percentage * 0.5));
   const streak = Math.min(14, new Set(items.map((item) => new Date(item.updatedAt).toDateString())).size);
+  const retentionSnapshot = buildRetentionSnapshot({
+    completedThisWeek: items.filter((item) => item.kind === "saved").length,
+    activeStreakDays: streak,
+    categoriesExplored: exploredCategories.size,
+    profileImprovements: profileBoost,
+    reviewedDecisions: recentReminders(items).length,
+  });
+  const milestones = buildRetentionMilestones(retentionSnapshot);
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
@@ -89,6 +98,16 @@ export function InsightsDashboard() {
           </section>
 
           <section className="mt-8 grid gap-4 lg:grid-cols-[1fr_.9fr]">
+            <DecisionStreakCard streakDays={retentionSnapshot.activeStreakDays} completedThisWeek={retentionSnapshot.completedThisWeek} />
+            <WeeklyProgressCard completedThisWeek={retentionSnapshot.completedThisWeek} reviewedDecisions={retentionSnapshot.reviewedDecisions} categoriesExplored={retentionSnapshot.categoriesExplored} />
+          </section>
+
+          <section className="mt-8 space-y-4">
+            <p className="text-xs font-bold uppercase tracking-[.14em] text-primary">Milestones</p>
+            <RetentionMilestones milestones={milestones} />
+          </section>
+
+          <section className="mt-8 grid gap-4 lg:grid-cols-[1fr_.9fr]">
             <Card className="p-5">
               <p className="text-xs font-bold uppercase tracking-[.14em] text-primary">Confidence trend</p>
               <TrendList items={items} />
@@ -101,6 +120,10 @@ export function InsightsDashboard() {
                 ))}
               </div>
             </Card>
+          </section>
+
+          <section className="mt-8">
+            <ReturnPromptCard title="Continue your next decision" description="Pick up a draft, revisit a result, or explore a new category when you’re ready." href="/decision" />
           </section>
 
           <section className="mt-8 grid gap-4 lg:grid-cols-2">
