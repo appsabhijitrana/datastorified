@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowRight, Compass, Home, Layers3, Search, Sparkles, UserRound, Wrench } from "lucide-react";
 import { authClient, GoogleSignInButton } from "@datastorified/auth";
-import { Badge, BrandMark, Card } from "@datastorified/ui";
+import { BrandMark, Card } from "@datastorified/ui";
 import { cn } from "@datastorified/utils";
 import { DecisionAssistantDock } from "../assistant/DecisionAssistantDock";
 
@@ -103,6 +103,27 @@ export function AppShell({ children, showMobileNav = true }: AppShellProps) {
 
 function TopHeader() {
   const { data: session, isPending } = authClient.useSession();
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const accountSlot = !mounted || isPending ? (
+    <span className="inline-flex min-h-11 items-center rounded-full border border-border bg-white px-4 text-sm font-semibold text-muted shadow-soft">Loading account…</span>
+  ) : session?.user ? (
+    <Link href="/profile" className="flex min-h-11 items-center gap-2 rounded-xl border border-border bg-white px-3 text-sm font-semibold shadow-soft">
+      <span className="grid size-7 place-items-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+        {(session.user.name ?? session.user.email ?? "A").slice(0, 2).toUpperCase()}
+      </span>
+      <span className="hidden sm:inline">{session.user.name ?? session.user.email ?? "Account"}</span>
+    </Link>
+  ) : (
+    <GoogleSignInButton className="min-h-11 px-4">
+      <UserRound size={16} />
+      <span className="hidden sm:inline">Sign in with Google</span>
+    </GoogleSignInButton>
+  );
   return (
     <header className="sticky top-0 z-40 border-b border-border/70 bg-white/90 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4 sm:px-6 lg:px-6">
@@ -115,21 +136,7 @@ function TopHeader() {
             <Search size={16} />
             Search launcher
           </Link>
-          {isPending ? (
-            <Badge>Checking account…</Badge>
-          ) : session?.user ? (
-            <Link href="/profile" className="flex min-h-11 items-center gap-2 rounded-xl border border-border bg-white px-3 text-sm font-semibold shadow-soft">
-              <span className="grid size-7 place-items-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                {(session.user.name ?? session.user.email ?? "A").slice(0, 2).toUpperCase()}
-              </span>
-              <span className="hidden sm:inline">{session.user.name ?? session.user.email ?? "Account"}</span>
-            </Link>
-          ) : (
-            <GoogleSignInButton className="min-h-11 px-4">
-              <UserRound size={16} />
-              <span className="hidden sm:inline">Sign in with Google</span>
-            </GoogleSignInButton>
-          )}
+          {accountSlot}
         </div>
       </div>
     </header>

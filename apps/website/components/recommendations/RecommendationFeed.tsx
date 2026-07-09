@@ -19,6 +19,7 @@ import {
 import { getDecisionAdapters } from "@datastorified/decision-os/adapters";
 import { Badge, Button, Card, ProgressBar, ScoreRing, SectionHeader } from "@datastorified/ui/design-system";
 import { getProfileAnalysis } from "@datastorified/profile";
+import { localProfileStorage } from "@datastorified/profile";
 import { buildPersonalizedRecommendations, type PersonalizationContext as RecommendationContext } from "@datastorified/personalization";
 import { storage } from "@datastorified/storage";
 import type { DecisionProfileEnvelope } from "@datastorified/profile";
@@ -32,6 +33,7 @@ type RecommendationItem = {
 
 export function PersonalizedRecommendationFeed({ drafts = [], recentDecisions = [], onProfileNudge }: { drafts?: DecisionMemoryDraft[]; recentDecisions?: StoredDecision[]; onProfileNudge: () => void; }) {
   const { data: session } = authClient.useSession();
+  const isLoggedIn = Boolean(session?.user);
   const adapters = getDecisionAdapters();
   const [profileScore, setProfileScore] = useState(0);
   const [profileCompletion, setProfileCompletion] = useState(0);
@@ -40,7 +42,7 @@ export function PersonalizedRecommendationFeed({ drafts = [], recentDecisions = 
 
   useEffect(() => {
     let mounted = true;
-    void adapters.profile.getProfile().then((profileEnvelope) => {
+    void (isLoggedIn ? adapters.profile.getProfile() : Promise.resolve(localProfileStorage.getProfile())).then((profileEnvelope) => {
       if (!mounted) return;
       const analysis = getProfileAnalysis((profileEnvelope as DecisionProfileEnvelope | null)?.profile);
       setProfileScore(analysis.score);
@@ -50,12 +52,12 @@ export function PersonalizedRecommendationFeed({ drafts = [], recentDecisions = 
     return () => {
       mounted = false;
     };
-  }, [adapters.profile]);
+  }, [adapters.profile, isLoggedIn]);
 
   useEffect(() => {
     let mounted = true;
     void Promise.all([
-      adapters.profile.getProfile(),
+      isLoggedIn ? adapters.profile.getProfile() : Promise.resolve(localProfileStorage.getProfile()),
       adapters.memory.listRecent(),
       adapters.memory.listSaved(),
       adapters.memory.listHistory(),
@@ -83,7 +85,7 @@ export function PersonalizedRecommendationFeed({ drafts = [], recentDecisions = 
     return () => {
       mounted = false;
     };
-  }, [adapters.memory, adapters.profile, drafts, profileCompletion, recentDecisions]);
+  }, [adapters.memory, adapters.profile, drafts, isLoggedIn, profileCompletion, recentDecisions]);
 
   const topWorkflows = useMemo(() => feed.slice(0, 4), [feed]);
 

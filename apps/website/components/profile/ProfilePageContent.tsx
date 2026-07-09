@@ -6,7 +6,7 @@ import { authClient, GoogleSignInButton } from "@datastorified/auth";
 import { Badge, Button, Card } from "@datastorified/ui";
 import { localDecisionStorage } from "@datastorified/decision-os";
 import { getDecisionAdapters } from "@datastorified/decision-os/adapters";
-import { removeLocalProfileField, saveLocalProfile } from "@datastorified/profile";
+import { localProfileStorage, removeLocalProfileField, saveLocalProfile } from "@datastorified/profile";
 import { getProfileAnalysis, type DecisionProfile } from "@datastorified/profile";
 import { getDecisionConfidence, DecisionConfidenceCard, MissingSignalList, ProfileCompletenessImpact } from "../decision/DecisionConfidence";
 import { ProgressiveProfileNudge } from "./ProgressiveProfileNudge";
@@ -44,14 +44,14 @@ export function ProfilePageContent() {
 
   useEffect(() => {
     let cancelled = false;
-    void adapters.profile.getProfile().then((envelope) => {
+    void (session?.user ? adapters.profile.getProfile() : Promise.resolve(localProfileStorage.getProfile())).then((envelope) => {
       if (cancelled) return;
       setProfile(envelope.profile ?? null);
     });
     return () => {
       cancelled = true;
     };
-  }, [adapters.profile]);
+  }, [adapters.profile, session?.user]);
 
   const analysis = useMemo(() => getProfileAnalysis(profile), [profile]);
   const confidence = useMemo(
@@ -151,7 +151,7 @@ export function ProfilePageContent() {
             const confirmed = window.confirm("Clear your local personalization data from this device?");
             if (!confirmed) return;
             saveLocalProfile({});
-            const envelope = await adapters.profile.getProfile();
+            const envelope = session?.user ? await adapters.profile.getProfile() : localProfileStorage.getProfile();
             setProfile(envelope.profile ?? null);
           }}
           onClearLocalDecisionHistory={() => {
@@ -194,13 +194,13 @@ export function ProfilePageContent() {
                 onSave={async () => {
                   const next = castFieldValue(field.key, draftValue);
                   saveLocalProfile({ [field.key]: next } as Partial<DecisionProfile>);
-                  const envelope = await adapters.profile.getProfile();
+                  const envelope = session?.user ? await adapters.profile.getProfile() : localProfileStorage.getProfile();
                   setProfile(envelope.profile ?? null);
                   setEditingField(null);
                 }}
                 onRemove={async () => {
                   removeLocalProfileField(field.key);
-                  const envelope = await adapters.profile.getProfile();
+                  const envelope = session?.user ? await adapters.profile.getProfile() : localProfileStorage.getProfile();
                   setProfile(envelope.profile ?? null);
                   setEditingField(null);
                 }}
@@ -248,8 +248,8 @@ export function ProfilePageContent() {
             <p>• Google login only helps sync and save benefits.</p>
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
-            <Button variant="secondary" onClick={async () => { saveLocalProfile({}); const envelope = await adapters.profile.getProfile(); setProfile(envelope.profile ?? null); }}>Refresh local profile <RefreshCcw size={16} /></Button>
-            <Button variant="ghost" onClick={async () => { removeLocalProfileField("city"); const envelope = await adapters.profile.getProfile(); setProfile(envelope.profile ?? null); }}>Remove city</Button>
+            <Button variant="secondary" onClick={async () => { saveLocalProfile({}); const envelope = session?.user ? await adapters.profile.getProfile() : localProfileStorage.getProfile(); setProfile(envelope.profile ?? null); }}>Refresh local profile <RefreshCcw size={16} /></Button>
+            <Button variant="ghost" onClick={async () => { removeLocalProfileField("city"); const envelope = session?.user ? await adapters.profile.getProfile() : localProfileStorage.getProfile(); setProfile(envelope.profile ?? null); }}>Remove city</Button>
           </div>
         </Card>
       </div>

@@ -18,8 +18,8 @@ describe("DecisionQuestion", () => {
       />,
     );
 
-    expect(screen.getByRole("button", { name: "Yes" }).getAttribute("aria-pressed")).toBe("true");
-    expect(screen.getByRole("button", { name: "No" }).getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByRole("button", { name: /^Yes/ }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: /^No/ }).getAttribute("aria-pressed")).toBe("false");
   });
 
   it("announces validation errors", () => {
@@ -54,7 +54,7 @@ describe("DecisionQuestion", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "No" }));
+    fireEvent.click(screen.getByRole("button", { name: /^No/ }));
     expect(onChange).toHaveBeenCalledWith(false);
   });
 });

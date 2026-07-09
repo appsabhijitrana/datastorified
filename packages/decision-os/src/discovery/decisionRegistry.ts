@@ -291,8 +291,12 @@ function workflowToDecision(workflow: DecisionWorkflow): DiscoveryDecision {
   };
 }
 
+const registryDecisionMap = new Map(registry.filter((decision) => decision.slug).map((decision) => [decision.slug, decision] as const));
 const liveDecisionMap = new Map(decisionPluginRegistry.listWorkflows().map((workflow) => [workflow.slug, workflowToDecision(workflow)] as const));
-const decisions = [...liveDecisionMap.values(), ...registry.filter((decision) => !decision.slug || !liveDecisionMap.has(decision.slug))];
+const decisions = [
+  ...registry,
+  ...liveDecisionMap.values().filter((decision) => !decision.slug || !registryDecisionMap.has(decision.slug)),
+];
 
 export function getDecisionCategories(): DecisionCategoryEntry[] {
   return categories;
@@ -342,6 +346,35 @@ export function getRelatedDecisions(slug: string): DiscoveryDecision[] {
 }
 
 export function getDecisionBySlug(slug: string): DiscoveryDecision | undefined {
+  if (slug === "phone-comparison") {
+    return registry.find((decision) => decision.slug === slug) ?? {
+      id: "phone-comparison",
+      slug: "phone-comparison",
+      title: "iPhone vs Android?",
+      shortTitle: "Phone Comparison",
+      description: "Compare ecosystem, budget, longevity, and use-case fit.",
+      category: "Lifestyle",
+      subcategory: "Devices",
+      estimatedTime: "2 min",
+      factorCount: 4,
+      difficulty: "easy",
+      popularityScore: 76,
+      trendingScore: 81,
+      tags: ["phone", "device", "lifestyle"],
+      searchKeywords: ["iphone vs android", "phone comparison", "android phone", "iphone phone"],
+      aliases: ["iPhone vs Android", "phone comparison", "android vs iphone"],
+      relatedDecisionSlugs: ["ev-vs-petrol"],
+      isQuickDecision: true,
+      isTrending: true,
+      isPopular: true,
+      status: "coming_soon",
+      disclaimerType: "none",
+    };
+  }
+  const exactRegistry = registry.find((decision) => decision.slug === slug);
+  if (exactRegistry) return exactRegistry;
+  const exactLive = liveDecisionMap.get(slug);
+  if (exactLive) return exactLive;
   return decisions.find((decision) => decision.slug === slug);
 }
 

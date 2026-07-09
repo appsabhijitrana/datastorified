@@ -16,6 +16,7 @@ import { DecisionOrchestrator } from "@datastorified/decision-os/core/orchestrat
 import { authClient, GoogleSignInButton } from "@datastorified/auth";
 import { HybridDecisionRepository } from "@datastorified/decision-repository";
 import { getProfileAnalysis, type DecisionProfileEnvelope } from "@datastorified/profile";
+import { localProfileStorage } from "@datastorified/profile";
 import { getDecisionAdapters } from "@datastorified/decision-os/adapters";
 import { DecisionAccuracyBadge } from "./DecisionAccuracyBadge";
 import { DecisionProgress } from "./DecisionProgress";
@@ -97,14 +98,14 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
     void (async () => {
       try {
         if (maintenanceState !== 'outage_blocking') {
-          const profileEnvelope = await getDecisionAdapters().profile.getProfile();
+          const profileEnvelope = session?.user ? await getDecisionAdapters().profile.getProfile() : localProfileStorage.getProfile();
           setProfile(profileEnvelope as DecisionProfileEnvelope);
         }
       } catch {
         // Profile is optional; ignore failures.
       }
     })();
-  }, [maintenanceState]);
+  }, [maintenanceState, session?.user]);
 
   if (maintenanceState === 'outage_blocking') {
     return <DecisionOSOutagePage message={maintenanceMessage} />;

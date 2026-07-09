@@ -69,7 +69,7 @@ export function DecisionAssistantDock({ path, isLoggedIn }: { path: string; isLo
           <section className="space-y-3">
             <p className="text-xs font-bold uppercase tracking-[.14em] text-primary">Suggested prompts</p>
             <div className="flex flex-wrap gap-2">
-              {[...context.prompts, ...defaultPrompts].slice(0, 6).map((prompt) => (
+              {[...new Set([...context.prompts, ...defaultPrompts])].slice(0, 6).map((prompt) => (
                 <Chip key={prompt} selected={prompt === activePrompt} onClick={() => setActivePrompt(prompt)}>
                   {prompt}
                 </Chip>

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Clock3, Search, X } from "lucide-react";
 import { authClient } from "@datastorified/auth";
@@ -18,13 +17,11 @@ export function DecisionSearch({ large = false, initialValue = "", placeholder =
   const { data: session } = authClient.useSession();
   const [query, setQuery] = useState(initialValue);
   const [isOpen, setIsOpen] = useState(false);
-  const [isClient, setIsClient] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [recentDecisionSuggestions, setRecentDecisionSuggestions] = useState<string[]>([]);
   const deviceType = typeof window === "undefined" ? "unknown" : window.innerWidth < 768 ? "mobile" : "desktop";
 
   useEffect(() => {
-    setIsClient(true);
     setRecentSearches(storage.getSearches());
     setRecentDecisionSuggestions(storage.getDecisionSuggestions());
   }, []);
@@ -70,7 +67,7 @@ export function DecisionSearch({ large = false, initialValue = "", placeholder =
       <button
         type="button"
         onClick={open}
-        aria-label={ariaLabel}
+        aria-label="What decision are you trying to make today?"
         className={`flex w-full items-center gap-3 border border-border bg-white text-left shadow-lift transition hover:-translate-y-0.5 hover:border-primary/20 ${large ? "min-h-16 rounded-[28px] px-4 py-3 sm:px-5" : "min-h-14 rounded-2xl px-3.5 py-2.5"}`}
       >
         <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary"><Search size={20} /></span>
@@ -81,7 +78,7 @@ export function DecisionSearch({ large = false, initialValue = "", placeholder =
         <span className="hidden shrink-0 items-center gap-1 rounded-full bg-soft px-3 py-1 text-xs font-semibold text-muted sm:inline-flex">Search</span>
       </button>
 
-      {isClient && isOpen && createPortal(
+      {isOpen && (
         <div className="fixed inset-0 z-[70] bg-ink/35 backdrop-blur-sm">
           <div className={`absolute inset-x-0 bottom-0 mx-auto w-full max-w-4xl ${large ? "sm:inset-auto sm:top-16 sm:bottom-16 sm:rounded-[32px]" : "rounded-t-[32px] sm:inset-auto sm:top-16 sm:bottom-auto sm:rounded-[32px]"} bg-surface shadow-2xl`}>
             <div className="flex items-center justify-between border-b border-border px-4 py-4 sm:px-6">
@@ -109,7 +106,7 @@ export function DecisionSearch({ large = false, initialValue = "", placeholder =
                 />
 
                 <div className="flex flex-wrap gap-2">
-                  <Button onClick={() => runSearch(query)} className="min-h-11" disabled={!normalizedQuery}>Find decision</Button>
+                  <Button onClick={() => runSearch(query)} className="min-h-11" disabled={!normalizedQuery}>Find my decision</Button>
                   <Button variant="secondary" onClick={handleSuggest} disabled={!normalizedQuery}>Suggest this decision</Button>
                 </div>
 
@@ -156,8 +153,7 @@ export function DecisionSearch({ large = false, initialValue = "", placeholder =
               </div>
             </div>
           </div>
-        </div>,
-        document.body,
+        </div>
       )}
     </div>
   );
@@ -180,9 +176,9 @@ function SearchResults({
 }) {
   if (results.length === 0) {
     return (
-      <Card className="border-dashed border-primary/20 bg-soft/40 p-5">
-        <EmptyState
-          title="We do not have this decision yet."
+        <Card className="border-dashed border-primary/20 bg-soft/40 p-5">
+          <EmptyState
+          title="No matching decision flows"
           description="Try a different phrase or suggest this decision so we can keep it locally."
           action={<Button variant="secondary" onClick={onSuggest}>Suggest this decision</Button>}
         />

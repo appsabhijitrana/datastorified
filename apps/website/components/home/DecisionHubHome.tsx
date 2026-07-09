@@ -11,6 +11,7 @@ import { DecisionOrchestrator } from "@datastorified/decision-os/core/orchestrat
 import { getDecisionAdapters } from "@datastorified/decision-os/adapters";
 import { HybridDecisionRepository } from "@datastorified/decision-repository";
 import { getProfileAnalysis } from "@datastorified/profile";
+import { localProfileStorage } from "@datastorified/profile";
 import { decisionRouteFromText } from "../../lib/decision-routing";
 import { RecommendedDecisionRail } from "../recommendations/RecommendationFeed";
 import { ProgressiveProfileNudge } from "../profile/ProgressiveProfileNudge";
@@ -23,6 +24,7 @@ const quickChips = ["FD vs SIP", "Rent vs Buy", "EV vs Petrol", "Job vs Business
 export function DecisionHubHome() {
   const router = useRouter();
   const { data: session } = authClient.useSession();
+  const isLoggedIn = Boolean(session?.user);
   const repository = useMemo(() => new HybridDecisionRepository({ authenticated: Boolean(session?.user) }), [session?.user]);
   const orchestrator = useMemo(() => new DecisionOrchestrator({ repository }), [repository]);
   const adapters = getDecisionAdapters();
@@ -38,7 +40,11 @@ export function DecisionHubHome() {
   useEffect(() => {
     let cancelled = false;
     setLoadingMemory(true);
-    void Promise.all([orchestrator.listDrafts(), orchestrator.listRecentDecisions(), adapters.profile.getProfile()])
+    void Promise.all([
+      orchestrator.listDrafts(),
+      orchestrator.listRecentDecisions(),
+      isLoggedIn ? adapters.profile.getProfile() : Promise.resolve(localProfileStorage.getProfile()),
+    ])
       .then(([draftItems, recentItems, profileEnvelope]) => {
         if (cancelled) return;
         setDrafts(draftItems.slice(0, 3));
@@ -54,7 +60,7 @@ export function DecisionHubHome() {
     return () => {
       cancelled = true;
     };
-  }, [adapters.profile, orchestrator]);
+  }, [adapters.profile, isLoggedIn, orchestrator]);
 
   const continueItems = drafts.length ? drafts : recent;
   const clarityScore = Math.max(0, Math.min(100, profileScore));

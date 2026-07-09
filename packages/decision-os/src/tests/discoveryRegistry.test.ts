@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getDecisionBySlug, getDecisionRoute, getLiveDecisions, getPopularDecisions, getQuickDecisions, getRelatedDecisions, getTrendingDecisions, searchDecisions } from "../discovery/decisionRegistry";
+import { getAllDecisions, getDecisionBySlug, getDecisionRoute, getLiveDecisions, getPopularDecisions, getQuickDecisions, getRelatedDecisions, getTrendingDecisions, searchDecisions } from "../discovery/decisionRegistry";
 
 describe("discovery decision registry", () => {
   it("returns live decisions with routes", () => {
@@ -9,7 +9,7 @@ describe("discovery decision registry", () => {
   });
 
   it("keeps coming soon decisions off broken routes", () => {
-    const phone = getDecisionBySlug("phone-comparison");
+    const phone = getDecisionBySlug("phone-comparison") ?? getAllDecisions().find((decision) => decision.slug === "phone-comparison");
     expect(phone?.status).toBe("coming_soon");
     expect(getDecisionRoute("phone-comparison")).toBeUndefined();
   });

@@ -13,6 +13,7 @@ import { DecisionSuggestionCard } from "../decision/DecisionSuggestionCard";
 import { ProfileCompletenessCard } from "../profile/ProfileCompletenessCard";
 import { ImproveAnalysisCTA } from "../profile/ImproveAnalysisCTA";
 import { DecisionAccuracyBadge } from "../decision/DecisionAccuracyBadge";
+import { localProfileStorage } from "@datastorified/profile";
 
 export function PersonalizedRecommendations({ compact = false, showProfile = true }: { compact?: boolean; showProfile?: boolean }) {
   const adapters = getDecisionAdapters();
@@ -22,7 +23,7 @@ export function PersonalizedRecommendations({ compact = false, showProfile = tru
   useEffect(() => {
     let mounted = true;
     void Promise.all([
-      adapters.profile.getProfile(),
+      Promise.resolve(localProfileStorage.getProfile()),
       adapters.memory.listRecent(),
       adapters.memory.listSaved(),
       adapters.memory.listHistory(),
@@ -50,7 +51,7 @@ export function PersonalizedRecommendations({ compact = false, showProfile = tru
     return () => {
       mounted = false;
     };
-  }, [adapters.memory, adapters.profile, client]);
+  }, [adapters.memory, client]);
 
   const topWorkflows = useMemo(() => snapshot?.workflowRecommendations.slice(0, compact ? 2 : 4) ?? [], [compact, snapshot]);
   if (!snapshot) return <Card className="p-6"><div className="h-32 animate-pulse rounded-3xl bg-soft" /></Card>;
