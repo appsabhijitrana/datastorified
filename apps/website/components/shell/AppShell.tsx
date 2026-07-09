@@ -2,12 +2,16 @@
 
 import React from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { ArrowRight, Compass, Home, Layers3, Search, Sparkles, UserRound, Wrench } from "lucide-react";
 import { authClient, GoogleSignInButton } from "@datastorified/auth";
 import { BrandMark, Card } from "@datastorified/ui";
 import { cn } from "@datastorified/utils";
-import { DecisionAssistantDock } from "../assistant/DecisionAssistantDock";
+const DecisionAssistantDock = dynamic(() => import("../assistant/DecisionAssistantDock").then((module) => module.DecisionAssistantDock), {
+  ssr: false,
+  loading: () => null,
+});
 
 type AppShellProps = {
   children: React.ReactNode;
