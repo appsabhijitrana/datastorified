@@ -248,7 +248,7 @@ export function DecisionHubHome() {
                 <h3 className="mt-2 text-xl font-bold">Need a quick interpretation?</h3>
                 <p className="mt-2 text-sm leading-6 text-muted">Use the assistant to summarize a result or explain a trade-off without leaving the dashboard.</p>
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <Button variant="secondary">Open AI assistant</Button>
+                  <Button variant="secondary" onClick={() => window.dispatchEvent(new Event("ds-open-assistant"))}>Open AI assistant</Button>
                   <Link href="/profile" className="inline-flex"><Button variant="ghost">Review privacy</Button></Link>
                 </div>
               </Card>

@@ -7,6 +7,7 @@ import { ArrowRight, Compass, Home, Layers3, Search, Sparkles, UserRound, Wrench
 import { authClient, GoogleSignInButton } from "@datastorified/auth";
 import { Badge, BrandMark, Card } from "@datastorified/ui";
 import { cn } from "@datastorified/utils";
+import { DecisionAssistantDock } from "../assistant/DecisionAssistantDock";
 
 type AppShellProps = {
   children: React.ReactNode;
@@ -38,6 +39,7 @@ const desktopNav: NavItem[] = [
 
 export function AppShell({ children, showMobileNav = true }: AppShellProps) {
   const pathname = usePathname() ?? "/";
+  const { data: session } = authClient.useSession();
   const active = pathname === "/"
     ? "home"
     : pathname.startsWith("/decision/saved")
@@ -93,6 +95,7 @@ export function AppShell({ children, showMobileNav = true }: AppShellProps) {
       </div>
 
       <FloatingStartButton />
+      <DecisionAssistantDock path={pathname} isLoggedIn={Boolean(session?.user)} />
       {showMobileNav && <MobileBottomNav active={active} />}
     </div>
   );
