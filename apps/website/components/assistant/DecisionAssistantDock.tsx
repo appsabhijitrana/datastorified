@@ -40,7 +40,7 @@ export function DecisionAssistantDock({ path, isLoggedIn }: { path: string; isLo
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] left-4 z-40 inline-flex min-h-14 items-center gap-2 rounded-full bg-gradient-to-br from-primary to-accent px-5 text-sm font-bold text-white shadow-glow transition hover:-translate-y-0.5 md:bottom-6"
+        className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] left-4 z-40 inline-flex min-h-14 max-w-[calc(100vw-2rem)] items-center gap-2 rounded-full bg-gradient-to-br from-primary to-accent px-5 text-sm font-bold text-white shadow-glow transition hover:-translate-y-0.5 md:bottom-6"
       >
         <Bot size={16} />
         AI assistant

@@ -88,7 +88,7 @@ export function AppShell({ children, showMobileNav = true }: AppShellProps) {
 
         <div className="flex min-h-dvh min-w-0 flex-1 flex-col">
           <TopHeader />
-          <main className="min-w-0 flex-1 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-4 md:pb-10 md:pt-6">
+          <main className="min-w-0 flex-1 pb-[calc(8rem+env(safe-area-inset-bottom))] pt-4 md:pb-10 md:pt-6">
             <div className="mx-auto min-w-0 max-w-6xl px-4 sm:px-6 lg:px-8">{children}</div>
           </main>
         </div>
@@ -139,7 +139,7 @@ function TopHeader() {
 function FloatingStartButton() {
   return (
     <Link href="/decision" className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-4 z-40 md:bottom-6">
-      <span className="inline-flex min-h-14 items-center gap-2 rounded-full bg-gradient-to-br from-primary to-accent px-5 text-sm font-bold text-white shadow-glow">
+      <span className="inline-flex min-h-14 max-w-[calc(100vw-2rem)] items-center gap-2 rounded-full bg-gradient-to-br from-primary to-accent px-5 text-sm font-bold text-white shadow-glow">
         <Sparkles size={16} />
         Start decision
       </span>
