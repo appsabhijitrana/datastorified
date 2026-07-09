@@ -68,7 +68,7 @@ export function AppShell({ children, showMobileNav = true }: AppShellProps) {
               const isExternal = item.href.startsWith("http");
               const isActive = !isExternal && ((item.href === "/" && active === "home") || (item.href === "/explore" && active === "explore") || (item.href === "/decision/saved" && active === "my-decisions") || (item.href === "/insights" && active === "insights") || (item.href === "/profile" && active === "profile"));
               const content = (
-                <span className={cn("flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition", isActive ? "bg-primary text-white shadow-glow" : "text-muted hover:bg-soft hover:text-ink")}>
+                <span className={cn("relative flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition-all duration-200 ease-out motion-reduce:transition-none", isActive ? "bg-primary text-white shadow-glow after:absolute after:inset-y-2 after:right-2 after:w-1 after:rounded-full after:bg-white/90" : "text-muted hover:-translate-y-0.5 hover:bg-soft hover:text-ink")}>
                   <Icon size={18} />
                   {item.label}
                 </span>
@@ -163,9 +163,9 @@ function MobileBottomNav({ active }: { active: string }) {
             <Link
               key={item.label}
               href={item.href}
-              className={cn(
-                "flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl text-[11px] font-semibold transition",
-                isActive ? "bg-primary/10 text-primary" : "text-muted",
+            className={cn(
+                "relative flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl text-[11px] font-semibold transition-all duration-200 ease-out motion-reduce:transition-none",
+                isActive ? "scale-[1.03] bg-primary/10 text-primary shadow-sm shadow-primary/10 after:absolute after:inset-x-4 after:bottom-1 after:h-0.5 after:rounded-full after:bg-primary" : "text-muted hover:-translate-y-0.5 hover:bg-soft hover:text-ink",
               )}
             >
               <Icon size={19} />

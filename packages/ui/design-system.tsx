@@ -11,10 +11,10 @@ export function Button({ className, variant = "primary", ...props }: React.Butto
   return (
     <button
       className={cn(
-        "inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50",
-        variant === "primary" && "bg-gradient-to-br from-primary via-blue-600 to-accent text-white shadow-glow hover:-translate-y-0.5 hover:shadow-lift",
-        variant === "secondary" && "border border-border/80 bg-white text-ink shadow-soft hover:border-primary/30 hover:shadow-lift",
-        variant === "ghost" && "text-muted hover:bg-soft hover:text-ink",
+        "inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition-all duration-200 ease-out motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50",
+        variant === "primary" && "bg-gradient-to-br from-primary via-blue-600 to-accent text-white shadow-glow hover:-translate-y-0.5 hover:shadow-lift active:translate-y-0 active:shadow-soft",
+        variant === "secondary" && "border border-border/80 bg-white text-ink shadow-soft hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lift active:translate-y-0",
+        variant === "ghost" && "text-muted hover:bg-soft hover:text-ink active:bg-soft/80",
         variant === "danger" && "bg-danger text-white shadow-soft",
         className,
       )}
@@ -24,7 +24,7 @@ export function Button({ className, variant = "primary", ...props }: React.Butto
 }
 
 export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("rounded-[1.75rem] border border-border/80 bg-white shadow-soft", className)} {...props} />;
+  return <div className={cn("rounded-[1.75rem] border border-border/80 bg-white shadow-soft transition-all duration-200 ease-out motion-reduce:transition-none hover:-translate-y-0.5 hover:shadow-lift", className)} {...props} />;
 }
 
 export function Badge({ className, ...props }: React.HTMLAttributes<HTMLSpanElement>) {
@@ -35,8 +35,8 @@ export function Chip({ className, selected, ...props }: React.ButtonHTMLAttribut
   return (
     <button
       className={cn(
-        "inline-flex min-h-11 items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20",
-        selected ? "border-primary/20 bg-primary/10 text-primary shadow-sm" : "border-border bg-white text-ink hover:border-primary/20 hover:shadow-soft",
+        "inline-flex min-h-11 items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-all duration-200 ease-out motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20",
+        selected ? "border-primary/20 bg-primary/10 text-primary shadow-sm shadow-primary/10 scale-[1.01]" : "border-border bg-white text-ink hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-soft active:translate-y-0",
         className,
       )}
       {...props}
@@ -58,7 +58,7 @@ export function BottomSheet({ open, title, children, onClose }: { open: boolean;
   return (
     <div className={cn("fixed inset-0 z-50", open ? "pointer-events-auto" : "pointer-events-none")}>
       <button aria-label="Close sheet" className={cn("absolute inset-0 bg-ink/35 transition-opacity", open ? "opacity-100" : "opacity-0")} onClick={onClose} />
-      <div className={cn("absolute inset-x-0 bottom-0 rounded-t-[1.75rem] border-t border-border bg-white p-4 shadow-lift transition-transform", open ? "translate-y-0" : "translate-y-full")}>
+      <div className={cn("absolute inset-x-0 bottom-0 rounded-t-[1.75rem] border-t border-border bg-white p-4 shadow-lift transition-transform duration-300 ease-out motion-reduce:transition-none", open ? "translate-y-0" : "translate-y-full")}>
         <div className="mx-auto max-w-2xl">
           <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-soft" />
           <div className="flex items-start justify-between gap-3">
@@ -75,7 +75,7 @@ export function BottomSheet({ open, title, children, onClose }: { open: boolean;
 export function Dialog({ open, title, children, onClose }: { open: boolean; title?: string; children: React.ReactNode; onClose: () => void }) {
   return open ? (
     <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 grid place-items-center bg-ink/35 p-4">
-      <div className="w-full max-w-lg rounded-[1.75rem] border border-border bg-white p-5 shadow-lift">
+      <div className="w-full max-w-lg rounded-[1.75rem] border border-border bg-white p-5 shadow-lift animate-in fade-in zoom-in-95 duration-200 motion-reduce:animate-none">
         <div className="flex items-start justify-between gap-3">
           <div>{title ? <h2 className="text-xl font-bold">{title}</h2> : null}</div>
           <button className="min-h-11 rounded-xl px-3 text-sm font-semibold text-muted hover:bg-soft" onClick={onClose}>Close</button>
@@ -100,7 +100,7 @@ export function EmptyState({ title = "Nothing here yet", description, action }: 
 }
 
 export function Skeleton({ className }: { className?: string }) {
-  return <div className={cn("animate-pulse rounded-2xl bg-soft", className)} />;
+  return <div className={cn("animate-pulse rounded-2xl bg-soft/80 motion-reduce:animate-none", className)} />;
 }
 
 export function ProgressBar({ value, max = 100, label, className }: { value: number; max?: number; label?: string; className?: string }) {
@@ -109,7 +109,7 @@ export function ProgressBar({ value, max = 100, label, className }: { value: num
     <div className={cn("space-y-2", className)}>
       {label ? <div className="flex items-center justify-between text-sm font-medium text-muted"><span>{label}</span><span>{Math.round(percent)}%</span></div> : null}
       <div className="h-2 overflow-hidden rounded-full bg-soft">
-        <div className="h-full rounded-full bg-gradient-to-r from-primary via-blue-600 to-accent" style={{ width: `${percent}%` }} />
+        <div className="h-full rounded-full bg-gradient-to-r from-primary via-blue-600 to-accent transition-[width] duration-700 ease-out motion-reduce:transition-none" style={{ width: `${percent}%` }} />
       </div>
     </div>
   );
@@ -124,7 +124,7 @@ export function ScoreRing({ score, size = 96 }: { score: number; size?: number }
     <div className="relative grid place-items-center" style={{ width: size, height: size }}>
       <svg viewBox="0 0 100 100" className="size-full -rotate-90">
         <circle cx="50" cy="50" r={radius} className="stroke-border/40" strokeWidth="10" fill="none" />
-        <circle cx="50" cy="50" r={radius} className="stroke-primary" strokeWidth="10" fill="none" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={offset} />
+        <circle cx="50" cy="50" r={radius} className="stroke-primary transition-[stroke-dashoffset] duration-700 ease-out motion-reduce:transition-none" strokeWidth="10" fill="none" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={offset} />
       </svg>
       <div className="absolute text-center">
         <div className="text-2xl font-bold">{safe}</div>

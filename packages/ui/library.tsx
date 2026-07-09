@@ -62,7 +62,7 @@ export function Sidebar({ title, subtitle, items = defaultSidebarItems, extra }:
         {items.map((item) => {
           const Icon = item.icon;
           return (
-            <Link key={item.label} href={item.href} className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-muted transition hover:bg-soft hover:text-ink">
+            <Link key={item.label} href={item.href} className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-muted transition-all duration-200 ease-out motion-reduce:transition-none hover:-translate-y-0.5 hover:bg-soft hover:text-ink">
               <Icon size={18} />
               {item.label}
             </Link>
@@ -112,8 +112,8 @@ export function BottomNavigation({ active = "home" }: { active?: string }) {
             key={key}
             href={href}
             className={cn(
-              "flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-1.5 text-[11px] font-semibold transition",
-              active === key ? "bg-primary/10 text-primary" : "text-muted hover:bg-soft hover:text-ink",
+              "relative flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-1.5 text-[11px] font-semibold transition-all duration-200 ease-out motion-reduce:transition-none",
+              active === key ? "scale-[1.03] bg-primary/10 text-primary shadow-sm shadow-primary/10 after:absolute after:inset-y-2 after:left-1 after:w-1 after:rounded-full after:bg-primary" : "text-muted hover:-translate-y-0.5 hover:bg-soft hover:text-ink",
             )}
           >
             <Icon size={19} />
@@ -125,13 +125,33 @@ export function BottomNavigation({ active = "home" }: { active?: string }) {
   );
 }
 
-export function MetricCard({ title, value, detail, icon }: { title: string; value: string; detail?: string; icon?: React.ReactNode }) {
+export function MetricCard({ title, value, detail, icon }: { title: string; value: string | number; detail?: string; icon?: React.ReactNode }) {
+  const [displayValue, setDisplayValue] = React.useState<string | number>(typeof value === "number" ? 0 : value);
+
+  React.useEffect(() => {
+    if (typeof value !== "number") {
+      setDisplayValue(value);
+      return;
+    }
+    let raf = 0;
+    const started = performance.now();
+    const duration = 650;
+    const animate = (now: number) => {
+      const progress = Math.min(1, (now - started) / duration);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setDisplayValue(Math.round(value * eased));
+      if (progress < 1) raf = requestAnimationFrame(animate);
+    };
+    raf = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(raf);
+  }, [value]);
+
   return (
     <Card className="p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-muted">{title}</p>
-          <p className="mt-3 text-3xl font-bold tracking-tight">{value}</p>
+          <p className="mt-3 text-3xl font-bold tracking-tight">{displayValue}</p>
         </div>
         {icon ? <span className="ds-icon-wrap">{icon}</span> : null}
       </div>
@@ -142,7 +162,7 @@ export function MetricCard({ title, value, detail, icon }: { title: string; valu
 
 export function InsightCard({ title = "Insight", children }: { title?: string; children: React.ReactNode }) {
   return (
-    <Card className="border-primary/15 bg-gradient-to-br from-primary/[.06] to-accent/[.08] p-5">
+    <Card className="border-primary/15 bg-gradient-to-br from-primary/[.06] to-accent/[.08] p-5 transition-all duration-200 ease-out motion-reduce:transition-none hover:-translate-y-0.5 hover:shadow-lift">
       <div className="flex items-start gap-3">
         <span className="ds-icon-wrap"><BarChart3 size={18} /></span>
         <div>
@@ -157,7 +177,7 @@ export function InsightCard({ title = "Insight", children }: { title?: string; c
 export function DecisionCard({ title, description, category, href, actionLabel = "Start" }: { title: string; description: string; category: string; href: string; actionLabel?: string }) {
   return (
     <Link href={href} className="block h-full">
-      <Card className="flex h-full flex-col p-5 transition hover:-translate-y-0.5 hover:shadow-lift">
+      <Card className="flex h-full flex-col p-5 transition-all duration-200 ease-out motion-reduce:transition-none hover:-translate-y-0.5 hover:shadow-lift">
         <Badge>{category}</Badge>
         <h3 className="mt-3 text-lg font-bold tracking-tight">{title}</h3>
         <p className="mt-2 text-sm leading-6 text-muted">{description}</p>
@@ -203,7 +223,7 @@ export function RecommendationCard(props: { title: string; description: string; 
 
 export function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <Card className="p-5">
+    <Card className="p-5 transition-all duration-200 ease-out motion-reduce:transition-none hover:-translate-y-0.5 hover:shadow-lift">
       <p className="text-sm font-semibold text-muted">{title}</p>
       <div className="mt-4">{children}</div>
     </Card>
@@ -242,11 +262,11 @@ export function MiniLineChart({ points }: { points: number[] }) {
   const safe = points.length ? points : [0, 0, 0, 0, 0];
   const max = Math.max(...safe, 1);
   return (
-    <div className="flex h-20 items-end gap-2">
-      {safe.slice(-6).map((point, index) => (
-        <span
-          key={`${index}-${point}`}
-          className="flex-1 rounded-t-full bg-gradient-to-t from-primary to-accent"
+      <div className="flex h-20 items-end gap-2">
+        {safe.slice(-6).map((point, index) => (
+          <span
+            key={`${index}-${point}`}
+          className="flex-1 rounded-t-full bg-gradient-to-t from-primary to-accent animate-[fadeIn_.3s_ease-out] motion-reduce:animate-none"
           style={{ height: `${Math.max(10, (point / max) * 100)}%` }}
         />
       ))}
@@ -264,7 +284,7 @@ export function ComparisonBar({ leftLabel, rightLabel, leftValue, rightValue }: 
         <span className="text-muted">{rightLabel}</span>
       </div>
       <div className="flex h-3 overflow-hidden rounded-full bg-soft">
-        <span className="bg-gradient-to-r from-primary to-accent" style={{ width: `${leftPercent}%` }} />
+        <span className="bg-gradient-to-r from-primary to-accent transition-[width] duration-700 ease-out motion-reduce:transition-none" style={{ width: `${leftPercent}%` }} />
         <span className="bg-soft/20" style={{ width: `${100 - leftPercent}%` }} />
       </div>
     </div>
@@ -273,7 +293,7 @@ export function ComparisonBar({ leftLabel, rightLabel, leftValue, rightValue }: 
 
 export function ConfidenceMeter({ value, label = "Confidence", hint }: { value: number; label?: string; hint?: string }) {
   return (
-    <Card className="p-5">
+    <Card className="p-5 transition-all duration-200 ease-out motion-reduce:transition-none hover:-translate-y-0.5 hover:shadow-lift">
       <div className="flex items-center justify-between gap-4">
         <div>
           <p className="text-xs font-bold uppercase tracking-[.14em] text-primary">{label}</p>
@@ -291,7 +311,7 @@ export function RiskMeter({ value, label = "Risk", hint }: { value: number; labe
   const percent = Math.max(0, Math.min(100, value));
   const tone = percent >= 70 ? "danger" : percent >= 40 ? "warning" : "success";
   return (
-    <Card className="p-5">
+    <Card className="p-5 transition-all duration-200 ease-out motion-reduce:transition-none hover:-translate-y-0.5 hover:shadow-lift">
       <div className="flex items-center justify-between gap-4">
         <div>
           <p className="text-xs font-bold uppercase tracking-[.14em] text-primary">{label}</p>
@@ -308,7 +328,7 @@ export function RiskMeter({ value, label = "Risk", hint }: { value: number; labe
 export function ScenarioProjectionChart({ data, title = "Scenario projection", description }: { data: Array<{ label: string; value: number }>; title?: string; description?: string }) {
   const safeData = data.length ? data : [{ label: "Now", value: 0 }];
   return (
-    <Card className="p-5">
+    <Card className="p-5 transition-all duration-200 ease-out motion-reduce:transition-none hover:-translate-y-0.5 hover:shadow-lift">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-muted">{title}</p>
@@ -384,7 +404,7 @@ export function BarComparisonChart({ title, leftLabel, rightLabel, leftValue, ri
     { label: rightLabel, value: rightValue, fill: "rgb(124 58 237)" },
   ];
   return (
-    <Card className="p-5">
+    <Card className="p-5 transition-all duration-200 ease-out motion-reduce:transition-none hover:-translate-y-0.5 hover:shadow-lift">
       {title ? <p className="text-sm font-semibold text-muted">{title}</p> : null}
       <div className="mt-4 h-56 w-full">
         <ResponsiveContainer width="100%" height="100%">
@@ -422,7 +442,7 @@ export function SkeletonLoader({ lines = 3 }: { lines?: number }) {
 
 export function PremiumCTA({ title, description, actionLabel, onAction }: { title: string; description: string; actionLabel: string; onAction: () => void }) {
   return (
-    <Card className="border-primary/15 bg-gradient-to-br from-primary/[.05] to-accent/[.08] p-5">
+    <Card className="border-primary/15 bg-gradient-to-br from-primary/[.05] to-accent/[.08] p-5 transition-all duration-200 ease-out motion-reduce:transition-none hover:-translate-y-0.5 hover:shadow-lift">
       <div className="flex items-start gap-3">
         <span className="ds-icon-wrap"><Sparkles size={18} /></span>
         <div className="min-w-0 flex-1">
@@ -437,7 +457,7 @@ export function PremiumCTA({ title, description, actionLabel, onAction }: { titl
 
 export function AIInsightCard({ title = "AI insight", children }: { title?: string; children: React.ReactNode }) {
   return (
-    <Card className="border-primary/15 bg-gradient-to-br from-primary/[.05] to-accent/[.08] p-5">
+    <Card className="border-primary/15 bg-gradient-to-br from-primary/[.05] to-accent/[.08] p-5 transition-all duration-200 ease-out motion-reduce:transition-none hover:-translate-y-0.5 hover:shadow-lift">
       <div className="flex items-start gap-3">
         <span className="ds-icon-wrap"><Sparkles size={18} /></span>
         <div>
