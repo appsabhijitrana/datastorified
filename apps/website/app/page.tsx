@@ -3,7 +3,7 @@ import { DecisionHubHome } from "../components/home/DecisionHubHome";
 
 export default function Home() {
   return (
-    <AppShell>
+    <AppShell showFloatingStart={false}>
       <DecisionHubHome />
     </AppShell>
   );

@@ -16,6 +16,7 @@ const DecisionAssistantDock = dynamic(() => import("../assistant/DecisionAssista
 type AppShellProps = {
   children: React.ReactNode;
   showMobileNav?: boolean;
+  showFloatingStart?: boolean;
 };
 
 type NavItem = {
@@ -41,7 +42,7 @@ const desktopNav: NavItem[] = [
   { label: "Profile", href: "/profile", icon: UserRound },
 ];
 
-export function AppShell({ children, showMobileNav = true }: AppShellProps) {
+export function AppShell({ children, showMobileNav = true, showFloatingStart = true }: AppShellProps) {
   const pathname = usePathname() ?? "/";
   const { data: session } = authClient.useSession();
   const active = pathname === "/"
@@ -98,7 +99,7 @@ export function AppShell({ children, showMobileNav = true }: AppShellProps) {
         </div>
       </div>
 
-      <FloatingStartButton />
+      {showFloatingStart && <FloatingStartButton />}
       <DecisionAssistantDock path={pathname} isLoggedIn={Boolean(session?.user)} />
       {showMobileNav && <MobileBottomNav active={active} />}
     </div>

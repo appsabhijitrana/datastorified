@@ -249,10 +249,10 @@ export function DecisionHubHome() {
                 onSkip={() => router.push("/decision")}
                 onSaved={() => router.push("/profile")}
               />
-              <Card className="p-5">
-                <p className="text-xs font-bold uppercase tracking-[.14em] text-primary">Bottom AI assistant CTA</p>
-                <h3 className="mt-2 text-xl font-bold">Need a quick interpretation?</h3>
-                <p className="mt-2 text-sm leading-6 text-muted">Use the assistant to summarize a result or explain a trade-off without leaving the dashboard.</p>
+              <Card className="border-primary/15 bg-primary/[.04] p-5 lg:self-start">
+                <p className="text-xs font-bold uppercase tracking-[.14em] text-primary">Need a quick interpretation?</p>
+                <h3 className="mt-2 text-xl font-bold">Open the assistant when you need a summary.</h3>
+                <p className="mt-2 text-sm leading-6 text-muted">It stays integrated without interrupting the main flow.</p>
                 <div className="mt-4 flex flex-wrap gap-2">
                   <Button variant="secondary" onClick={() => window.dispatchEvent(new Event("ds-open-assistant"))}>Open AI assistant</Button>
                   <Link href="/profile" className="inline-flex"><Button variant="ghost">Review privacy</Button></Link>

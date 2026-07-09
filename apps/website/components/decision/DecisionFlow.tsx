@@ -54,6 +54,13 @@ export function DecisionFlow({ pluginId, slug }: { pluginId: string; slug: strin
   const introHref = `/decision/${pluginId}/${slug}`;
 
   useEffect(() => {
+    if (!workflow) return;
+    if (loading || !state) {
+      document.title = `${workflow.title} | Start Decision`;
+    }
+  }, [loading, state, workflow]);
+
+  useEffect(() => {
     if (!workflow || workflow.pluginId !== pluginId) return;
     let cancelled = false;
     setLoading(true);
