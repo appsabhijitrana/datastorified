@@ -38,7 +38,7 @@ const desktopNav: NavItem[] = [
   { label: "Explore", href: "/explore", icon: Compass },
   { label: "My Decisions", href: "/decision/saved", icon: Layers3 },
   { label: "Insights", href: "/insights", icon: Sparkles },
-  { label: "Tools", href: "https://tools.datastorified.com", icon: Wrench },
+  { label: "Tools", href: "/tools", icon: Wrench },
   { label: "Profile", href: "/profile", icon: UserRound },
 ];
 

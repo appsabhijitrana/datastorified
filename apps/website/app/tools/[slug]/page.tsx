@@ -1,0 +1,30 @@
+import { notFound } from "next/navigation";
+import { toolBySlug, tools } from "../../../../../packages/tools-engine/registry";
+import { breadcrumbSchema, canonical, createMetadata, faqSchema, serializeJsonLd, softwareApplicationSchema } from "@datastorified/seo";
+import ToolExperience from "../../../../tools/app/[slug]/tool-experience";
+
+export function generateStaticParams() {
+  return tools.map(({ slug }) => ({ slug }));
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const tool = toolBySlug(slug);
+  return tool ? createMetadata(`${tool.name} — DataStorified`, tool.description, "datastorified.com", `/tools/${slug}`) : {};
+}
+
+export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const tool = toolBySlug(slug);
+  if (!tool) notFound();
+  const url = canonical("datastorified.com", `/tools/${slug}`);
+  const schemas = [
+    faqSchema([
+      { question: `Does ${tool.name} upload my data?`, answer: "No. Tools process text and files locally in the browser." },
+      { question: "Is this tool free?", answer: "Yes. These tools work without an account." },
+    ]),
+    softwareApplicationSchema({ name: tool.name, description: tool.description, url }),
+    breadcrumbSchema([{ name: "Tools", url: canonical("datastorified.com", "/tools") }, { name: tool.category, url: canonical("datastorified.com", "/tools#categories") }, { name: tool.name, url }]),
+  ];
+  return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(schemas) }} /><ToolExperience tool={tool} basePath="/tools" /></>;
+}

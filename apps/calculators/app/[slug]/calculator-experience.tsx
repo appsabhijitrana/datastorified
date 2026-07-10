@@ -29,7 +29,7 @@ import { ChartCard } from "@datastorified/ui/chart-card";
 import { SmartNumberInput } from "@datastorified/ui/smart-number-input";
 import type { SmartNumberMode } from "@datastorified/ui/smart-number";
 
-export default function CalculatorExperience({ calculator }: { calculator: CalculatorDefinition }) {
+export default function CalculatorExperience({ calculator, basePath = "/" }: { calculator: CalculatorDefinition; basePath?: string }) {
   const defaults = useMemo(() => Object.fromEntries(calculator.fields.map((field) => [field.key, field.default])), [calculator]);
   const [values, setValues] = useState<Record<string, number>>(defaults);
   const [favorite, setFavorite] = useState(false);
@@ -79,7 +79,7 @@ export default function CalculatorExperience({ calculator }: { calculator: Calcu
   return <>
     <Header surface="calculators" />
     <main className="mx-auto max-w-7xl px-4 pb-20 pt-7 sm:px-6">
-      <Breadcrumb items={[{ label: "Calculators", href: "/" }, { label: calculator.category, href: "/#categories" }, { label: calculator.name }]} />
+      <Breadcrumb items={[{ label: "Calculators", href: basePath }, { label: calculator.category, href: `${basePath}#categories` }, { label: calculator.name }]} />
 
       <div className="mt-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
@@ -148,7 +148,7 @@ export default function CalculatorExperience({ calculator }: { calculator: Calcu
       <section className="mt-16">
         <h2 className="text-2xl font-bold sm:text-3xl">Related calculators</h2>
         <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {calculator.related.map((slug) => calculatorBySlug(slug)).filter(Boolean).map((related) => <CalculatorCard key={related!.slug} name={related!.name} description={related!.description} category={related!.category} href={`/${related!.slug}`} />)}
+          {calculator.related.map((slug) => calculatorBySlug(slug)).filter(Boolean).map((related) => <CalculatorCard key={related!.slug} name={related!.name} description={related!.description} category={related!.category} href={`${basePath}/${related!.slug}`} />)}
         </div>
       </section>
 

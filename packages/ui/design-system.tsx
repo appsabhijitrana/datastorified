@@ -55,14 +55,67 @@ export function SearchInput({ className, ...props }: React.InputHTMLAttributes<H
 }
 
 export function BottomSheet({ open, title, children, onClose }: { open: boolean; title?: string; children: React.ReactNode; onClose: () => void }) {
+  const panelRef = React.useRef<HTMLDivElement | null>(null);
+  const titleId = React.useId();
+  const previousFocusRef = React.useRef<HTMLElement | null>(null);
+
+  React.useEffect(() => {
+    if (!open || typeof document === "undefined") return;
+    previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const bodyStyle = document.body.style;
+    const previousOverflow = bodyStyle.overflow;
+    const previousPaddingRight = bodyStyle.paddingRight;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    bodyStyle.overflow = "hidden";
+    if (scrollbarWidth > 0) bodyStyle.paddingRight = `${scrollbarWidth}px`;
+    const timer = window.setTimeout(() => {
+      const firstFocusable = panelRef.current?.querySelector<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+      (firstFocusable ?? panelRef.current)?.focus?.();
+    }, 0);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key !== "Tab" || !panelRef.current) return;
+      const focusables = Array.from(panelRef.current.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')).filter((element) => !element.hasAttribute("disabled"));
+      if (!focusables.length) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("keydown", handleKeyDown);
+      bodyStyle.overflow = previousOverflow;
+      bodyStyle.paddingRight = previousPaddingRight;
+      previousFocusRef.current?.focus?.();
+    };
+  }, [onClose, open]);
+
   return (
     <div className={cn("fixed inset-0 z-50", open ? "pointer-events-auto" : "pointer-events-none")}>
       <button aria-label="Close sheet" className={cn("absolute inset-0 bg-ink/35 transition-opacity", open ? "opacity-100" : "opacity-0")} onClick={onClose} />
-      <div className={cn("absolute inset-x-0 bottom-0 rounded-t-[1.75rem] border-t border-border bg-white p-4 shadow-lift transition-transform duration-300 ease-out motion-reduce:transition-none", open ? "translate-y-0" : "translate-y-full")}>
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={title ? titleId : undefined}
+        tabIndex={-1}
+        className={cn("absolute inset-x-0 bottom-0 max-h-[min(85dvh,52rem)] overflow-y-auto overscroll-contain rounded-t-[1.75rem] border-t border-border bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-lift transition-transform duration-300 ease-out motion-reduce:transition-none", open ? "translate-y-0" : "translate-y-full")}
+      >
         <div className="mx-auto max-w-2xl">
           <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-soft" />
           <div className="flex items-start justify-between gap-3">
-            <div>{title ? <h2 className="text-lg font-bold">{title}</h2> : null}</div>
+            <div>{title ? <h2 id={titleId} className="text-lg font-bold">{title}</h2> : null}</div>
             <Button variant="ghost" onClick={onClose} aria-label="Close dialog">Close</Button>
           </div>
           <div className="mt-4">{children}</div>
@@ -73,11 +126,65 @@ export function BottomSheet({ open, title, children, onClose }: { open: boolean;
 }
 
 export function Dialog({ open, title, children, onClose }: { open: boolean; title?: string; children: React.ReactNode; onClose: () => void }) {
+  const dialogRef = React.useRef<HTMLDivElement | null>(null);
+  const titleId = React.useId();
+  const previousFocusRef = React.useRef<HTMLElement | null>(null);
+
+  React.useEffect(() => {
+    if (!open || typeof document === "undefined") return;
+    previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const bodyStyle = document.body.style;
+    const previousOverflow = bodyStyle.overflow;
+    const previousPaddingRight = bodyStyle.paddingRight;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    bodyStyle.overflow = "hidden";
+    if (scrollbarWidth > 0) bodyStyle.paddingRight = `${scrollbarWidth}px`;
+    const timer = window.setTimeout(() => {
+      const firstFocusable = dialogRef.current?.querySelector<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+      (firstFocusable ?? dialogRef.current)?.focus?.();
+    }, 0);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key !== "Tab" || !dialogRef.current) return;
+      const focusables = Array.from(dialogRef.current.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')).filter((element) => !element.hasAttribute("disabled"));
+      if (!focusables.length) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("keydown", handleKeyDown);
+      bodyStyle.overflow = previousOverflow;
+      bodyStyle.paddingRight = previousPaddingRight;
+      previousFocusRef.current?.focus?.();
+    };
+  }, [onClose, open]);
+
   return open ? (
-    <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 grid place-items-center bg-ink/35 p-4">
-      <div className="w-full max-w-lg rounded-[1.75rem] border border-border bg-white p-5 shadow-lift animate-in fade-in zoom-in-95 duration-200 motion-reduce:animate-none">
+    <div className="fixed inset-0 z-50 grid place-items-center bg-ink/35 p-4" onMouseDown={onClose}>
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={title ? titleId : undefined}
+        tabIndex={-1}
+        className="w-full max-w-lg max-h-[min(90dvh,48rem)] overflow-y-auto overscroll-contain rounded-[1.75rem] border border-border bg-white p-5 shadow-lift animate-in fade-in zoom-in-95 duration-200 motion-reduce:animate-none"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
         <div className="flex items-start justify-between gap-3">
-          <div>{title ? <h2 className="text-xl font-bold">{title}</h2> : null}</div>
+          <div>{title ? <h2 id={titleId} className="text-xl font-bold">{title}</h2> : null}</div>
           <button className="min-h-11 rounded-xl px-3 text-sm font-semibold text-muted hover:bg-soft" onClick={onClose}>Close</button>
         </div>
         <div className="mt-4">{children}</div>

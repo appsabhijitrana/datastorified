@@ -21,7 +21,7 @@ const samples: Record<string, string> = {
 const sampleFor = (mode: string) => samples[mode] ?? "Paste or type your content here. DataStorified keeps the work in your browser.";
 const defaultOptions: Record<string, UtilityScalar> = { case: "upper", order: "asc", find: "clear", replace: "better", delimiter: "|", paragraphs: 3, pattern: "DS-\\d{4}", flags: "g", count: 10, length: 18, uppercase: true, lowercase: true, numbers: true, symbols: true, amount: 0, name: "Payee", note: "", width: 800, height: 600, quality: .8, x: 0, y: 0, rotation: 90, pages: "1" };
 
-export default function ToolExperience({ tool }: { tool: ToolDefinition }) {
+export default function ToolExperience({ tool, basePath = "/" }: { tool: ToolDefinition; basePath?: string }) {
   const [input, setInput] = useState(sampleFor(tool.mode));
   const [options, setOptions] = useState<Record<string, UtilityScalar>>(defaultOptions);
   const [favorite, setFavorite] = useState(false);
@@ -49,7 +49,7 @@ export default function ToolExperience({ tool }: { tool: ToolDefinition }) {
   return <>
     <Header surface="tools" />
     <main className="mx-auto max-w-7xl px-4 pb-20 pt-7 sm:px-6">
-      <Breadcrumb items={[{ label: "Tools", href: "/" }, { label: tool.category, href: "/#categories" }, { label: tool.name }]} />
+      <Breadcrumb items={[{ label: "Tools", href: basePath }, { label: tool.category, href: `${basePath}#categories` }, { label: tool.name }]} />
       <div className="mt-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div><Badge>{tool.category}</Badge><h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-5xl">{tool.name}</h1><p className="mt-3 max-w-2xl text-lg leading-8 text-muted">{tool.description}</p></div>
         <Button variant="secondary" onClick={toggleFavorite}><Heart size={17} className={favorite ? "fill-danger text-danger" : ""} />{favorite ? "Saved" : "Favorite"}</Button>
@@ -62,7 +62,7 @@ export default function ToolExperience({ tool }: { tool: ToolDefinition }) {
       </div>
 
       <div className="mt-6"><InsightCard title="Private by design">This tool runs on your device. Your content is not sent to a DataStorified server.</InsightCard></div>
-      <section className="mt-16"><h2 className="text-2xl font-bold sm:text-3xl">Related tools</h2><div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{related.map((candidate) => <ToolCard key={candidate.slug} name={candidate.name} description={candidate.description} category={candidate.category} href={`/${candidate.slug}`} />)}</div></section>
+      <section className="mt-16"><h2 className="text-2xl font-bold sm:text-3xl">Related tools</h2><div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{related.map((candidate) => <ToolCard key={candidate.slug} name={candidate.name} description={candidate.description} category={candidate.category} href={`${basePath}/${candidate.slug}`} />)}</div></section>
       <section className="mt-16"><h2 className="text-2xl font-bold sm:text-3xl">Frequently asked questions</h2><div className="mt-5"><FAQ items={faq} /></div></section>
     </main>
     <Footer /><BottomNav />

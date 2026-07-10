@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useEffect, useId, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { LEGAL_LINKS } from "@datastorified/legal";
+import { Dialog } from "../../../../packages/ui/design-system";
 import { cn } from "@datastorified/utils";
 
 type TermsAcceptanceModalProps = {
@@ -14,25 +15,14 @@ type TermsAcceptanceModalProps = {
 };
 
 export function TermsAcceptanceModal({ open, mode = "signin", onClose, onContinue, continueLabel }: TermsAcceptanceModalProps) {
-  const checkboxId = useId();
-  const titleId = useId();
-  const descriptionId = useId();
-  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const checkboxId = React.useId();
+  const descriptionId = React.useId();
   const [checked, setChecked] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     setChecked(false);
-    const timer = window.setTimeout(() => dialogRef.current?.focus(), 0);
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      window.clearTimeout(timer);
-      window.removeEventListener("keydown", onKeyDown);
-    };
   }, [open, onClose]);
 
   if (!open) return null;
@@ -48,21 +38,10 @@ export function TermsAcceptanceModal({ open, mode = "signin", onClose, onContinu
   };
 
   return (
-    <div className="fixed inset-0 z-[80] grid place-items-center bg-ink/40 px-4 py-6 backdrop-blur-sm">
-      <div
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        aria-describedby={descriptionId}
-        tabIndex={-1}
-        className="w-full max-w-lg rounded-[2rem] border border-border bg-white p-5 shadow-lift outline-none sm:p-7"
-      >
+    <Dialog open={open} title={mode === "signin" ? "Before you continue" : "Please review and accept the terms"} onClose={onClose}>
+      <div aria-describedby={descriptionId} className="space-y-5">
         <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">{mode === "signin" ? "Before you continue" : "One more step"}</p>
-        <h2 id={titleId} className="mt-2 text-2xl font-bold tracking-[-.03em] text-ink">
-          {mode === "signin" ? "Before you continue" : "Please review and accept the terms"}
-        </h2>
-        <p id={descriptionId} className="mt-3 text-sm leading-6 text-muted">
+        <p id={descriptionId} className="text-sm leading-6 text-muted">
           {mode === "signin"
             ? "Please review and accept DataStorified’s terms before creating your account."
             : "To keep using cloud and account features, please confirm the current legal terms."}
@@ -112,6 +91,6 @@ export function TermsAcceptanceModal({ open, mode = "signin", onClose, onContinu
           </button>
         </div>
       </div>
-    </div>
+    </Dialog>
   );
 }
