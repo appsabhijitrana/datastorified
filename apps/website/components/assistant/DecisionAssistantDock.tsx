@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { Bot, Lightbulb, MessageSquareText, Sparkles, WandSparkles } from "lucide-react";
-import { BottomSheet, Badge, Card, Chip, ProgressBar } from "@datastorified/ui/design-system";
+import { Badge, Card, Chip, ProgressBar } from "@datastorified/ui/design-system";
 import { AIInsightCard } from "@datastorified/ui/library";
 
 type AssistantContext = {
@@ -46,59 +46,76 @@ export function DecisionAssistantDock({ path, isLoggedIn }: { path: string; isLo
         AI assistant
       </button>
 
-      <BottomSheet
-        open={open}
-        title="AI assistant"
-        onClose={() => setOpen(false)}
-      >
-        <div className="space-y-4">
-          <Card className="border-primary/15 bg-gradient-to-br from-primary/[.05] to-accent/[.06] p-4">
-            <div className="flex items-start gap-3">
-              <span className="ds-icon-wrap"><Sparkles size={18} /></span>
-              <div>
-                <p className="text-sm font-semibold text-ink">{context.title}</p>
-                <p className="mt-1 text-sm leading-6 text-muted">{context.summary}</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Badge>{isLoggedIn ? "Sync-aware" : "Local-only"}</Badge>
-                  <Badge>Safe mock responses</Badge>
+      {open ? (
+        <div className="fixed inset-0 z-50">
+          <div aria-hidden="true" className="absolute inset-0 bg-ink/30" onClick={() => setOpen(false)} />
+          <div className="absolute inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] px-4 md:inset-auto md:bottom-6 md:left-4 md:right-auto md:w-[26rem] md:max-w-[calc(100vw-2rem)]">
+            <Card className="max-h-[min(78dvh,46rem)] overflow-y-auto overscroll-contain border-primary/15 bg-white p-4 shadow-lift md:p-5">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[.14em] text-primary">AI assistant</p>
+                  <p className="mt-1 text-sm leading-6 text-muted">Context-aware help, opened only when you ask for it.</p>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="inline-flex min-h-11 items-center rounded-xl border border-border bg-white px-3 text-sm font-semibold text-muted shadow-soft"
+                >
+                  Close
+                </button>
               </div>
-            </div>
-          </Card>
 
-          <section className="space-y-3">
-            <p className="text-xs font-bold uppercase tracking-[.14em] text-primary">Suggested prompts</p>
-            <div className="flex flex-wrap gap-2">
-              {[...new Set([...context.prompts, ...defaultPrompts])].slice(0, 6).map((prompt) => (
-                <Chip key={prompt} selected={prompt === activePrompt} onClick={() => setActivePrompt(prompt)}>
-                  {prompt}
-                </Chip>
-              ))}
-            </div>
-          </section>
+              <div className="mt-4 space-y-4">
+                <Card className="border-primary/15 bg-gradient-to-br from-primary/[.05] to-accent/[.06] p-4">
+                  <div className="flex items-start gap-3">
+                    <span className="ds-icon-wrap"><Sparkles size={18} /></span>
+                    <div>
+                      <p className="text-sm font-semibold text-ink">{context.title}</p>
+                      <p className="mt-1 text-sm leading-6 text-muted">{context.summary}</p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <Badge>{isLoggedIn ? "Sync-aware" : "Local-only"}</Badge>
+                        <Badge>Safe mock responses</Badge>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
 
-          <AIInsightCard title="Assistant response">
-            {response}
-          </AIInsightCard>
+                <section className="space-y-3">
+                  <p className="text-xs font-bold uppercase tracking-[.14em] text-primary">Suggested prompts</p>
+                  <div className="flex flex-wrap gap-2">
+                    {[...new Set([...context.prompts, ...defaultPrompts])].slice(0, 6).map((prompt) => (
+                      <Chip key={prompt} selected={prompt === activePrompt} onClick={() => setActivePrompt(prompt)}>
+                        {prompt}
+                      </Chip>
+                    ))}
+                  </div>
+                </section>
 
-          <section className="grid gap-3 sm:grid-cols-2">
-            <PromptCard title="From scratch" icon={<WandSparkles size={18} />} text="Help me decide from scratch" onClick={() => setActivePrompt("Help me decide from scratch")} />
-            <PromptCard title="Scenario question" icon={<Lightbulb size={18} />} text="What if my assumptions change?" onClick={() => setActivePrompt("What if my assumptions change?")} />
-            <PromptCard title="Result explanation" icon={<MessageSquareText size={18} />} text="Why did this option score higher?" onClick={() => setActivePrompt("Why did this option score higher?")} />
-            <PromptCard title="Next steps" icon={<Sparkles size={18} />} text="What should I verify next?" onClick={() => setActivePrompt("What should I verify next?")} />
-          </section>
+                <AIInsightCard title="Assistant response">
+                  {response}
+                </AIInsightCard>
 
-          <Card className="border-dashed border-border bg-soft/20 p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold text-ink">Context status</p>
-                <p className="mt-1 text-sm leading-6 text-muted">The assistant uses the current page context and simple mock responses. No backend AI is required.</p>
+                <section className="grid gap-3 sm:grid-cols-2">
+                  <PromptCard title="From scratch" icon={<WandSparkles size={18} />} text="Help me decide from scratch" onClick={() => setActivePrompt("Help me decide from scratch")} />
+                  <PromptCard title="Scenario question" icon={<Lightbulb size={18} />} text="What if my assumptions change?" onClick={() => setActivePrompt("What if my assumptions change?")} />
+                  <PromptCard title="Result explanation" icon={<MessageSquareText size={18} />} text="Why did this option score higher?" onClick={() => setActivePrompt("Why did this option score higher?")} />
+                  <PromptCard title="Next steps" icon={<Sparkles size={18} />} text="What should I verify next?" onClick={() => setActivePrompt("What should I verify next?")} />
+                </section>
+
+                <Card className="border-dashed border-border bg-soft/20 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-ink">Context status</p>
+                      <p className="mt-1 text-sm leading-6 text-muted">The assistant uses the current page context and simple mock responses. No backend AI is required.</p>
+                    </div>
+                    <ProgressBar value={context.progress} className="min-w-28" />
+                  </div>
+                </Card>
               </div>
-              <ProgressBar value={context.progress} className="min-w-28" />
-            </div>
-          </Card>
+            </Card>
+          </div>
         </div>
-      </BottomSheet>
+      ) : null}
     </>
   );
 }

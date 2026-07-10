@@ -168,9 +168,9 @@ export function DecisionHubHome() {
 
           <section className="space-y-4">
             <SectionHeader eyebrow="Trending" title="Trending decisions" description="Popular decisions surfacing right now." />
-            <div className="flex gap-4 overflow-x-auto pb-1 xl:grid xl:grid-cols-3 xl:overflow-visible">
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {trendingDecisions.slice(0, 6).map((decision) => (
-                <div key={decision.id} className="min-w-72 flex-1">
+                <div key={decision.id} className="min-w-0">
                   <RecommendationCard title={decision.title} category={decision.category} description={decision.description} href={getDecisionRoute(decision.slug) ?? "/decision"} reason="Trending" />
                 </div>
               ))}

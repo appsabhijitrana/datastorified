@@ -101,6 +101,8 @@ export function BottomSheet({ open, title, children, onClose }: { open: boolean;
     };
   }, [onClose, open]);
 
+  if (!open) return null;
+
   return (
     <div className={cn("fixed inset-0 z-50", open ? "pointer-events-auto" : "pointer-events-none")}>
       <div aria-hidden="true" className={cn("absolute inset-0 bg-ink/35 transition-opacity", open ? "opacity-100" : "opacity-0")} onClick={onClose} />

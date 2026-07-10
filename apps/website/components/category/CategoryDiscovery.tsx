@@ -128,7 +128,7 @@ function DiscoveryRail({ title, eyebrow, decisions, isLoggedIn, deviceType }: { 
   return (
     <section className="space-y-4">
       <SectionHeader eyebrow={eyebrow} title={title} description="Swipe on mobile, grid on desktop." />
-      <div className="flex gap-4 overflow-x-auto pb-1 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:overflow-visible">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {decisions.map((decision) => <DecisionCard key={decision.id} decision={decision} isLoggedIn={isLoggedIn} deviceType={deviceType} />)}
       </div>
     </section>
@@ -138,7 +138,7 @@ function DiscoveryRail({ title, eyebrow, decisions, isLoggedIn, deviceType }: { 
 function DecisionCard({ decision, isLoggedIn, deviceType }: { decision: DiscoveryDecision; isLoggedIn: boolean; deviceType: string }) {
   const href = getDecisionRoute(decision.slug);
   return (
-    <Card className="flex min-w-72 flex-1 flex-col gap-4 p-5">
+    <Card className="flex min-w-0 flex-1 flex-col gap-4 p-5">
       <div className="flex items-start justify-between gap-3">
         <Badge>{decision.category}</Badge>
         <Badge className="border-border bg-soft text-muted">{decision.tags[0] ?? "Decision"}</Badge>

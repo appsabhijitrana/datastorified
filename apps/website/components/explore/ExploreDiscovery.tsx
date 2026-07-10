@@ -251,7 +251,7 @@ function RailSection({ title, eyebrow, items }: { title: string; eyebrow: string
   return (
     <section className="space-y-4">
       <SectionHeader eyebrow={eyebrow} title={title} description="Fast, swipeable cards on mobile and a wider grid on desktop." />
-      <div className="flex gap-4 overflow-x-auto pb-1 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:overflow-visible">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {items.map((decision) => (
           <DecisionFeedCard key={decision.id} decision={decision} sourceSection={title.toLowerCase().replace(/\s+/g, "_")} />
         ))}
@@ -264,7 +264,7 @@ function DecisionFeedCard({ decision, sourceSection }: { decision: DiscoveryDeci
   const href = getDecisionRoute(decision.slug);
   const popularityUsers = Math.max(120, Math.round(decision.popularityScore * 18));
   return (
-    <Card className="flex min-w-72 flex-1 flex-col gap-4 p-5 transition hover:-translate-y-0.5 hover:shadow-lift">
+    <Card className="flex min-w-0 flex-1 flex-col gap-4 p-5 transition hover:-translate-y-0.5 hover:shadow-lift">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">
           <CardIcon decision={decision} />

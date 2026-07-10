@@ -55,11 +55,11 @@ export function RelatedDecisionCard({ title, eyebrow, items, isLoggedIn, deviceT
   return (
     <section className="space-y-4">
       <SectionHeader eyebrow={eyebrow} title={title} />
-      <div className="flex gap-4 overflow-x-auto pb-1 lg:grid lg:grid-cols-2 xl:grid-cols-4 lg:overflow-visible">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {items.map((decision) => {
           const href = getDecisionRoute(decision.slug);
           return (
-            <Card key={decision.id} className="flex min-w-72 flex-1 flex-col gap-4 p-5">
+            <Card key={decision.id} className="flex min-w-0 flex-1 flex-col gap-4 p-5">
               <div className="flex items-start justify-between gap-3">
                 <Badge>{decision.category}</Badge>
                 <ReasonBadge decision={decision} />
