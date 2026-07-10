@@ -103,7 +103,7 @@ export function BottomSheet({ open, title, children, onClose }: { open: boolean;
 
   return (
     <div className={cn("fixed inset-0 z-50", open ? "pointer-events-auto" : "pointer-events-none")}>
-      <button aria-label="Close sheet" className={cn("absolute inset-0 bg-ink/35 transition-opacity", open ? "opacity-100" : "opacity-0")} onClick={onClose} />
+      <div aria-hidden="true" className={cn("absolute inset-0 bg-ink/35 transition-opacity", open ? "opacity-100" : "opacity-0")} onClick={onClose} />
       <div
         ref={panelRef}
         role="dialog"
@@ -182,6 +182,7 @@ export function Dialog({ open, title, children, onClose }: { open: boolean; titl
         tabIndex={-1}
         className="w-full max-w-lg max-h-[min(90dvh,48rem)] overflow-y-auto overscroll-contain rounded-[1.75rem] border border-border bg-white p-5 shadow-lift animate-in fade-in zoom-in-95 duration-200 motion-reduce:animate-none"
         onMouseDown={(event) => event.stopPropagation()}
+        onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3">
           <div>{title ? <h2 id={titleId} className="text-xl font-bold">{title}</h2> : null}</div>
